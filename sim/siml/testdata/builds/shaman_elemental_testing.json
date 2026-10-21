@@ -17,7 +17,7 @@
 	},
 	"partyBuffs": {},
 	"player": {
-		"race": "RaceTroll",
+		"race": "RaceWindshaperSkyborne",
 		"class": "ClassShaman",
 		"equipment": {
 			"items": [
@@ -92,7 +92,7 @@
 			"conjuredId": 12662,
 			"mhImbueId": 20749,
 			"extraIds": [8423],
-			"elixirIds": [250343, 9155, 250338, 250341, 250351, 13452, 250337],
+			"elixirIds": [250343, 9155, 250338, 250341, 250337],
 			"resourcePotId": 13444
 		},
 		"itemSwap": {
@@ -417,6 +417,57 @@
 				{
 					"action": {
 						"condition": {
+							"dotIsActive": {
+								"spellId": {
+									"spellId": 10448,
+									"rank": 5
+								}
+							}
+						},
+						"castSpell": {
+							"spellId": {
+								"spellId": 16166
+							}
+						}
+					}
+				},
+				{
+					"action": {
+						"condition": {
+							"dotIsActive": {
+								"spellId": {
+									"spellId": 10448,
+									"rank": 5
+								}
+							}
+						},
+						"castSpell": {
+							"spellId": {
+								"spellId": 20572
+							}
+						}
+					}
+				},
+				{
+					"action": {
+						"condition": {
+							"dotIsActive": {
+								"spellId": {
+									"spellId": 10448,
+									"rank": 5
+								}
+							}
+						},
+						"castSpell": {
+							"spellId": {
+								"spellId": 20554
+							}
+						}
+					}
+				},
+				{
+					"action": {
+						"condition": {
 							"cmp": {
 								"op": "OpGt",
 								"lhs": {
@@ -498,15 +549,6 @@
 							"spellId": {
 								"spellId": 10414,
 								"rank": 7
-							}
-						}
-					}
-				},
-				{
-					"action": {
-						"castSpell": {
-							"spellId": {
-								"spellId": 16166
 							}
 						}
 					}
