@@ -2,9 +2,9 @@ import * as PresetUtils from '@app/preset_utils';
 import { PseudoStat, Spec, Stat } from '@generated/proto/common';
 import { Stats } from '@sim/proto/stats';
 
-import DefaultsJson from './defaults.siml';
 import DefaultApl from './apls/default.apl.siml';
 import TestingBuildJson from './builds/testing.siml';
+import DefaultsJson from './defaults.siml';
 
 // The spec's defaults, from defaults.siml.
 export const Defaults = PresetUtils.specDefaultsFromSettings(Spec.SpecEnhancementShaman, DefaultsJson);

@@ -4,7 +4,7 @@
 import { IndividualSimSettings } from '@generated/proto/ui';
 import pako from 'pako';
 
-import { SIM_CATEGORY_KEYS, SIM_CATEGORY_OF_KEY, SimSettingCategories } from '../constants/sim_settings';
+import { SIM_CATEGORY_OF_KEY, SimSettingCategories } from '../constants/sim_settings';
 import { getEnumValues } from '../utils/collections';
 
 export const LINK_CATEGORY_PARAM = 'i';

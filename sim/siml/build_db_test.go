@@ -15,7 +15,7 @@ import (
 )
 
 // Each committed build loaded over its spec's defaults, as testdata/builds holds it. The site's applyBuild is
-// checked against the same files by ui/features/settings/model/apply_build_files.test.ts. UPDATE_BUILDS=1
+// checked against the same files by ui/app/apply_build_files.test.ts. UPDATE_BUILDS=1
 // rewrites them, and `npx oxfmt sim/siml/testdata/builds` lays them out for the format check.
 func TestBuildsOverDefaults(t *testing.T) {
 	builds, err := filepath.Glob(filepath.Join(langRoot, "ui/specs/*/*/builds/*.siml"))

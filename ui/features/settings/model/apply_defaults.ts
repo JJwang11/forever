@@ -1,11 +1,11 @@
 import { APLRotation, APLRotation_Type as APLRotationType } from '@generated/proto/apl';
 import { Cooldowns, ItemSwap, Profession, type Spec } from '@generated/proto/common';
 import type { Player } from '@sim/player/player';
+import { Stats } from '@sim/proto/stats';
 import type { StatSweepSettings } from '@sim/settings/stat_sweep_settings';
 import type { StatWeightActionSettings } from '@sim/settings/stat_weight_settings';
 import type { IndividualSimHost } from '@sim/sim_host';
 import type { IndividualSimUIConfig } from '@sim/spec_config';
-import { Stats } from '@sim/proto/stats';
 import { batch } from '@sim/state/batch';
 
 import { applyBuild } from './apply_build';

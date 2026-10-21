@@ -3,11 +3,11 @@ import { PseudoStat, Spec, Stat } from '@generated/proto/common';
 import * as Mechanics from '@sim/constants/mechanics';
 import { Stats } from '@sim/proto/stats';
 
-import DefaultsJson from './defaults.siml';
 import HolyShockApl from './apls/holy_shock.apl.siml';
 import TwistOfLightApl from './apls/twist_of_light.apl.siml';
 import HolyShockBuildJson from './builds/holy_shock.siml';
 import TwistOfLightBuildJson from './builds/twist_of_light.siml';
+import DefaultsJson from './defaults.siml';
 import HolyShockGear from './gear_sets/holy_shock.gear.siml';
 import TwistOfLightGear from './gear_sets/twist_of_light.gear.siml';
 

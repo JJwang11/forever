@@ -2,8 +2,8 @@ import * as PresetUtils from '@app/preset_utils';
 import { Spec, Stat } from '@generated/proto/common';
 import { Stats } from '@sim/proto/stats';
 
-import DefaultsJson from './defaults.siml';
 import DefaultAPL from './apls/default.apl.siml';
+import DefaultsJson from './defaults.siml';
 import P1GearJson from './gear_sets/p1.gear.siml';
 import PreBiSGearJson from './gear_sets/prebis.gear.siml';
 

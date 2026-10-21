@@ -1,8 +1,8 @@
 import * as PresetUtils from '@app/preset_utils';
 import { Spec } from '@generated/proto/common';
 
-import DefaultsJson from './defaults.siml';
 import DefaultApl from './apls/default.apl.siml';
+import DefaultsJson from './defaults.siml';
 import DefaultGear from './gear_sets/default.gear.siml';
 
 // The spec's defaults, from defaults.siml.

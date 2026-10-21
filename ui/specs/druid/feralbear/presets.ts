@@ -3,8 +3,8 @@ import { PseudoStat, Spec, Stat } from '@generated/proto/common';
 import { SavedTalents } from '@generated/proto/ui';
 import { Stats } from '@sim/proto/stats';
 
-import DefaultsJson from './defaults.siml';
 import DefaultApl from './apls/default.apl.siml';
+import DefaultsJson from './defaults.siml';
 import Level60GearJson from './gear_sets/default.gear.siml';
 
 // The spec's defaults, from defaults.siml.

@@ -1,17 +1,16 @@
 import { makePresetBuildFromJSON } from '@app/preset_utils';
+import { applyBuild } from '@features/settings/model/apply_build';
 import { APLRotation } from '@generated/proto/apl';
 import { IndividualSimSettings } from '@generated/proto/ui';
 import { specTypeFunctions, withSpec } from '@sim/proto/spec_functions';
 import { getPlayerSpecFromPlayer } from '@sim/proto/utils';
 import { describe, expect, it } from 'vitest';
 
-import { applyBuild } from './apply_build';
-
 // Each committed build applied over its spec's defaults by the site's applyBuild, against what siml.LoadBuild gives
 // for the same files (sim/siml/testdata/builds, written by TestBuildsOverDefaults). The two must load the same character.
-const builds = import.meta.glob<any>('../../../specs/*/*/builds/*.siml', { eager: true, import: 'default' });
-const defaults = import.meta.glob<any>('../../../specs/*/*/defaults.siml', { eager: true, import: 'default' });
-const merged = import.meta.glob<any>('../../../../sim/siml/testdata/builds/*.json', { eager: true, import: 'default' });
+const builds = import.meta.glob<any>('../specs/*/*/builds/*.siml', { eager: true, import: 'default' });
+const defaults = import.meta.glob<any>('../specs/*/*/defaults.siml', { eager: true, import: 'default' });
+const merged = import.meta.glob<any>('../../sim/siml/testdata/builds/*.json', { eager: true, import: 'default' });
 
 // A host whose setters write into s, the settings the site would export.
 const hostOver = (s: IndividualSimSettings, spec: number) => {
@@ -63,8 +62,8 @@ describe('applyBuild over defaults.siml', () => {
 		return [
 			`${cls}/${folder}/${file}`,
 			json,
-			defaults[`../../../specs/${cls}/${folder}/defaults.siml`],
-			merged[`../../../../sim/siml/testdata/builds/${cls}_${folder}_${file}.json`],
+			defaults[`../specs/${cls}/${folder}/defaults.siml`],
+			merged[`../../sim/siml/testdata/builds/${cls}_${folder}_${file}.json`],
 		];
 	});
 

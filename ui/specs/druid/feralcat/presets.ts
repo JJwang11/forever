@@ -3,7 +3,6 @@ import { PseudoStat, Spec, Stat } from '@generated/proto/common';
 import { SavedTalents } from '@generated/proto/ui';
 import { Stats } from '@sim/proto/stats';
 
-import DefaultsJson from './defaults.siml';
 import BearweaveApl from './apls/bearweave.apl.siml';
 import DefaultApl from './apls/default.apl.siml';
 import EnergizedApl from './apls/energized.apl.siml';
@@ -11,6 +10,7 @@ import JvmesApl from './apls/jvmes.apl.siml';
 import PounceApl from './apls/pounce.apl.siml';
 import RavageApl from './apls/ravage.apl.siml';
 import ShadowmeldApl from './apls/shadowmeld.apl.siml';
+import DefaultsJson from './defaults.siml';
 import Level60GearJson from './gear_sets/default.gear.siml';
 import PreRaidGearJson from './gear_sets/pre_raid.gear.siml';
 
