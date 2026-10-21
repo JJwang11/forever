@@ -8,8 +8,11 @@ import (
 	"strings"
 	"testing"
 
+	googleProto "google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
+	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 func testSchema(t *testing.T) (*schema, *forms) {
@@ -496,5 +499,39 @@ func TestSchemaDerivations(t *testing.T) {
 		"apl", "simple", "cooldowns", "prepull", "priority", "group"}
 	if !slices.Equal(names, want) {
 		t.Errorf("sections %v, want %v (SPEC.md §5.1, §12.1)", names, want)
+	}
+}
+
+// Each enum short-name rule of SPEC.md §8.2, on enums built for it, since the protos need not hold a value that
+// takes each rule.
+func TestEnumShortNameRules(t *testing.T) {
+	keywords := map[string]bool{"none": true}
+	for _, c := range []struct {
+		enum   string
+		values []string
+		want   []string
+	}{
+		{"SwipeUsage", []string{"SwipeUsage_Never", "SwipeUsageAlways"}, []string{"never", "always"}}, // E and the _ after it go.
+		{"Mode", []string{"Mode_", "ModeAuto"}, []string{"mode_", "auto"}},                            // Nothing left after E and _ is snake(V).
+		{"E", []string{"E20", "E21"}, []string{"e20", "e21"}},                                         // A digit first is snake(V).
+		{"PetAttackSpeed", []string{"PetAttackSpeedNone"}, []string{"pet_attack_speed_none"}},         // A keyword is snake(V).
+		{"FinishingMove", []string{"None", "Rip"}, []string{"finishing_move_none", "rip"}},            // snake(V) a keyword too takes snake(E) in front.
+		{"Dup", []string{"DupFoo", "Foo"}, []string{"dup_foo", "foo"}},                                // Two values of one short name take snake(V).
+	} {
+		values := make([]*descriptorpb.EnumValueDescriptorProto, len(c.values))
+		for i, v := range c.values {
+			values[i] = &descriptorpb.EnumValueDescriptorProto{Name: googleProto.String(v), Number: googleProto.Int32(int32(i))}
+		}
+		fd, err := protodesc.NewFile(&descriptorpb.FileDescriptorProto{
+			Name:     googleProto.String(c.enum + ".proto"),
+			Package:  googleProto.String("short_names"),
+			EnumType: []*descriptorpb.EnumDescriptorProto{{Name: googleProto.String(c.enum), Value: values}},
+		}, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := enumShortNames(fd.Enums().Get(0), keywords); !slices.Equal(got, c.want) {
+			t.Errorf("%s %v read as %v, want %v", c.enum, c.values, got, c.want)
+		}
 	}
 }

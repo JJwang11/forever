@@ -533,15 +533,3 @@ message SimlPrintResult {
 	repeated SimlDiagnostic diagnostics = 2; // Why the print does not read back.
 	string error = 3;
 }
-
-// Re-prints text, the file at path, in canonical form.
-message SimlFormatRequest {
-	string path = 1;
-	string text = 2;
-}
-
-message SimlFormatResult {
-	string text = 1; // Empty when the text has an error.
-	repeated SimlDiagnostic diagnostics = 2;
-	string error = 3;
-}

@@ -113,18 +113,6 @@ func TestPrintRequestUnknownSection(t *testing.T) {
 	}
 }
 
-func TestFormatRequest(t *testing.T) {
-	names := readNames(t, "names.json")
-	r := FormatRequest(&proto.SimlFormatRequest{Path: "rotation.apl.siml", Text: "siml 1\nspec hunter\npriority:\n    cast   multi_shot\n"}, names)
-	if r.Error != "" || r.Text != apiRotation {
-		t.Errorf("got %q, error %q; want %q", r.Text, r.Error, apiRotation)
-	}
-	broken := FormatRequest(&proto.SimlFormatRequest{Path: "rotation.apl.siml", Text: "siml 1\nspec hunter\n\npriority:\n  cast multi_shto\n"}, names)
-	if broken.Text != "" || len(broken.Diagnostics) != 1 {
-		t.Errorf("got %q, diagnostics %v; want no text and one diagnostic", broken.Text, broken.Diagnostics)
-	}
-}
-
 // A literal run as long as a file may be reads without a stack of its own length (SPEC.md §2 reads a compound
 // duration as any number of number-and-unit pairs).
 func TestParseRequestReadsALongLiteralRun(t *testing.T) {
@@ -135,13 +123,10 @@ func TestParseRequestReadsALongLiteralRun(t *testing.T) {
 	}
 }
 
-func TestRequestsRefuseTextLargerThanAFile(t *testing.T) {
+func TestParseRequestRefusesTextLargerThanAFile(t *testing.T) {
 	text := "siml 1\nspec hunter\n\n// " + strings.Repeat("x", maxSourceSize) + "\n"
 	names := readNames(t, "names.json")
 	if r := ParseRequest(&proto.SimlParseRequest{Path: "x.apl.siml", Text: text}, names); !strings.Contains(r.Error, "larger than") {
 		t.Errorf("ParseRequest gave the error %q, want one naming the size", r.Error)
-	}
-	if r := FormatRequest(&proto.SimlFormatRequest{Path: "x.apl.siml", Text: text}, names); !strings.Contains(r.Error, "larger than") {
-		t.Errorf("FormatRequest gave the error %q, want one naming the size", r.Error)
 	}
 }

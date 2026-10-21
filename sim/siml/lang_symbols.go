@@ -299,7 +299,7 @@ func (d *Doc) readOccurrences() []occurrence {
 		}
 	}
 	for _, u := range uses {
-		res := resolveVariable(u.node.name, u.node.braced, declaredIn(seen, u.scope))
+		res := resolveVariable(u.node.name, u.node.braced, declaredIn(seen, scope{}))
 		name := u.node.name
 		if res.found {
 			name = res.name
@@ -378,12 +378,12 @@ func (d *Doc) settableVariables(usePath string) []declaredVariable {
 	path := resolveUse(d.path, usePath)
 	if d.typed != nil {
 		for u, used := range d.typed.used {
-			if use, ok := u.(*useStmt); ok && samePath(resolveUse(d.path, use.path.value), path) {
+			if use, ok := u.(*useStmt); ok && SamePath(resolveUse(d.path, use.path.value), path) {
 				return variablesOf(declaredByFile(used, path))
 			}
 		}
 	}
-	if samePath(path, d.path) {
+	if SamePath(path, d.path) {
 		return nil
 	}
 	text, ok := d.readUsed(path)
@@ -430,7 +430,7 @@ func sameOccurrence(a occurrence, aFile string, b occurrence, bFile string) bool
 	if b.file != "" {
 		bFile = b.file
 	}
-	if a.kind != b.kind || a.name != b.name || !samePath(aFile, bFile) {
+	if a.kind != b.kind || a.name != b.name || !SamePath(aFile, bFile) {
 		return false
 	}
 	return a.kind == "group" || a.kind == "sequence" || a.scope == b.scope
@@ -503,11 +503,11 @@ func everywhere(home *Doc, key occurrence, from *Doc) []foundOccurrence {
 		return out
 	}
 	files := nearbyFiles(home.path)
-	if from != home && !slices.ContainsFunc(files, func(file string) bool { return samePath(file, from.path) }) {
+	if from != home && !slices.ContainsFunc(files, func(file string) bool { return SamePath(file, from.path) }) {
 		files = append(files, from.path)
 	}
 	for _, file := range files {
-		own := samePath(file, from.path)
+		own := SamePath(file, from.path)
 		other := from
 		if !own {
 			text, ok := home.readUsed(file)
@@ -519,7 +519,7 @@ func everywhere(home *Doc, key occurrence, from *Doc) []foundOccurrence {
 			continue
 		}
 		for _, o := range other.occurrences() {
-			if o.file != "" && samePath(o.file, home.path) && o.kind == key.kind && o.name == key.name {
+			if o.file != "" && SamePath(o.file, home.path) && o.kind == key.kind && o.name == key.name {
 				out = append(out, foundOccurrence{other, o})
 			}
 		}
@@ -535,7 +535,7 @@ func nearbyFiles(path string) []string {
 	folder := filepath.Dir(path)
 	var files []string
 	add := func(file string) {
-		if !slices.Contains(files, file) && !samePath(file, path) {
+		if !slices.Contains(files, file) && !SamePath(file, path) {
 			files = append(files, file)
 		}
 	}
@@ -724,7 +724,7 @@ func (d *Doc) Rename(at Position, newName string) ([]FileEdits, error) {
 	}
 	var out []FileEdits
 	for _, f := range everywhere(home, key, d) {
-		i := slices.IndexFunc(out, func(e FileEdits) bool { return samePath(e.Path, f.doc.path) })
+		i := slices.IndexFunc(out, func(e FileEdits) bool { return SamePath(e.Path, f.doc.path) })
 		if i < 0 {
 			out = append(out, FileEdits{Path: f.doc.path})
 			i = len(out) - 1

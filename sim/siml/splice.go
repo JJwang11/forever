@@ -16,12 +16,7 @@ import (
 )
 
 // Edits to the rotation of an x.apl.siml, as the rotation panel makes them: each AplEdit changes the rotation JSON,
-// and the text changes only where the JSON does. A statement an edit touches is printed again, with the // lines
-// directly above it and its trailing comment (SPEC.md §10); a statement that moves takes its lines along; every other
-// line stays as written. A row printed again stays in its when blocks while its condition still starts with theirs, and
-// splits them otherwise (SPEC.md §6.9); a def call in it stays while the edits leave its value as it was (§6.10). The
-// new text is read back, and a statement that does not read as its JSON is printed again, or as raw JSON, until each
-// one does.
+// and the text changes only where the JSON does, by the rules of SPEC.md §12.5.
 
 const spliceRounds = 4 // A statement is read as written, then printed from its JSON, then written as raw JSON.
 

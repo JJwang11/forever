@@ -683,17 +683,9 @@ func (r *contextReader) accessor(head, unitWord string) {
 	r.args(propKind.message, propKind, unit, skip)
 }
 
-// The namespace an ActionID field of a kind reads (SPEC.md §7.2), unit being what the kind's unit field holds: an
-// aura_id field the auras on its unit, the field of a boss_spell_<prop> kind what a target casts, and every other
-// ActionID field what the player casts.
+// The namespace an ActionID field of a kind reads, unit being what the kind's unit field holds.
 func fieldNamespace(kind *aplKind, f *field, unit *proto.UnitReference) Namespace {
-	if f.Name == "aura_id" {
-		return auraNamespace(unit.GetType())
-	}
-	if kind != nil && strings.HasPrefix(kind.Kind, "boss_spell_") {
-		return NamespaceTargetSpell
-	}
-	return NamespaceSpell
+	return kindScope{kind: kind, unit: unit.GetType()}.namespace(f)
 }
 
 // The property an accessor whose subject the cursor is in goes on to, read from the text after the cursor.

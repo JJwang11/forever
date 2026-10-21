@@ -25,6 +25,16 @@ func langNames(t *testing.T) *Names {
 	return names
 }
 
+// The spell id a hunter file's spell name reads as, from the name table.
+func tableSpellID(t *testing.T, name string) int32 {
+	t.Helper()
+	id, ok := langNames(t).Spell(proto.Class_ClassHunter, NamespaceSpell, name)
+	if !ok {
+		t.Fatalf("the name table has no hunter spell %s", name)
+	}
+	return id.GetSpellId()
+}
+
 func langCatalog() *DatabaseCatalog { return CatalogAt(langRoot) }
 
 func analyzeText(t *testing.T, path, text string) *Doc {
@@ -232,10 +242,11 @@ func TestHoverSpell(t *testing.T) {
 	if !ok {
 		t.Fatal("no hover")
 	}
-	matchesText(t, "spell", h.Markdown, `\*\*Hunter's Mark\*\* · a spell · spell 14325`)
+	id := tableSpellID(t, "hunters_mark")
+	matchesText(t, "spell", h.Markdown, fmt.Sprintf(`\*\*Hunter's Mark\*\* · a spell · spell %d`, id))
 	matchesText(t, "spell", h.Markdown, `registered by hunter`)
-	if h.SpellID != 14325 {
-		t.Errorf("SpellID %d, want 14325, whose game files row the server adds", h.SpellID)
+	if h.SpellID != id {
+		t.Errorf("SpellID %d, want %d, whose game files row the server adds", h.SpellID, id)
 	}
 }
 
@@ -251,7 +262,9 @@ func TestHoverGear(t *testing.T) {
 	gear := "siml 1\n\nhead lieutenant_commanders_chain_helmet + falcons_call\nmain_hand notched_shortsword of_the_eagle\n"
 	d := analyzeText(t, gearPath, gear)
 	matchesText(t, "item", hoverText(t, d, positionOf(gear, "lieutenant", 2)), `Lieutenant Commander's Chain Helm.* · item \d+`)
-	matchesText(t, "enchant", hoverText(t, d, positionOf(gear, "falcons_call", 2)), `enchant effect 2586[\s\S]*fits head, legs`)
+	falcons := langNames(t).Enchants["falcons_call"]
+	fits := regexp.QuoteMeta("fits " + strings.Join(d.slotWords(falcons.Slots), ", "))
+	matchesText(t, "enchant", hoverText(t, d, positionOf(gear, "falcons_call", 2)), fmt.Sprintf(`enchant effect %d[\s\S]*%s`, falcons.EffectID, fits))
 	matchesText(t, "suffix", hoverText(t, d, positionOf(gear, "of_the_eagle", 2)), `random suffix`)
 }
 
@@ -522,7 +535,7 @@ func TestUseLinks(t *testing.T) {
 	if !slices.Equal(got, want) {
 		t.Fatalf("links %v, want %v", got, want)
 	}
-	if defs := d.Definition(positionOf(text, "apls/turret", 3)); len(defs) != 1 || !samePath(defs[0].Path, d.Links()[1].Path) {
+	if defs := d.Definition(positionOf(text, "apls/turret", 3)); len(defs) != 1 || !SamePath(defs[0].Path, d.Links()[1].Path) {
 		t.Errorf("definition of the use path: %v", defs)
 	}
 	missing := analyzeText(t, path, strings.Replace(text, "../apls/turret.apl.siml", "../apls/missing.apl.siml", 1))
@@ -685,7 +698,7 @@ func TestServerContentCases(t *testing.T) {
 		t.Fatal("no hover")
 	}
 	matchesText(t, "hover", h.Markdown, `Hunter's Mark`)
-	matchesText(t, "hover", h.Markdown, `spell 14325`)
+	matchesText(t, "hover", h.Markdown, fmt.Sprintf(`spell %d`, tableSpellID(t, "hunters_mark")))
 
 	// A file that uses one which does not declare the variable its with list sets.
 	usedText, _ := fixtureDoc(t, "default.apl.siml")
@@ -693,7 +706,7 @@ func TestServerContentCases(t *testing.T) {
 	usedPath := filepath.Join(langRoot, "tools", "vscode-apl", "test", "fixtures", "default.apl.siml")
 	unsaved := strings.Replace(usedText, "var ${Use Summon Hawk} = false\n", "", 1)
 	open := func(path string) ([]byte, error) {
-		if samePath(filepath.Clean(path), usedPath) {
+		if SamePath(filepath.Clean(path), usedPath) {
 			return []byte(unsaved), nil
 		}
 		return os.ReadFile(path)

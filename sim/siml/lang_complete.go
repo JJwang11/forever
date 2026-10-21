@@ -512,7 +512,7 @@ func (b *completer) catalogName(id int32) string {
 	if b.c == nil {
 		return ""
 	}
-	name, _ := catalogItemName(b.c, id)
+	name, _ := b.c.ItemName(id)
 	return name
 }
 
@@ -686,7 +686,7 @@ func (b *completer) fieldValues(f *field) {
 func (b *completer) enchantDetail(name string) string {
 	entry := b.d.names.Enchants[name]
 	var rows []string
-	for _, r := range enchantRows(b.c, entry.EffectID) {
+	for _, r := range b.c.EnchantRows(entry.EffectID) {
 		if !slices.Contains(rows, r.Name) {
 			rows = append(rows, r.Name)
 		}
@@ -702,7 +702,7 @@ func (b *completer) slotItems(slot string) {
 		return
 	}
 	for _, item := range b.c.Items() {
-		if slices.Contains(ItemSlots(item), proto.ItemSlot(v.Number)) {
+		if slices.Contains(item.slots(), proto.ItemSlot(v.Number)) {
 			b.itemItem(item.ID)
 		}
 	}

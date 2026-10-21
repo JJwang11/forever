@@ -1,6 +1,6 @@
 // Package lsp is the SIML language server: diagnostics, completion, hover, navigation, rename, outline, folding,
 // semantic tokens, formatting and code actions for every *.siml file, and the requests the rotation panel of the
-// VS Code extension makes (siml/rotation, siml/registered, siml/splice, siml/database, siml/patterns, siml/insertPattern, siml/sim).
+// VS Code extension makes (siml/rotation, siml/pathAt, siml/registered, siml/splice, siml/database, siml/patterns, siml/insertPattern, siml/sim).
 // It speaks JSON-RPC over a stream, and reads the name table and the item database from the repository each file
 // sits in.
 package lsp
@@ -386,7 +386,7 @@ func (s *server) changedLocked(path, uri string) {
 		return
 	}
 	for other, a := range s.analyses {
-		if other != uri && slices.ContainsFunc(a.used, func(used string) bool { return samePath(used, path) }) {
+		if other != uri && slices.ContainsFunc(a.used, func(used string) bool { return siml.SamePath(used, path) }) {
 			a.stale = true
 			s.scheduleLocked(other, usersDelay)
 		}
@@ -448,7 +448,7 @@ func (s *server) analyzeLocked(uri string) *analysis {
 // analysis reads.
 func (s *server) openerLocked(a *analysis) siml.Opener {
 	return func(path string) ([]byte, error) {
-		if a != nil && a.recording && !slices.ContainsFunc(a.used, func(used string) bool { return samePath(used, path) }) {
+		if a != nil && a.recording && !slices.ContainsFunc(a.used, func(used string) bool { return siml.SamePath(used, path) }) {
 			a.used = append(a.used, path)
 		}
 		if d := s.docByPathLocked(path); d != nil {
@@ -463,7 +463,7 @@ func (s *server) docByPathLocked(path string) *document {
 		return nil
 	}
 	for _, d := range s.docs {
-		if d.path != "" && samePath(d.path, path) {
+		if d.path != "" && siml.SamePath(d.path, path) {
 			return d
 		}
 	}

@@ -231,8 +231,9 @@ export function defineSpec<SpecType extends Spec>(def: SpecDefinition<SpecType>)
 }
 
 // Removes dev-only gearsets from the gear presets and from the builds, dropping a
-// build left empty. The default gear stays only when it is a production gearset
+// build left empty. The default gear stays only when it equals a production gearset
 // the spec lists, so a default taken from an unlisted preset is cleared as well.
+// Equal by value, as a spec's defaults.siml reads its gear into a message of its own.
 // `ui/app/spec_entry.tsx` applies it outside the dev server and the previews.
 export function withoutDevOnlyGear<SpecType extends Spec>(def: SpecDefinition<SpecType>): SpecDefinition<SpecType> {
 	const gear = def.presets.gear.filter(preset => !preset.devOnly);
@@ -240,9 +241,10 @@ export function withoutDevOnlyGear<SpecType extends Spec>(def: SpecDefinition<Sp
 		?.map(build => (build.gear?.devOnly ? { ...build, gear: undefined } : build))
 		.filter(({ name: _name, phase: _phase, group: _group, ...categories }) => Object.values(categories).some(value => value !== undefined));
 	const productionGear = [...gear, ...(builds ?? []).map(build => build.gear)].map(preset => preset?.gear);
+	const keepDefault = productionGear.some(listed => listed && EquipmentSpec.equals(listed, def.defaults.gear));
 	return {
 		...def,
-		defaults: { ...def.defaults, gear: productionGear.includes(def.defaults.gear) ? def.defaults.gear : EquipmentSpec.create() },
+		defaults: { ...def.defaults, gear: keepDefault ? def.defaults.gear : EquipmentSpec.create() },
 		presets: { ...def.presets, gear, builds },
 	};
 }

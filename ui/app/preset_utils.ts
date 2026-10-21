@@ -246,7 +246,7 @@ const makePresetSettingsHelper = (name: string, spec: Spec, simSettings: Individ
 		settings.playerOptions = {
 			inFrontOfTarget: simSettings.player.inFrontOfTarget,
 			distanceFromTarget: simSettings.player.distanceFromTarget,
-			// Settings with no `item_swap:` section turn swapping off, as the hand-written presets did.
+			// Settings with no `item_swap:` section turn swapping off.
 			enableItemSwap: simSettings.player.enableItemSwap,
 		};
 

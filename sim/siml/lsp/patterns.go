@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
-	"regexp"
 	"strconv"
 	"strings"
 
@@ -90,7 +89,7 @@ func number(v float64) string {
 	return strconv.FormatFloat(v, 'f', -1, 64)
 }
 
-// A time as const takes it: a string as written ("1.5s", "-3s"), a number as seconds.
+// A time as const takes it: a string as written ("1.5s", "-3s") without the spaces around it, a number as seconds.
 func duration(value any) string {
 	switch v := value.(type) {
 	case float64:
@@ -98,7 +97,7 @@ func duration(value any) string {
 	case int:
 		return strconv.Itoa(v) + "s"
 	}
-	return text(value)
+	return strings.TrimSpace(text(value))
 }
 
 func constant(val string) obj { return obj{"const": obj{"val": val}} }
@@ -361,7 +360,8 @@ var patterns = []pattern{
 			{Name: "gap", Label: "Gap", Kind: "duration", Default: "1.5s"},
 		},
 		build: func(v map[string]any) fragment {
-			start, gap := seconds(v["start"]), seconds(v["gap"])
+			start, _ := seconds(v["start"])
+			gap, _ := seconds(v["gap"])
 			var rows []any
 			for _, spell := range []any{v["first"], v["second"], v["third"]} {
 				if spell == nil || spell == "" {
@@ -375,28 +375,17 @@ var patterns = []pattern{
 	},
 }
 
-var simpleTime = regexp.MustCompile(`^([-+]?\d*\.?\d+)(ms|s|m)?$`)
-
-// Seconds from a time: a number, or a simple time string ("1.5s", "500ms", "-3").
-func seconds(value any) float64 {
+// Seconds from a time as a const reads one: a number, or a time string ("1.5s", "500ms", "2m30s", "-3"). False for
+// text the sim reads as no number, and for NaN or an infinity, which order against nothing.
+func seconds(value any) (float64, bool) {
 	switch v := value.(type) {
 	case float64:
-		return v
+		return v, !math.IsNaN(v) && !math.IsInf(v, 0)
 	case int:
-		return float64(v)
+		return float64(v), true
 	}
-	m := simpleTime.FindStringSubmatch(strings.TrimSpace(text(value)))
-	if m == nil {
-		return 0
-	}
-	amount, _ := strconv.ParseFloat(m[1], 64)
-	switch m[2] {
-	case "ms":
-		return amount / 1000
-	case "m":
-		return amount * 60
-	}
-	return amount
+	n, ok := siml.ConstSeconds(strings.TrimSpace(text(value)))
+	return n, ok && !math.IsNaN(n) && !math.IsInf(n, 0)
 }
 
 func patternList() []pattern { return patterns }
@@ -504,9 +493,7 @@ func prepullSeconds(r any) (float64, bool) {
 	if !ok {
 		return 0, false
 	}
-	seconds, ok := siml.ConstSeconds(strings.TrimSpace(val))
-	// NaN or an infinity orders against nothing, so such a row keeps no place in time.
-	return seconds, ok && !math.IsNaN(seconds) && !math.IsInf(seconds, 0)
+	return seconds(val)
 }
 
 // The edits that put a built pattern into the rotation. Prepull rows go where their time keeps the prepull list in
@@ -516,7 +503,15 @@ func patternEdits(apl any, p pattern, values map[string]any, place placement) ([
 	if root == nil {
 		root = map[string]any{}
 	}
-	f := p.build(withDefaults(p, values))
+	filled := withDefaults(p, values)
+	for _, ph := range p.Placeholders {
+		if v := filled[ph.Name]; ph.Kind == "duration" && v != nil && v != "" {
+			if _, ok := seconds(v); !ok {
+				return nil, fmt.Errorf("%s takes a time such as 1.5s or 300ms, not %q", ph.Label, text(v))
+			}
+		}
+	}
+	f := p.build(filled)
 	var edits []siml.AplEdit
 	add := func(op string, path []any, value any, index int) error {
 		e, err := edit(op, path, value, index)

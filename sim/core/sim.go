@@ -117,7 +117,7 @@ func RunSim(rsr *proto.RaidSimRequest, progress chan *proto.ProgressMetrics, sig
 	return runSim(rsr, progress, false, signals, nil)
 }
 
-// RunSim, calling executed with each row the sim's APLs execute (APLActionHook). The presims do not call it.
+// RunSim, calling executed with each action the sim's APLs execute (APLActionHook). The presims do not call it.
 func RunSimWithAPLHook(rsr *proto.RaidSimRequest, signals simsignals.Signals, executed APLActionHook) *proto.RaidSimResult {
 	return runSim(rsr, nil, false, signals, executed)
 }

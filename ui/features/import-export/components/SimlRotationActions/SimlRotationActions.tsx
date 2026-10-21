@@ -5,9 +5,9 @@ import { ContentBlock } from '@ui-kit/ContentBlock';
 import { Icon } from '@ui-kit/Icon';
 import { useState } from 'react';
 
-import { SIML_ROTATION_EXPORTER } from '../../exporters/siml';
+import { SIML_ROTATION_EXPORTER } from '../../exporters';
 import { exporterDialog } from '../Exporter/ExporterDialog';
-import { SimlRotationImporterDialog } from '../Importer/SimlImporterDialog';
+import { SimlRotationImporterDialog } from '../Importer';
 
 // Module scope, because `exporterDialog` builds a component type: called in the render body it would build a new
 // one each time and remount the open dialog.

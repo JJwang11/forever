@@ -10,7 +10,7 @@ import (
 // The URI of a file a location is in: the requesting document's for its own path or none, an open document's, else
 // the file's.
 func (s *server) locationURILocked(a *analysis, uri, path string) string {
-	if path == "" || samePath(path, a.doc.Path()) {
+	if path == "" || siml.SamePath(path, a.doc.Path()) {
 		return uri
 	}
 	return s.uriOfLocked(path)

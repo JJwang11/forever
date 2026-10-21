@@ -37,20 +37,6 @@ export async function spansOf(document: vscode.TextDocument): Promise<RotationRe
 	return read?.version === document.version ? read.spans : (await readRotation(document)).spans;
 }
 
-// The path of the shortest span around a position, the deeper of two the same length; [] outside every span.
-export function pathAt(document: vscode.TextDocument, spans: RotationResult['spans'], position: vscode.Position): JsonPath {
-	const offset = document.offsetAt(position);
-	let best: { path: JsonPath; size: number } | undefined;
-	for (const span of spans) {
-		if (span.range.start.line > position.line || span.range.end.line < position.line) continue;
-		const [start, end] = [document.offsetAt(vscodeRange(span.range).start), document.offsetAt(vscodeRange(span.range).end)];
-		if (offset < start || offset > end) continue;
-		if (!best || end - start < best.size || (end - start === best.size && span.path.length > best.path.length))
-			best = { path: span.path, size: end - start };
-	}
-	return best?.path ?? [];
-}
-
 // The text a JSON path is written at.
 export function spanFor(spans: RotationResult['spans'], path: JsonPath): Range | undefined {
 	const key = path.join('/');

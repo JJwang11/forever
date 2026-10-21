@@ -13,8 +13,8 @@ import (
 )
 
 // The requests the rotation panel of the VS Code extension makes about an open .apl.siml: the rotation the text reads
-// as, the text edits that make the panel's edits, the database's names and icons, the patterns Insert Pattern
-// offers, and a sim of the text.
+// as, the rotation path at a position, the text edits that make the panel's edits, the database's names and icons,
+// the patterns Insert Pattern offers, and a sim of the text.
 
 func (s *server) panelRequest(ctx context.Context, method string, params json.RawMessage) (any, *ResponseError) {
 	var p struct {
@@ -29,6 +29,7 @@ func (s *server) panelRequest(ctx context.Context, method string, params json.Ra
 		Iterations   int            `json:"iterations"`
 		Seed         int64          `json:"seed"`
 		Timeline     bool           `json:"timeline"`
+		Position     Position       `json:"position"`
 	}
 	if len(params) > 0 {
 		if err := json.Unmarshal(params, &p); err != nil {
@@ -43,6 +44,8 @@ func (s *server) panelRequest(ctx context.Context, method string, params json.Ra
 		return s.splice(p.URI, p.Version, p.Edits)
 	case "siml/registered":
 		return s.registered(p.URI)
+	case "siml/pathAt":
+		return s.pathAt(p.URI, p.Position)
 	case "siml/database":
 		return s.panelDatabase(p.URI)
 	case "siml/patterns":
@@ -186,6 +189,21 @@ func (s *server) rotation(uri string) (any, *ResponseError) {
 		out.Findings = append(out.Findings, panelFinding{Path: nonNil(path), Severity: severityNames[diag.Severity], Code: diag.Code, Message: diag.Message})
 	}
 	return out, nil
+}
+
+// The rotation path the text at a position of an open file writes, which the panel selects with the cursor and
+// Insert Pattern inserts at; [] outside the rotation's spans and while the file cannot be read.
+func (s *server) pathAt(uri string, at Position) (any, *ResponseError) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	a := s.analyzeLocked(uri)
+	if a == nil {
+		return nil, failed("%s is not open", uri)
+	}
+	if a.err != nil {
+		return []any{}, nil
+	}
+	return a.doc.PathAt(fromPosition(at)), nil
 }
 
 // The names the panel's pickers offer for an open file's spec. They depend on the spec line and the name table only,

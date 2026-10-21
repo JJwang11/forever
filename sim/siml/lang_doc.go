@@ -3,6 +3,7 @@ package siml
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 
@@ -95,9 +96,13 @@ func lineStartOf(text string, offset int) int { return strings.LastIndexByte(tex
 
 func (s span) holds(offset int) bool { return s.start <= offset && offset <= s.end }
 
-// Whether two paths name one file, whichever separator each is written with.
-func samePath(a, b string) bool {
-	return strings.ReplaceAll(a, `\`, "/") == strings.ReplaceAll(b, `\`, "/")
+// Whether two paths name one file, whichever separator each is written with, without case on Windows.
+func SamePath(a, b string) bool {
+	a, b = filepath.Clean(strings.ReplaceAll(a, `\`, "/")), filepath.Clean(strings.ReplaceAll(b, `\`, "/"))
+	if runtime.GOOS == "windows" {
+		return strings.EqualFold(a, b)
+	}
+	return a == b
 }
 
 // The section each statement belongs to; a header belongs to its own section.

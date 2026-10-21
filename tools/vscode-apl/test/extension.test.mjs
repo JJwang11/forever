@@ -12,6 +12,9 @@ import { activateBuilt, fakeVscode, serverRunning } from './vscode.mjs';
 
 const fixtures = fileURLToPath(new URL('fixtures/', import.meta.url));
 const manifest = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+// The committed name table, which the expected ids are read from.
+const names = JSON.parse(readFileSync(new URL('../../../sim/siml/names.json', import.meta.url), 'utf8'));
+const tableSpell = (className, name) => names.classes[className].spell[name];
 
 let stand;
 let extension;
@@ -91,13 +94,14 @@ test('the panel opens on an .apl.siml and reads its rotation, its findings and t
 	assert.ok(Array.isArray(rotation.findings));
 	const init = panel.posted.find(m => m.type === 'init');
 	assert.equal(init.fileName, 'default.apl.siml');
-	assert.equal(init.db.spells[71]?.[0], 'Defensive Stance');
+	assert.equal(init.db.spells[tableSpell('warrior', 'defensive_stance').spellId]?.[0], 'Defensive Stance');
 	// The names come through their own request, after the rotation.
 	await until(() => panel.posted.some(m => m.type === 'registered'));
 	const registered = panel.posted.find(m => m.type === 'registered').registered;
 	assert.equal(registered.status, 'ready');
 	assert.equal(registered.spec, 'hunter');
-	assert.ok(registered.registered.spells.some(n => n.name === 'hunters_mark' && n.id.spellId === 14325 && n.id.rank === 4));
+	const mark = tableSpell('hunter', 'hunters_mark');
+	assert.ok(registered.registered.spells.some(n => n.name === 'hunters_mark' && n.id.spellId === mark.spellId && n.id.rank === mark.rank));
 	assert.ok(registered.registered.items.every(n => n.name.startsWith('item.') && n.id.itemId > 0));
 	panel.dispose();
 });
@@ -109,7 +113,7 @@ test('a moved row changes only the lines of that row', async () => {
 	const applied = stand.state.applied.length;
 	const answer = await edit(panel, { version, seq: 1, edits: [{ op: 'move', path: ['priorityList'], from: 4, to: 1 }] });
 	assert.equal(document.version, version + 1, 'one change');
-	assert.equal(answer.rotation.priorityList[1].action.castSpell.spellId.spellId, 1317257, 'Strider Kick is second');
+	assert.equal(answer.rotation.priorityList[1].action.castSpell.spellId.spellId, tableSpell('hunter', 'strider_kick').spellId, 'Strider Kick is second');
 	// One WorkspaceEdit: the row's line goes in at its new place and comes out of its old one.
 	assert.equal(stand.state.applied.length, applied + 1);
 	const edits = stand.state.applied.at(-1).map(e => [e.range.start.line, e.range.end.line, e.newText]);
@@ -187,7 +191,11 @@ test("a panel's edit is dropped when the text changes while the server splices i
 		const answer = await edit(panel, { version, seq: 1, edits: [{ op: 'move', path: ['priorityList'], from: 4, to: 1 }] });
 		assert.equal(stand.state.applied.length, applied, 'no edit applied');
 		assert.equal(answer.version, document.version);
-		assert.equal(answer.rotation.priorityList[4].action.castSpell.spellId.spellId, 1317257, 'Strider Kick stays fifth');
+		assert.equal(
+			answer.rotation.priorityList[4].action.castSpell.spellId.spellId,
+			tableSpell('hunter', 'strider_kick').spellId,
+			'Strider Kick stays fifth',
+		);
 	} finally {
 		client.sendRequest = sendRequest;
 		panel.dispose();

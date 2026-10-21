@@ -220,11 +220,11 @@ func (k *keySet) has(key string) bool { return k.set[key] }
 func newKeySet() *keySet { return &keySet{set: map[string]bool{}} }
 
 // The sections a file writes, a group by its name, and talents when it has a talents line. A file's top-level var
-// lines are its apl: section.
+// lines are its apl: section; its def lines write no section.
 func presentSections(ix *schemaIndex, tree *syntaxTree) *keySet {
 	present := newKeySet()
 	for _, s := range tree.sections {
-		written := s.header != nil || len(s.body) > 0
+		written := s.header != nil || slices.ContainsFunc(s.body, func(b stmt) bool { _, isDef := b.(*defStmt); return !isDef })
 		if ix.sections[s.name] == nil || !written {
 			continue
 		}
@@ -587,13 +587,17 @@ func (f *typedFile) setVariables(rotation *proto.APLRotation, with []varBind, pa
 		names[i] = v.GetName()
 	}
 	var values []*proto.APLValue
+	set := map[string]bool{}
 	for _, b := range with {
 		res := resolveVariable(b.variable.name, b.variable.braced, names)
 		switch {
 		case t.reportAmbiguous(b.variable, res):
 		case !res.found:
 			t.report("with-unknown-variable", fmt.Sprintf("%s declares no variable %s%s", path, nodeText(b.variable, ""), didYouMean(b.variable.name, names)), b.variable.span)
+		case set[res.name]:
+			t.report("duplicate-variable", fmt.Sprintf("with sets %s twice", nodeText(b.variable, "")), b.variable.span)
 		default:
+			set[res.name] = true
 			k := slices.Index(names, res.name)
 			value := t.valueIn(b.value, slices.Concat(jsonKeys(t.ix.rotationPath), []any{"valueVariables", k, "value"})...)
 			if value != nil {

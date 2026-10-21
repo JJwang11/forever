@@ -9,12 +9,9 @@ import type { IndividualSimHost } from '@sim/sim_host';
 import { withViewerStatFilters } from '@sim/state/stat_filter_sharing';
 import { toastManager } from '@ui-kit/Toast';
 
-import { SIML_ROTATION_FILE } from '../exporters/siml';
+import { SIML_ROTATION_FILE, SIML_SETUP_FILE } from '../exporters/siml';
 import { located, parseSiml, specField } from '../siml_client';
 import { type ImporterDefinition, ImportProblems } from './types';
-
-// What text with no file name reads as: a full setup, or any part of one (sim/siml/SPEC.md §1).
-const PASTED_FILE = 'wowsims.siml';
 
 /**
  * Reads `text` as the file `path` names and loads exactly the categories it holds, so a file holding a rotation
@@ -83,7 +80,7 @@ const uploadedPath = (fileName: string) => fileName.toLowerCase().replace(/\s*\(
 export const SIML_IMPORTER: ImporterDefinition = {
 	title: i18n.t('import.siml.title'),
 	allowFileUpload: true,
-	onImport: (host, data, fileName) => importSiml(host, data, fileName ? uploadedPath(fileName) : PASTED_FILE),
+	onImport: (host, data, fileName) => importSiml(host, data, fileName ? uploadedPath(fileName) : SIML_SETUP_FILE),
 };
 
 export const SIML_ROTATION_IMPORTER: ImporterDefinition = {

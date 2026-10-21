@@ -34,6 +34,16 @@ func tableNames(t *testing.T) *siml.Names {
 	return names
 }
 
+// The ActionID a hunter file's name in ns reads as, from the committed name table.
+func tableSpell(t *testing.T, ns siml.Namespace, name string) *proto.ActionID {
+	t.Helper()
+	id, ok := tableNames(t).Spell(proto.Class_ClassHunter, ns, name)
+	if !ok {
+		t.Fatalf("the name table has no %s %s for a hunter", ns, name)
+	}
+	return id
+}
+
 // The JSON as protojson compares it: an empty list is the default and left out, and an ActionID's rank is the name's
 // own once it prints by one (SPEC.md §12.4), so ranks are not compared.
 func normalized(v any) any {
@@ -251,6 +261,34 @@ func TestPrepullRowsKeepTimeOrder(t *testing.T) {
 	for _, f := range siml.Lint(rotationProto(t, apl)) {
 		if strings.HasPrefix(f.Code, "prepull") {
 			t.Errorf("%+v", f)
+		}
+	}
+}
+
+func TestPatternTimesReadAsAConstReadsThem(t *testing.T) {
+	names := tableNames(t)
+	sequence, _ := patternByID("prepull-sequence")
+	for _, c := range []struct {
+		start, gap string
+		want       []string
+	}{
+		{"-1m", "30s", []string{"-60s", "-30s", "0s"}},
+		{"-1h", "1e1", []string{"-3600s", "-3590s", "-3580s"}},
+		{" -.5s ", "+1500ms", []string{"-0.5s", "1s", "2.5s"}},
+		{"-2m30s", "1m", []string{"-150s", "-90s", "-30s"}},
+	} {
+		apl := inserted(t, names, map[string]any{"type": "TypeAPL"}, sequence, map[string]any{"first": 10.0, "second": 11.0, "third": 12.0, "start": c.start, "gap": c.gap}, placement{})
+		var got []string
+		for _, r := range apl["prepullActions"].([]any) {
+			got = append(got, fmt.Sprint(at(r, []any{"doAtValue", "const", "val"})))
+		}
+		if !reflect.DeepEqual(got, c.want) {
+			t.Errorf("start %q, gap %q: prepull at %v, want %v", c.start, c.gap, got, c.want)
+		}
+	}
+	for _, bad := range []string{"soon", "NaN", "1x"} {
+		if _, err := patternEdits(nil, sequence, map[string]any{"first": 10.0, "second": 11.0, "start": bad}, placement{}); err == nil {
+			t.Errorf("a start of %q inserts", bad)
 		}
 	}
 }

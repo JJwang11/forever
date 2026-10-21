@@ -4,9 +4,9 @@ import { basename } from 'node:path';
 
 import * as vscode from 'vscode';
 
-import { applyEdits, documentFor, isAplSiml, pathAt, readRotation, samePath, spanFor, spansOf, vscodeRange } from './host';
+import { applyEdits, documentFor, isAplSiml, readRotation, samePath, spanFor, spansOf, vscodeRange } from './host';
 import { insertPattern } from './insert_pattern';
-import type { AplDatabase, FromPanel, PanelState, Range, Registered, TextEdit, ToPanel } from './protocol';
+import type { AplDatabase, FromPanel, JsonPath, PanelState, Range, Registered, TextEdit, ToPanel } from './protocol';
 import { databaseFor, onServerStarted, request } from './server';
 import { onSimRecord, type SimRecord, simRecord, simulate } from './simulate';
 
@@ -227,8 +227,9 @@ function bind(panel: vscode.WebviewPanel, uri: vscode.Uri, extensionUri: vscode.
 		vscode.window.onDidChangeTextEditorSelection(async event => {
 			const document = event.textEditor.document;
 			if (document.uri.toString() !== key || event.kind === vscode.TextEditorSelectionChangeKind.Command) return;
-			const spans = await spansOf(document).catch(() => undefined);
-			if (spans) post({ type: 'cursor', path: pathAt(document, spans, event.selections[0].active) });
+			const { line, character } = event.selections[0].active;
+			const path = await request<JsonPath>(document.uri, 'siml/pathAt', { uri: key, position: { line, character } }).catch(() => undefined);
+			if (path) post({ type: 'cursor', path });
 		}),
 	];
 

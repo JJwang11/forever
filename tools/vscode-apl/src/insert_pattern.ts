@@ -1,10 +1,8 @@
 import * as vscode from 'vscode';
 
-import { applyEdits, documentFor, isAplSiml, pathAt, readRotation, spansOf } from './host';
+import { applyEdits, documentFor, isAplSiml, readRotation } from './host';
 import type { AplDatabase, AplPattern, AplPlaceholder, JsonObject, JsonPath, Registered, RegisteredName, TextEdit } from './protocol';
 import { databaseFor, request } from './server';
-
-const SECONDS = /^-?\d+(\.\d+)?(ms|s)?$/;
 
 interface NamePick extends vscode.QuickPickItem {
 	id: RegisteredName['id'];
@@ -41,12 +39,9 @@ async function ask(placeholder: AplPlaceholder, names: Names, taken: { groups: s
 			)?.label;
 			break;
 		}
+		// The server reads a time as a const does and refuses the pattern when it reads none.
 		case 'duration':
-			answer = await vscode.window.showInputBox({
-				title: `${placeholder.label}${skip}`,
-				value: fallback,
-				validateInput: value => (SECONDS.test(value.trim()) ? undefined : 'A time such as 1.5s or 300ms'),
-			});
+			answer = await vscode.window.showInputBox({ title: `${placeholder.label}${skip}`, value: fallback });
 			break;
 		case 'number': {
 			const value = await vscode.window.showInputBox({
@@ -148,8 +143,10 @@ export function registerInsertPattern(context: vscode.ExtensionContext): void {
 		vscode.commands.registerCommand('wowsims-apl.insertPattern', async () => {
 			const editor = vscode.window.activeTextEditor;
 			if (!editor || !isAplSiml(editor.document.uri.path)) return;
-			const spans = await spansOf(editor.document).catch(() => []);
-			await insertPattern(editor.document.uri, pathAt(editor.document, spans, editor.selection.active));
+			const { uri } = editor.document;
+			const { line, character } = editor.selection.active;
+			const path = await request<JsonPath>(uri, 'siml/pathAt', { uri: uri.toString(), position: { line, character } }).catch(() => []);
+			await insertPattern(uri, path);
 		}),
 	);
 }

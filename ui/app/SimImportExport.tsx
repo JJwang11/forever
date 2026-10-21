@@ -50,8 +50,8 @@ export const SimImportExport = () => {
 			<ImportExportMenu kind={ImportExportKind.Export} icon="right-from-bracket" title={i18n.t('export.title')}>
 				{ready && (
 					<>
-						<ImportExportItem label="SIML" dialog={SimlExporterDialog} />
 						<ImportExportItem label={i18n.t('export.menu.link')} dialog={LinkExporterDialog} />
+						<ImportExportItem label="SIML" dialog={SimlExporterDialog} />
 						<ImportExportItem label="JSON" dialog={JsonExporterDialog} />
 						<ImportExportItem label="WoWHead" dialog={WowheadExporterDialog} />
 						<ImportExportItem label={i18n.t('export.menu.sixty_upgrades_ep')} dialog={SixtyUpgradesExporterDialog} />

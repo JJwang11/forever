@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+
+	"github.com/wowsims/forever/sim/siml"
 )
 
 // The rotation as the panel reads an .apl.siml through siml/rotation, and its edits through siml/splice.
@@ -63,36 +65,12 @@ func key(path []any) string {
 	return strings.Join(parts, "/")
 }
 
-// The rotation path the text at a position writes, as the panel finds it from the spans: the path of the shortest
-// span around it, the deeper of two the same length.
-func pathAtSpans(text string, spans []panelSpan, at Position) []any {
-	offset := func(p Position) int {
-		ls := strings.SplitAfter(text, "\n")
-		n := 0
-		for i := 0; i < p.Line; i++ {
-			n += len(ls[i])
-		}
-		return n + p.Character
-	}
-	var best *panelSpan
-	for i, s := range spans {
-		if !contains(s.Range, at) {
-			continue
-		}
-		size := offset(s.Range.End) - offset(s.Range.Start)
-		if best == nil {
-			best = &spans[i]
-			continue
-		}
-		bestSize := offset(best.Range.End) - offset(best.Range.Start)
-		if size < bestSize || size == bestSize && len(s.Path) > len(best.Path) {
-			best = &spans[i]
-		}
-	}
-	if best == nil {
-		return nil
-	}
-	return best.Path
+// The rotation path the text at a position writes, through siml/pathAt.
+func pathAt(c *client, uri string, at Position) []any {
+	c.t.Helper()
+	var path []any
+	c.request("siml/pathAt", map[string]any{"uri": uri, "position": at}, &path)
+	return path
 }
 
 func positionOf(text string, offset int) Position {
@@ -115,7 +93,7 @@ func TestRotationReadsWithItsRows(t *testing.T) {
 		t.Errorf("class %q, registered %q %q", r.ClassName, r.Registered.Status, r.Registered.Spec)
 	}
 	serpent := strings.Index(text, "cast serpent_sting")
-	if path := pathAtSpans(text, r.Spans, positionOf(text, serpent+2)); len(path) < 2 || key(path[:2]) != "priorityList/5" {
+	if path := pathAt(c, uri, positionOf(text, serpent+2)); len(path) < 2 || key(path[:2]) != "priorityList/5" {
 		t.Errorf("the path at serpent_sting = %v", path)
 	}
 	var row, spell *panelSpan
@@ -132,6 +110,27 @@ func TestRotationReadsWithItsRows(t *testing.T) {
 	}
 	if spell == nil || spell.Range.Start != positionOf(text, serpent+len("cast ")) {
 		t.Errorf("the spell's span = %+v", spell)
+	}
+}
+
+func TestPathAtIsTheShortestSpan(t *testing.T) {
+	c := started(t)
+	_, uri, text := fixture(t, "default.apl.siml")
+	c.open(uri, text)
+	serpent := strings.Index(text, "cast serpent_sting")
+	if path := pathAt(c, uri, positionOf(text, serpent+len("cast s"))); key(path) != "priorityList/5/action/castSpell/spellId" {
+		t.Errorf("the path in the spell's name = %v, want the spell id's", path)
+	}
+	if path := pathAt(c, uri, positionOf(text, strings.Index(text, "spec hunter"))); path == nil || len(path) != 0 {
+		t.Errorf("the path on the spec line = %#v, want []", path)
+	}
+	broken := "siml 1\nspec hunter\n\ncast\n"
+	c.change(uri, 2, broken)
+	if path := pathAt(c, uri, positionOf(broken, strings.Index(broken, "cast"))); path == nil || len(path) != 0 {
+		t.Errorf("the path in a file that does not read = %#v, want []", path)
+	}
+	if r := c.send("siml/pathAt", map[string]any{"uri": uri + ".closed", "position": pos(0, 0)}); r.Error == nil {
+		t.Error("siml/pathAt answered for a file that is not open")
 	}
 }
 
@@ -263,8 +262,9 @@ func TestPickersWriteNamedActionIDs(t *testing.T) {
 		return nil
 	}
 	innervate := find("spells", "innervate")
-	if !reflect.DeepEqual(innervate, map[string]any{"spellId": 29166.0, "tag": -1.0}) {
-		t.Errorf("innervate = %v", innervate)
+	want := tableSpell(t, siml.NamespaceSpell, "innervate")
+	if tag, _ := innervate["tag"].(float64); innervate["spellId"] != float64(want.GetSpellId()) || tag != float64(want.GetTag()) {
+		t.Errorf("innervate = %v, want the table's %v", innervate, want)
 	}
 	mark := find("targetAuras", "hunters_mark")
 	items := r.Registered.Registered["items"]
@@ -306,8 +306,9 @@ func TestDatabaseNamesAndIcons(t *testing.T) {
 		Items  map[string][2]string `json:"items"`
 	}
 	c.request("siml/database", map[string]any{"uri": smokeURI}, &db)
-	if db.Spells["14325"][0] != "Hunter's Mark" {
-		t.Errorf("spell 14325 = %v", db.Spells["14325"])
+	mark := fmt.Sprint(tableSpell(t, siml.NamespaceSpell, "hunters_mark").GetSpellId())
+	if db.Spells[mark][0] != "Hunter's Mark" {
+		t.Errorf("spell %s = %v", mark, db.Spells[mark])
 	}
 	if len(db.Items) == 0 {
 		t.Error("no items")

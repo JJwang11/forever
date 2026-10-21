@@ -44,6 +44,18 @@ func TestNumbers(t *testing.T) {
 	}
 }
 
+// A float field holds the float32 nearest the number written, prints as the shortest decimal of that float32, and
+// refuses a number past its range (SPEC.md §5.2). No proto holds a float field, so no corpus case can.
+func TestFloatFields(t *testing.T) {
+	f, ok := parseFloat("0.123456789")
+	if !ok || numberText(float64(f), 32) != "0.12345679" {
+		t.Errorf("0.123456789 in a float field is %v (%v), want it printed as 0.12345679", f, ok)
+	}
+	if f, ok := parseFloat("340282356779733661637539395458142568448"); ok {
+		t.Errorf("a number past a float32's range reads as %v", f)
+	}
+}
+
 // A double reaches spec_rotation_json, raw JSON and an entry in those forms, and reads back to itself.
 func TestNumbersInFiles(t *testing.T) {
 	ix, err := loadIndex()

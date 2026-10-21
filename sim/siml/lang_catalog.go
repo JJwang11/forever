@@ -6,6 +6,7 @@ import (
 	"slices"
 	"sync"
 
+	"github.com/wowsims/forever/sim/core/itemfit"
 	"github.com/wowsims/forever/sim/core/proto"
 	"google.golang.org/protobuf/encoding/protojson"
 )
@@ -194,88 +195,21 @@ var catalogs = struct {
 	byRoot map[string]*Reread[*DatabaseCatalog]
 }{byRoot: map[string]*Reread[*DatabaseCatalog]{}}
 
-// --- What goes together, by the rules core.EligibleSlotsForItem and core.EnchantAppliesToItem check a gear set with.
+// --- What goes together, by the rules the sim checks a gear set with (sim/core/itemfit).
 
-// The slots of each ItemType but the weapon, whose slots its hand type gives.
-var typeSlots = map[proto.ItemType][]proto.ItemSlot{
-	proto.ItemType_ItemTypeHead:     {proto.ItemSlot_ItemSlotHead},
-	proto.ItemType_ItemTypeNeck:     {proto.ItemSlot_ItemSlotNeck},
-	proto.ItemType_ItemTypeShoulder: {proto.ItemSlot_ItemSlotShoulder},
-	proto.ItemType_ItemTypeBack:     {proto.ItemSlot_ItemSlotBack},
-	proto.ItemType_ItemTypeChest:    {proto.ItemSlot_ItemSlotChest},
-	proto.ItemType_ItemTypeWrist:    {proto.ItemSlot_ItemSlotWrist},
-	proto.ItemType_ItemTypeHands:    {proto.ItemSlot_ItemSlotHands},
-	proto.ItemType_ItemTypeWaist:    {proto.ItemSlot_ItemSlotWaist},
-	proto.ItemType_ItemTypeLegs:     {proto.ItemSlot_ItemSlotLegs},
-	proto.ItemType_ItemTypeFeet:     {proto.ItemSlot_ItemSlotFeet},
-	proto.ItemType_ItemTypeFinger:   {proto.ItemSlot_ItemSlotFinger1, proto.ItemSlot_ItemSlotFinger2},
-	proto.ItemType_ItemTypeTrinket:  {proto.ItemSlot_ItemSlotTrinket1, proto.ItemSlot_ItemSlotTrinket2},
-	proto.ItemType_ItemTypeRanged:   {proto.ItemSlot_ItemSlotRanged},
+func (item CatalogItem) fit() itemfit.Item {
+	return itemfit.Item{Type: item.Type, HandType: item.HandType, WeaponType: item.WeaponType, RangedType: item.RangedType}
 }
 
 // The slots an item goes in.
-func ItemSlots(item CatalogItem) []proto.ItemSlot {
-	if item.Type == proto.ItemType_ItemTypeWeapon {
-		switch item.HandType {
-		case proto.HandType_HandTypeMainHand, proto.HandType_HandTypeTwoHand:
-			return []proto.ItemSlot{proto.ItemSlot_ItemSlotMainHand}
-		case proto.HandType_HandTypeOffHand:
-			return []proto.ItemSlot{proto.ItemSlot_ItemSlotOffHand}
-		case proto.HandType_HandTypeOneHand:
-			return []proto.ItemSlot{proto.ItemSlot_ItemSlotMainHand, proto.ItemSlot_ItemSlotOffHand}
-		}
-		return nil
-	}
-	return typeSlots[item.Type]
-}
-
-// The slots an enchant row's item types go in.
-func enchantSlots(row CatalogEnchant) []proto.ItemSlot {
-	var out []proto.ItemSlot
-	for _, t := range slices.Concat([]proto.ItemType{row.Type}, row.ExtraTypes) {
-		if t == proto.ItemType_ItemTypeWeapon {
-			out = append(out, proto.ItemSlot_ItemSlotMainHand, proto.ItemSlot_ItemSlotOffHand)
-		} else {
-			out = append(out, typeSlots[t]...)
-		}
-	}
-	return out
-}
+func (item CatalogItem) slots() []proto.ItemSlot { return itemfit.ItemSlots(item.fit()) }
 
 // Whether an enchant row fits an item.
-func EnchantFits(row CatalogEnchant, item CatalogItem) bool {
-	switch {
-	case row.EnchantType == proto.EnchantType_EnchantTypeTwoHand && item.HandType != proto.HandType_HandTypeTwoHand,
-		row.EnchantType == proto.EnchantType_EnchantTypeStaff && item.WeaponType != proto.WeaponType_WeaponTypeStaff,
-		(row.EnchantType == proto.EnchantType_EnchantTypeShield) != (item.WeaponType == proto.WeaponType_WeaponTypeShield),
-		(row.EnchantType == proto.EnchantType_EnchantTypeOffHand) != (item.WeaponType == proto.WeaponType_WeaponTypeOffHand):
-		return false
-	}
-	ranged := item.RangedType
-	if row.Type == proto.ItemType_ItemTypeRanged {
-		// Bows, crossbows and guns: the ranged weapons a ranged enchant fits.
-		if ranged != proto.RangedWeaponType_RangedWeaponTypeBow && ranged != proto.RangedWeaponType_RangedWeaponTypeCrossbow &&
-			ranged != proto.RangedWeaponType_RangedWeaponTypeGun {
-			return false
-		}
-	} else if ranged != proto.RangedWeaponType_RangedWeaponTypeUnknown && ranged != proto.RangedWeaponType_RangedWeaponTypeWand {
-		return false
-	}
-	slots := ItemSlots(item)
-	return slices.ContainsFunc(enchantSlots(row), func(s proto.ItemSlot) bool { return slices.Contains(slots, s) })
-}
-
-// The rows of an enchant effect in c.
-func enchantRows(c *DatabaseCatalog, effectID int32) []CatalogEnchant {
-	return c.EnchantRows(effectID)
+func (row CatalogEnchant) fits(item CatalogItem) bool {
+	return itemfit.EnchantFits(itemfit.Enchant{Type: row.Type, EnchantType: row.EnchantType, ExtraTypes: row.ExtraTypes}, item.fit())
 }
 
 // Whether a row of the enchant effect fits the item.
 func enchantEffectFits(c *DatabaseCatalog, effectID int32, item CatalogItem) bool {
-	return slices.ContainsFunc(enchantRows(c, effectID), func(row CatalogEnchant) bool { return EnchantFits(row, item) })
-}
-
-// An item's name in c: the gear's, a consumable's or an item icon's.
-func catalogItemName(c *DatabaseCatalog, id int32) (string, bool) {
-	return c.ItemName(id)
+	return slices.ContainsFunc(c.EnchantRows(effectID), func(row CatalogEnchant) bool { return row.fits(item) })
 }

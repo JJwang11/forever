@@ -17,6 +17,8 @@ import { activateBuilt, fakeVscode, serverRunning } from './vscode.mjs';
 
 const out = mkdtempSync(join(tmpdir(), 'wowsims-apl-panel-'));
 const fixture = fileURLToPath(new URL('fixtures/default.apl.siml', import.meta.url));
+// The committed name table, which the expected ids are read from.
+const names = JSON.parse(readFileSync(new URL('../../../sim/siml/names.json', import.meta.url), 'utf8'));
 
 let stand;
 let extension;
@@ -117,7 +119,8 @@ test('a spell picked for a tagged one is written as its own name, with no tag ca
 	option().dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
 	await settled();
 	const edit = sent.filter(m => m.type === 'edit').at(-1);
-	assert.deepEqual(edit.edits[0].value, { spellId: 14266, rank: 8 });
+	const { spellId, rank } = names.classes.hunter.spell.raptor_strike;
+	assert.deepEqual(edit.edits[0].value, { spellId, rank });
 	assert.match(document_.getText(), /\npriority:\n {2}cast raptor_strike\n/);
 });
 

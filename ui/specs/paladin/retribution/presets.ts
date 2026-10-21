@@ -76,8 +76,12 @@ export const TwistOfLightEpWeights = PresetUtils.makePresetEpWeights(
 
 // The settings and the build of each talent tree. The Auto rotation picks the Twist of Light or the Holy Shock APL from
 // the talents; the Holy Shock build swaps in Shin Blade while the Manual Crowd Pummeler is on cooldown.
-export const TwistOfLightBuild = PresetUtils.makePresetBuildFromJSON('Twist of Light', Spec.SpecRetributionPaladin, TwistOfLightBuildJson);
-export const HolyShockBuild = PresetUtils.makePresetBuildFromJSON('Holy Shock', Spec.SpecRetributionPaladin, HolyShockBuildJson);
+export const TwistOfLightBuild = PresetUtils.makePresetBuildFromJSON('Twist of Light', Spec.SpecRetributionPaladin, TwistOfLightBuildJson, {
+	gear: TwistOfLightGearPreset,
+});
+export const HolyShockBuild = PresetUtils.makePresetBuildFromJSON('Holy Shock', Spec.SpecRetributionPaladin, HolyShockBuildJson, {
+	gear: HolyShockGearPreset,
+});
 export const TwistOfLightSettings = TwistOfLightBuild.settings!;
 export const HolyShockSettings = HolyShockBuild.settings!;
 export const TwistOfLightTalents = TwistOfLightBuild.talents!;

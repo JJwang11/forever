@@ -13,4 +13,6 @@ priority:
   cast x if !a && b || c
   cast x if a & b | c
   cast x if 5min > 1s
+  cast x if 1.5x > 1s
+  cast x if 1.x > 1s
   cast x if `{"unclosed": true

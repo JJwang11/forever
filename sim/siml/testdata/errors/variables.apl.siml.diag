@@ -8,3 +8,4 @@
 15:26 warning undefined-variable
 16:16 warning undefined-variable
 20:7 error duplicate-variable
+21:13 warning undefined-variable

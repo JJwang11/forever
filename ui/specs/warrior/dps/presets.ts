@@ -126,11 +126,13 @@ export const DefaultSettings = PresetUtils.makePresetSettingsFromJSON('Defaults'
 
 export const PreBiSFuryBuild = PresetUtils.makePresetBuildFromJSON('Pre-BiS', Spec.SpecDpsWarrior, PreBiSFuryBuildJson, {
 	group: 'Fury',
+	gear: PreBiSFuryGear,
 	epWeights: PreBiSFuryEpWeights,
 });
 
 export const PreBiSArmsBuild = PresetUtils.makePresetBuildFromJSON('Pre-BiS', Spec.SpecDpsWarrior, PreBiSArmsBuildJson, {
 	group: 'Arms',
+	gear: PreBiSArmsGear,
 	epWeights: PreBiSArmsEpWeights,
 });
 

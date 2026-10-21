@@ -69,8 +69,8 @@ func missingLines(a, b []byte, prefix string) []string {
 
 // The committed file is in the generator's form, and a regeneration gives every entry of it back as it is: the
 // name, its meaning and its registered-by list. What the sim and the database give beyond the table is only
-// reported, since a database update or a class change adds names without changing what is committed, and make
-// regenerates the table from them before anything reads it.
+// reported, since a database update or a class change adds names without changing what is committed until make
+// siml-names regenerates the table.
 func TestTableKeepsItsEntries(t *testing.T) {
 	old, data, c := committedTable(t)
 	if got := old.Encode(); !bytes.Equal(got, data) {
@@ -145,13 +145,14 @@ func TestGenerateIsDeterministic(t *testing.T) {
 func TestPinnedNamesSurviveTheSim(t *testing.T) {
 	old, _, c := committedTable(t)
 	heroic := old.Classes[proto.Class_ClassWarrior][siml.NamespaceSpell]["heroic_strike"]
-	if heroic.SpellID != 25286 || heroic.Tag != 1 {
-		t.Fatalf("warrior.spell.heroic_strike is %+v, want spell 25286 tag 1", heroic)
+	if heroic.Tag == 0 || !slices.Contains(heroic.RegisteredBy, "dps_warrior") {
+		t.Fatalf("warrior.spell.heroic_strike is %+v, want a tagged spell dps_warrior registers", heroic)
 	}
+	const pinnedTag = 7
 	pinned := &siml.Names{Classes: maps.Clone(old.Classes), Shared: old.Shared, Items: old.Items, Enchants: old.Enchants, Suffixes: old.Suffixes}
 	pinned.Classes[proto.Class_ClassWarrior] = maps.Clone(old.Classes[proto.Class_ClassWarrior])
 	spells := maps.Clone(old.Classes[proto.Class_ClassWarrior][siml.NamespaceSpell])
-	spells["heroic_strike"] = siml.SpellName{SpellID: 25286, Tag: 7}
+	spells["heroic_strike"] = siml.SpellName{SpellID: heroic.SpellID, Tag: pinnedTag}
 	pinned.Classes[proto.Class_ClassWarrior][siml.NamespaceSpell] = spells
 
 	names, report, err := Update(pinned, c, nil)
@@ -159,13 +160,15 @@ func TestPinnedNamesSurviveTheSim(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := names.Classes[proto.Class_ClassWarrior][siml.NamespaceSpell]
-	if e := got["heroic_strike"]; e.SpellID != 25286 || e.Tag != 7 || len(e.RegisteredBy) != 0 {
-		t.Errorf("heroic_strike is %+v, want the pinned spell 25286 tag 7 with no registered-by", e)
+	if e := got["heroic_strike"]; e.SpellID != heroic.SpellID || e.Tag != pinnedTag || len(e.RegisteredBy) != 0 {
+		t.Errorf("heroic_strike is %+v, want the pinned spell %d tag %d with no registered-by", e, heroic.SpellID, pinnedTag)
 	}
-	if e := got["heroic_strike_tag1"]; e.SpellID != 25286 || e.Tag != 1 || !slices.Contains(e.RegisteredBy, "dps_warrior") {
-		t.Errorf("heroic_strike_tag1 is %+v, want the registered spell 25286 tag 1", e)
+	tagged := fmt.Sprintf("heroic_strike_tag%d", heroic.Tag)
+	if e := got[tagged]; e.SpellID != heroic.SpellID || e.Tag != heroic.Tag || !slices.Contains(e.RegisteredBy, "dps_warrior") {
+		t.Errorf("%s is %+v, want the registered spell %d tag %d", tagged, e, heroic.SpellID, heroic.Tag)
 	}
-	if !slices.Contains(report.Stale, "warrior.spell.heroic_strike is pinned to spell 25286 tag 7; the sim registers spell 25286, spell 25286 tag 1") {
+	stale := fmt.Sprintf("warrior.spell.heroic_strike is pinned to spell %[1]d tag %[2]d; the sim registers spell %[1]d, spell %[1]d tag %[3]d", heroic.SpellID, pinnedTag, heroic.Tag)
+	if !slices.Contains(report.Stale, stale) {
 		t.Errorf("the report does not name the stale heroic_strike: %v", report.Stale)
 	}
 	for name, e := range spells {
@@ -174,7 +177,7 @@ func TestPinnedNamesSurviveTheSim(t *testing.T) {
 		}
 	}
 	added := slices.DeleteFunc(slices.Clone(report.Added), func(line string) bool { return !strings.HasPrefix(line, "warrior.spell.") })
-	if want := []string{"warrior.spell.heroic_strike_tag1 = spell 25286 tag 1"}; !reflect.DeepEqual(added, want) {
-		t.Errorf("the run added %v to warrior.spell, want heroic_strike_tag1 alone", added)
+	if want := []string{fmt.Sprintf("warrior.spell.%s = spell %d tag %d", tagged, heroic.SpellID, heroic.Tag)}; !reflect.DeepEqual(added, want) {
+		t.Errorf("the run added %v to warrior.spell, want %s alone", added, tagged)
 	}
 }

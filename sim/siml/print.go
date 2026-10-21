@@ -271,7 +271,7 @@ func (p *printer) shortValue(k *aplKind, body protoreflect.Message, prec int, sc
 		if !p.only(body, "name") {
 			return nil
 		}
-		return p.variableRef(body.Get(p.fieldOf(body, "name").desc).String(), sc)
+		return p.variableRef(body.Get(p.fieldOf(body, "name").desc).String())
 	case "variable_placeholder":
 		if !p.only(body, "name") {
 			return nil
@@ -321,9 +321,9 @@ func (p *printer) shortValue(k *aplKind, body protoreflect.Message, prec int, sc
 	return nil
 }
 
-// `$x` when SPEC.md §7.5 reads it back as name in this scope, else `${name}`.
-func (p *printer) variableRef(name string, sc scope) text {
-	declared := declaredIn(p.declarations, sc)
+// `$x` when SPEC.md §7.5 reads it back as name, else `${name}`.
+func (p *printer) variableRef(name string) text {
+	declared := declaredIn(p.declarations, scope{})
 	readsBack := func(written string) bool {
 		r := resolveVariable(written, false, declared)
 		if r.found {
@@ -555,7 +555,7 @@ func (p *printer) ref(v protoreflect.Message, ns Namespace, sc scope) text {
 		return word("none")
 	}
 	if actionIDVariable != nil && len(set) == 1 && set[0].desc == actionIDVariable && v.Get(actionIDVariable).String() != "" {
-		return p.variableRef(v.Get(actionIDVariable).String(), sc)
+		return p.variableRef(v.Get(actionIDVariable).String())
 	}
 	only := func(names ...string) bool {
 		return !slices.ContainsFunc(set, func(f *field) bool { return !slices.Contains(names, f.Name) })

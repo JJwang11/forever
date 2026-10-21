@@ -28,8 +28,9 @@ header may still be written, but the printer leaves it out. Text with no file na
 double extension that names no section is `unknown-section` at 1:1, and the file's body is not read.
 
 `x.group.siml` is the exception: a group's header names the group, so each group is written under a header of its
-own, which never joins the implied section, and the printer writes it. A row or `var` line before the first group
-header belongs to no group, and is `misplaced-statement`.
+own, which never joins the implied section, and the printer writes it. Every line before the first group header
+but the `siml`, `spec` and `use` lines, a row, `var`, `def` or `when` line alike, belongs to no group and is
+`misplaced-statement`, and that alone.
 
 Every file may also hold the top-level lines of §3.3. A file holds names only, and the name table (§7) says what
 they mean.
@@ -1075,14 +1076,16 @@ The record is committed with the table, and its lines are kept.
   `var $x = …` when the name is itself an ident.
 - **References.** `${Exact}` refers to that exact name. `$x` refers to:
     1. the declared variable whose name equals `x`, if any;
-    2. else the one declared variable, in the reference's scope, whose `identifier(name)` equals `x`.
+    2. else the one declared variable whose `identifier(name)` equals `x`.
 
-    The scope is the rotation's value variables, plus the enclosing group's variables inside a group.
+    The declared variables are the rotation's value variables, and those of the rotations of used files. A
+    group's own variables and a group reference's `with` replace a value variable of the same name inside that
+    group, and declare none.
 
 - **Errors.** Two declarations folding to `x`, with no exact match, give `ambiguous-variable`. No match gives
   the warning `undefined-variable`, with the JSON name set to `x`.
-- **Declared but never assigned.** A name that only a group reference's `with` sets, or that only a group the
-  reference is not in declares, also gets `undefined-variable`.
+- **Declared but never assigned.** A name that only a group's variables or a group reference's `with` set,
+  with no value variable of that name, also gets `undefined-variable`: the sim drops the reference.
 
 **Placeholders, groups and sequences** use exact names: `%x` or `%{Exact}`, `group "Exact"`,
 `sequence("Exact")`.
@@ -1255,14 +1258,16 @@ use "default.apl.siml" with $use_summon_hawk = true
 - **The path.** It is read against the folder of the using file, with `/` or `\` between parts and `.` and `..`
   resolved; a path that starts with `/`, `\` or a drive (`C:\`) is read as it is.
 - **Conflicts.** A section present in both files, or brought by two used files, is `section-conflict`. Two
-  groups conflict when they share a name, and two talents lines conflict too. The message names where each
+  groups conflict when they share a name, and two talents lines conflict too. A `def` writes no section, so a
+  file whose rotation part is only defs takes in the used rotation whole. The message names where each
   section was first: this file, or the used file that brought it. A section file that uses a section its kind
   does not hold, or a talents line (§3.3), is `section-not-allowed`. Each is reported once per `use` line,
   listing the sections.
 - **Specs.** The two files' `spec` lines must agree (`spec-mismatch`).
 - **`with`.** It sets the value of variables the used rotation declares, matched by the rule of §7.5. An
   unknown variable is `with-unknown-variable` and one that matches several is `ambiguous-variable`, each at the
-  variable, and `with` on a file with no rotation is `with-not-rotation`, at the first variable of the list.
+  variable, and `with` on a file with no rotation is `with-not-rotation`, at the first variable of the list. A
+  list that sets one variable twice is `duplicate-variable`, at the second.
   Names in `with` values are read in the using file, and variables in them are the used rotation's.
 - **References.** This file's rows may refer to the variables and groups that a used rotation declares.
 - **Errors in the used file.** The used file's first error, in the order of §13, is reported at the `use` line
@@ -1509,6 +1514,19 @@ normalisations:
 
 The protos are then compared with `proto.Equal`.
 
+### 12.5 Editor splices
+
+The rotation panel edits the rotation of an `x.apl.siml` through its JSON, and the text changes only where the
+JSON does:
+
+- A statement an edit touches is printed again, with the `//` lines directly above it and its trailing comment
+  (§10). A statement that moves takes those lines along. Every other line stays as written.
+- A row printed again stays in its `when` blocks while its condition still starts with theirs, and splits them
+  otherwise (§6.9).
+- A def call in a row printed again stays while the edits leave its value as it was (§6.10).
+- The new text is read back, and a statement that does not read as its JSON is printed again, or as raw JSON,
+  until each one does.
+
 ---
 
 ## 13. Diagnostics
@@ -1544,7 +1562,7 @@ are errors.
 | `spell-variable`                                                                                              | error    | §7.2; while `ActionID` has no string member                           |
 | `icd-trigger`                                                                                                 | error    | §7.4; an aura in `icdOnlyBy` of the file's spec outside the ICD kinds |
 | `ambiguous-variable`                                                                                          | error    | §7.5                                                                  |
-| `duplicate-group`, `duplicate-variable`, `reference-cycle`                                                    | error    | §6.1, §7.5, §6.10                                                     |
+| `duplicate-group`, `duplicate-variable`, `reference-cycle`                                                    | error    | §6.1, §7.5, §6.10; a `with` list that sets one variable twice (§9)    |
 | `undefined-variable`, `undefined-group`, `undefined-placeholder`, `undefined-sequence`                        | warning  | §7.5                                                                  |
 | `def-shadows`, `duplicate-def`, `duplicate-parameter`, `def-arity`, `positional-only`                         | error    | §6.10                                                                 |
 | `unused-def`, `unused-parameter`                                                                              | warning  | §6.10                                                                 |
@@ -1610,6 +1628,7 @@ sim/siml/testdata/
   splice/<case>.apl.siml            input of the rotation panel's edits (`splice_test.go`)
   splice/<case>.edits.json          AplEdit list (splice.go); a set with no value removes what its path names
   splice/<case>.apl.siml.want       expected text after the splice
+  builds/<class>_<spec>_<build>.json each committed ui/specs build loaded over its defaults (`build_db_test.go`)
 ```
 
 **File access.** A file reads the files it `use`s from the file system, resolved as §9 says, except an error

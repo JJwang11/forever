@@ -818,7 +818,7 @@ func (d *Doc) editDef(e AplEdit) ([]TextEdit, error) {
 			return nil, err
 		}
 		for _, file := range files {
-			if samePath(file.Path, d.path) {
+			if SamePath(file.Path, d.path) {
 				return file.Edits, nil
 			}
 		}

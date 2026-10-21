@@ -13,8 +13,11 @@ import type { ExporterDefinition } from './types';
 /** The file a rotation export downloads as, whose double extension says it holds a rotation. */
 export const SIML_ROTATION_FILE = 'rotation.apl.siml';
 
-// What a setup export reads back as, which is what pasted text reads as.
-const SETUP_FILE = 'wowsims.siml';
+/**
+ * The file a setup export downloads as, which is also what pasted text with no file name reads as: a full setup, or
+ * any part of one (sim/siml/SPEC.md §1).
+ */
+export const SIML_SETUP_FILE = 'wowsims.siml';
 
 /** The print `request` asks for. Text that would not import is refused with its problems, rather than handed out. */
 const printReadable = async (host: IndividualSimHost<any>, request: Partial<SimlPrintRequest>): Promise<string> => {
@@ -52,7 +55,7 @@ const printSimlRotation = (host: IndividualSimHost<any>): Promise<string> =>
 export const SIML_EXPORTER: ExporterDefinition = {
 	title: i18n.t('export.siml.title'),
 	allowDownload: true,
-	downloadFileName: SETUP_FILE,
+	downloadFileName: SIML_SETUP_FILE,
 	downloadMimeType: 'text/plain',
 	selectCategories: true,
 	getData: (host, categories) => printSimlSettings(host, selectedCategories(categories)),

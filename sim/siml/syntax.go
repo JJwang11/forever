@@ -303,8 +303,8 @@ type rawEntryStmt struct {
 // in the parse result.
 type unparsedStmt struct{ stmtBase }
 
-// A section, from its header (none for the section a section file implies) to the next header. body holds its
-// statements in order, a header's own body line first.
+// A section, from its header to the next header. The section a section file implies has no header until the first
+// written header of it joins it (SPEC.md §1). body holds its statements in order, a header's own body line first.
 type section struct {
 	name   string
 	group  *stringNode
@@ -314,7 +314,7 @@ type section struct {
 
 type syntaxTree struct {
 	statements []stmt     // Every line's statement in file order; a header's body line sits in the header.
-	top        []stmt     // siml, spec, talents and use, and the var lines of a full file before any header.
+	top        []stmt     // siml, spec, talents and use, and the var and def lines of a full file before any header, and those of its lines there that do not read.
 	sections   []*section // In file order.
 	trailing   []trivia   // The trivia after the last statement.
 	lines      *lineMap
@@ -784,14 +784,15 @@ func (f *fileParser) line(p *parser, first bool) lineRead {
 	if f.skip {
 		return here(&unparsedStmt{}, false)
 	}
-	if f.section == f.implied && f.kind.Section == sectionGroup {
-		p.report("misplaced-statement", `in an x.group.siml, a row or var line goes under a group "Name": header`, t.at())
+	headless := f.section == f.implied && f.kind.Section == sectionGroup
+	if headless {
+		p.report("misplaced-statement", `in an x.group.siml, every line but siml, spec and use goes under a group "Name": header`, t.at())
 	}
 	if whenShape(p.toks, p.i) {
 		return f.when(p, here)
 	}
 	if word == "def" {
-		if f.section != nil && (f.def == nil || f.def.Name != sectionAPL) {
+		if f.section != nil && !headless && (f.def == nil || f.def.Name != sectionAPL) {
 			p.report("misplaced-def", "def goes at the top of a file or under apl:", t.at())
 		}
 		s := attempt(p, p.defDecl)

@@ -11,4 +11,6 @@
 14:15 error write-and
 14:19 error write-or
 15:13 error bad-literal
-16:13 error unclosed-raw
+16:13 error bad-literal
+17:13 error bad-literal
+18:13 error unclosed-raw

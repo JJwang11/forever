@@ -158,7 +158,7 @@ which reads a statement up to the cursor for completion; `go test --tags=with_db
 
 ```
 go test ./sim/siml/...                     # the corpus; no database needed
-go test --tags=with_db ./sim/siml/...      # also the table's up-to-date test
+go test --tags=with_db ./sim/siml/...      # also the test that the table keeps its entries
 go test --tags=with_db ./cmd/wowsimcli/... # also the repository check of ui/specs
 ```
 

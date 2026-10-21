@@ -158,7 +158,8 @@ func TestReadFile(t *testing.T) {
 		t.Errorf("ReadFile(%s) = %v, %v; want an orc", plain, f, err)
 	}
 	f, err := ReadFile(main)
-	if _, noTable := DefaultNames(); noTable != nil {
+	names, noTable := DefaultNames()
+	if noTable != nil {
 		if err == nil || !strings.Contains(err.Error(), "with_db") {
 			t.Errorf("without the table, ReadFile(%s) = %v, want an error naming the with_db tag", main, err)
 		}
@@ -170,7 +171,8 @@ func TestReadFile(t *testing.T) {
 	if want := []string{"g", "r"}; !slices.Equal(f.Categories, want) {
 		t.Errorf("the categories are %v, want %v", f.Categories, want)
 	}
-	if items := f.Equipment().GetItems(); len(items) != 17 || items[0].GetId() != 16428 || items[0].GetEnchant() != 2586 {
+	helmet, falcons := names.Items["lieutenant_commanders_chain_helmet"], names.Enchants["falcons_call"].EffectID
+	if items := f.Equipment().GetItems(); len(items) != 17 || items[0].GetId() != helmet || items[0].GetEnchant() != falcons {
 		t.Errorf("the equipment is %v, want 17 items from gear/p1.gear.siml", items)
 	}
 	if swap := f.Settings.GetPlayer().GetItemSwap(); f.Rotation().GetType() != proto.APLRotation_TypeAPL || len(f.Rotation().GetPriorityList()) != 1 || swap != nil {

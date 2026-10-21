@@ -643,7 +643,7 @@ func (d *Doc) describeName(ref *nameRef, c *DatabaseCatalog) (string, int32) {
 		}
 		var rows []CatalogEnchant
 		if c != nil {
-			rows = enchantRows(c, entry.EffectID)
+			rows = c.EnchantRows(entry.EffectID)
 		}
 		title := ref.name
 		if len(rows) > 0 {
@@ -705,13 +705,13 @@ func (d *Doc) itemText(c *DatabaseCatalog, id int32) string {
 	}
 	title := strconv.Itoa(int(id))
 	if c != nil {
-		if name, ok := catalogItemName(c, id); ok {
+		if name, ok := c.ItemName(id); ok {
 			title = name
 		}
 	}
 	parts := []string{fmt.Sprintf("**%s** · item %d", title, id)}
 	if found {
-		slots := d.slotWords(ItemSlots(item))
+		slots := d.slotWords(item.slots())
 		var facts []string
 		if item.Ilvl != 0 {
 			facts = append(facts, fmt.Sprintf("ilvl %d", item.Ilvl))

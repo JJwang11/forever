@@ -411,7 +411,7 @@ func scanName(src string, pos int) token {
 }
 
 func scanNumber(src string, pos int) token {
-	if end, ok := literalEnd(src, pos); ok {
+	if end, ok := literalEnd(src, pos); ok && (end >= len(src) || src[end] != '.') {
 		return token{kind: tokNumber, text: src[pos:end], start: pos, end: end}
 	}
 	end := pos + 1
@@ -437,8 +437,8 @@ func isLiteral(s string) bool {
 
 // Where the literal at pos ends (SPEC.md §2): a number, then %, a unit, or a compound duration such as 1h2m3.5s,
 // with no letter, digit or _ after it. The fraction is tried first and the whole number alone when that fails, so
-// 1.5x reads as the literal 1 and 1.5 ends on a letter. A loop, not a recursion, so a run such as 1s1s1s… costs no
-// stack however long it is.
+// the literal of 1.5x ends at its dot, and scanNumber reads a literal that ends at a dot as part of a bad-literal
+// run. A loop, not a recursion, so a run such as 1s1s1s… costs no stack however long it is.
 func literalEnd(src string, pos int) (int, bool) {
 	whole := digits(src, pos)
 	if whole == pos {

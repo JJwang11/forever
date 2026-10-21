@@ -15,8 +15,8 @@ vi.hoisted(() => {
 const printSiml = vi.hoisted(() => vi.fn());
 vi.mock('../../siml_client', async importOriginal => ({ ...(await importOriginal<typeof import('../../siml_client')>()), printSiml }));
 
-import { SIML_ROTATION_EXPORTER } from '../../exporters/siml';
-import { SIML_ROTATION_IMPORTER } from '../../importers/siml';
+import { SIML_ROTATION_EXPORTER } from '../../exporters';
+import { SIML_ROTATION_IMPORTER } from '../../importers';
 import { SimlRotationActions } from './SimlRotationActions';
 
 const rotation = APLRotation.fromJson({ type: 'TypeAPL', priorityList: [{ action: { castSpell: { spellId: { spellId: 2643 } } } }] });

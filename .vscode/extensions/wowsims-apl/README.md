@@ -59,8 +59,9 @@ rotation again with them.
 `docs/siml_editors.md` is the guide: the language data (file type, comments, brackets), the grammar, the server's
 capabilities and semantic token legend, and the setup for Neovim, Helix, Zed, Emacs, Sublime Text and JetBrains. The
 short form: build `wowsimcli`, and start `wowsimcli siml lsp` for files that end in `.siml`, with the language id
-`siml`; it needs no settings and logs on stderr. The panel's requests (`siml/rotation`, `siml/splice`,
-`siml/database`, `siml/patterns`, `siml/insertPattern`, `siml/sim`) are in `sim/siml/lsp/panel.go`.
+`siml`; it needs no settings and logs on stderr. The panel's requests (`siml/rotation`, `siml/pathAt`,
+`siml/registered`, `siml/splice`, `siml/database`, `siml/patterns`, `siml/insertPattern`, `siml/sim`) are in
+`sim/siml/lsp/panel.go`.
 
 ## Commands
 
@@ -77,12 +78,12 @@ A rotation kept as JSON prints as SIML with
 
 ## Settings
 
-|                               |                                                                                                                               |
-| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `wowsims-apl.goBinary`        | the `go` binary that builds the server and reads spell hovers; `go` looks on the PATH, then GOROOT and the usual install dirs |
-| `wowsims-apl.server`          | a prebuilt `wowsimcli` (built with `--tags=with_db`) to run as the server instead of building one                             |
-| `wowsims-apl.simIterations`   | iterations per sim run from the editor (1000)                                                                                 |
-| `wowsims-apl.simSettingsFile` | settings exported from the site, as JSON or SIML, the character sims from the editor run with                                 |
+|                               |                                                                                                        |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `wowsims-apl.goBinary`        | the `go` binary that builds the server; `go` looks on the PATH, then GOROOT and the usual install dirs |
+| `wowsims-apl.server`          | a prebuilt `wowsimcli` (built with `--tags=with_db`) to run as the server instead of building one      |
+| `wowsims-apl.simIterations`   | iterations per sim run from the editor (1000)                                                          |
+| `wowsims-apl.simSettingsFile` | settings exported from the site, as JSON or SIML, the character sims from the editor run with          |
 
 ## The panel
 

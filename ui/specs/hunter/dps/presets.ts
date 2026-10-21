@@ -24,8 +24,8 @@ export const Defaults = PresetUtils.specDefaultsFromSettings(Spec.SpecHunter, De
 
 // The same armor twice, with the weapons each playstyle swings: a two-hander to weave with, which
 // is also the better pair of stats at range, and two one-handers to stand in melee with.
-export const P1Gear = PresetUtils.makePresetGear('P1', P1GearJson);
-export const P1MeleeGear = PresetUtils.makePresetGear('P1 Dual Wield', P1MeleeGearJson);
+export const P1Gear = PresetUtils.makePresetGear('P1', P1GearJson, { devOnly: true });
+export const P1MeleeGear = PresetUtils.makePresetGear('P1 Dual Wield', P1MeleeGearJson, { devOnly: true });
 
 // The priority list of each playstyle. Their "Use ..." variables are the simple rotation's toggles.
 export const PlaystyleAPLs: Record<Playstyle, any> = {
@@ -51,13 +51,13 @@ export const SimpleRotation = PresetUtils.makePresetSimpleRotation('Simple', Spe
 // Gear, talents, rotation, pet and distance together, one per tree and playstyle: the best build found for each on
 // the P1 gear over a three minute fight.
 export const Builds = [
-	PresetUtils.makePresetBuildFromJSON('SV Weave', Spec.SpecHunter, SvWeaveBuild),
-	PresetUtils.makePresetBuildFromJSON('MM Weave', Spec.SpecHunter, MmWeaveBuild),
-	PresetUtils.makePresetBuildFromJSON('BM Weave', Spec.SpecHunter, BmWeaveBuild),
-	PresetUtils.makePresetBuildFromJSON('MM', Spec.SpecHunter, MmBuild),
-	PresetUtils.makePresetBuildFromJSON('BM', Spec.SpecHunter, BmBuild),
-	PresetUtils.makePresetBuildFromJSON('SV', Spec.SpecHunter, SvBuild),
-	PresetUtils.makePresetBuildFromJSON('SV Melee', Spec.SpecHunter, SvMeleeBuild),
+	PresetUtils.makePresetBuildFromJSON('SV Weave', Spec.SpecHunter, SvWeaveBuild, { gear: P1Gear }),
+	PresetUtils.makePresetBuildFromJSON('MM Weave', Spec.SpecHunter, MmWeaveBuild, { gear: P1Gear }),
+	PresetUtils.makePresetBuildFromJSON('BM Weave', Spec.SpecHunter, BmWeaveBuild, { gear: P1Gear }),
+	PresetUtils.makePresetBuildFromJSON('MM', Spec.SpecHunter, MmBuild, { gear: P1Gear }),
+	PresetUtils.makePresetBuildFromJSON('BM', Spec.SpecHunter, BmBuild, { gear: P1Gear }),
+	PresetUtils.makePresetBuildFromJSON('SV', Spec.SpecHunter, SvBuild, { gear: P1Gear }),
+	PresetUtils.makePresetBuildFromJSON('SV Melee', Spec.SpecHunter, SvMeleeBuild, { gear: P1MeleeGear }),
 ];
 
 // Each build's talents, under its name.

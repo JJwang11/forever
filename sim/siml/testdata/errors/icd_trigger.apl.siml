@@ -5,4 +5,6 @@ spec hunter
 // trigger_icd, and nowhere else.
 priority:
   cast aimed_shot if aura(icd_trigger).icd_is_ready
+  cast aimed_shot if aura(icd_trigger).internal_cooldown < 1s
+  trigger_icd(icd_trigger)
   cast aimed_shot if aura(icd_trigger).is_active

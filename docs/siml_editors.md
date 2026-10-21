@@ -36,8 +36,8 @@ go build --tags=with_db -o wowsimcli ./cmd/wowsimcli   # in the repository root
 ./wowsimcli siml lsp                                  # speaks LSP on stdin and stdout, logs on stderr
 ```
 
-`with_db` builds the item database in, which hover and the slot-row checks read; without it the server still starts
-and checks files, as `siml parse` does. Rebuild after pulling Go changes. The server reads the name table
+The server reads the item database at run time, so it checks files, hovers and completes with or without `with_db`;
+only the panel's sim (`siml/sim`) needs the tag, as `siml sim` does. Rebuild after pulling Go changes. The server reads the name table
 (`sim/siml/names.json`) and the database from the repository the file is in, so `make siml-names` or
 `make db` needs no restart.
 

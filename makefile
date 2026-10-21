@@ -35,7 +35,7 @@ $(OUT_DIR)/bundle/.dirstamp: \
   sim/siml/names.json \
   sim/siml/forms.json \
   $(filter-out %_test.go,$(wildcard sim/siml/*.go)) \
-  | bin/wowsimcli$(BIN_EXT)
+  $(if $(WOWSIMCLI),,| bin/wowsimcli$(BIN_EXT))
 	node_modules/typescript/bin/tsc --noEmit
 	npx tsx vite.build-workers.mts
 	npx vite build
@@ -97,7 +97,7 @@ node_modules: package-lock.json
 
 # What tools/vite/siml.mts reads .siml imports with when $WOWSIMCLI is unset. It stays out of dist: the pull request
 # preview uploads all of dist to Cloudflare Pages, which refuses a file over 25 MiB.
-bin/wowsimcli$(BIN_EXT): sim/core/proto/api.pb.go sim/siml/forms.json $(filter-out %_test.go,$(call rwildcard,sim,*.go) $(call rwildcard,cmd/wowsimcli,*.go))
+bin/wowsimcli$(BIN_EXT): sim/core/proto/api.pb.go sim/siml/forms.json sim/siml/llm_head.txt $(filter-out %_test.go,$(call rwildcard,sim,*.go) $(call rwildcard,cmd/wowsimcli,*.go) $(call rwildcard,tools/spelldata,*.go))
 	go build -o $@ ./cmd/wowsimcli
 
 # Run before committing, and after a change to proto/apl.proto: refresh the SIML name table and siml.llm.txt, then

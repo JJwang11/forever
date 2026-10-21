@@ -127,13 +127,13 @@ func (d *Doc) gear(c *DatabaseCatalog, check func(Range, string, string)) {
 		}
 		switch {
 		case named && !found:
-			if known, ok := catalogItemName(c, id); ok {
+			if known, ok := c.ItemName(id); ok {
 				check(d.rangeOf(row.item.span), "gear-item", known+" is no gear the database lists")
 			} else {
 				check(d.rangeOf(row.item.span), "gear-item", fmt.Sprintf("the database has no item %d", id))
 			}
-		case found && slotValue != nil && !slices.Contains(ItemSlots(item), proto.ItemSlot(slotValue.Number)):
-			slots := strings.Join(d.slotWords(ItemSlots(item)), " or ")
+		case found && slotValue != nil && !slices.Contains(item.slots(), proto.ItemSlot(slotValue.Number)):
+			slots := strings.Join(d.slotWords(item.slots()), " or ")
 			if slots == "" {
 				slots = "no slot"
 			}

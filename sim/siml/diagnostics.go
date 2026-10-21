@@ -33,7 +33,7 @@ type Diagnostic struct {
 	Path       string // The file it is in.
 	Start, End Position
 	Severity   Severity
-	Code       string // A code of SPEC.md §13, such as unknown-name.
+	Code       string // A code of SPEC.md §13 such as unknown-name, a lint code, or unregistered-name.
 	Message    string
 	Related    *RelatedLocation // For an error of a used file reported at the use line: where it is in that file.
 }

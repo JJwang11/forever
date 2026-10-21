@@ -128,8 +128,9 @@ go run --tags=with_db ./cmd/wowsimcli siml fmt -check ui/specs/<class>   # each 
 
 `siml fmt -check` fails on a `.siml` file under `ui/specs` that does not read cleanly, is not in canonical form, sits
 outside its class folder, or names a spell or aura its spec does not register; `go test --tags=with_db
-./cmd/wowsimcli/...` runs it over every file under `ui/specs`. `./sim/...` includes `sim/siml`, whose tests fail on a
-name table that was not regenerated.
+./cmd/wowsimcli/...` runs it over every file under `ui/specs`. `./sim/...` includes `sim/siml/gen`, whose
+`TestTableKeepsItsEntries` fails when a committed entry of the name table comes back changed and logs the names it
+lacks; `make siml-names` adds them.
 
 **A .results file that cannot move proves nothing.** Before reading a pass as evidence, grep the class's
 .results for the spell id you changed: a suite whose rotation never casts the spell passes whatever the

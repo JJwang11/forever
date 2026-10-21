@@ -3,6 +3,7 @@ package lsp
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -135,8 +136,9 @@ func TestHoverNamesASpellOfTheTable(t *testing.T) {
 	c.change(smokeURI, 2, lines("siml 1", "spec hunter", "", "priority:", "  cast hunters_mark", ""))
 	var hover Hover
 	c.request("textDocument/hover", map[string]any{"textDocument": textDocument(smokeURI), "position": pos(4, 9)}, &hover)
-	if !strings.Contains(hover.Contents.Value, "Hunter's Mark") || !strings.Contains(hover.Contents.Value, "spell 14325") ||
-		!strings.Contains(hover.Contents.Value, "https://www.wowhead.com/forever/spell=14325") {
+	id := tableSpell(t, siml.NamespaceSpell, "hunters_mark").GetSpellId()
+	if !strings.Contains(hover.Contents.Value, "Hunter's Mark") || !strings.Contains(hover.Contents.Value, fmt.Sprintf("spell %d", id)) ||
+		!strings.Contains(hover.Contents.Value, fmt.Sprintf("https://www.wowhead.com/forever/spell=%d", id)) {
 		t.Errorf("hover = %q", hover.Contents.Value)
 	}
 }

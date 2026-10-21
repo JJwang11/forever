@@ -2,8 +2,6 @@ package lsp
 
 import (
 	"path/filepath"
-	"runtime"
-	"strings"
 	"sync"
 
 	"github.com/wowsims/forever/sim/siml"
@@ -32,12 +30,4 @@ func (w *workspaces) names(root string) (*siml.Names, error) {
 	}
 	w.mu.Unlock()
 	return t.Get()
-}
-
-// Whether two paths name one file.
-func samePath(a, b string) bool {
-	if runtime.GOOS == "windows" {
-		return strings.EqualFold(filepath.Clean(a), filepath.Clean(b))
-	}
-	return filepath.Clean(a) == filepath.Clean(b)
 }

@@ -1,6 +1,6 @@
 import i18n from '@i18n/config';
 
-import { SIML_IMPORTER, SIML_ROTATION_IMPORTER } from '../../importers/siml';
+import { SIML_IMPORTER, SIML_ROTATION_IMPORTER } from '../../importers';
 import { Importer } from './Importer';
 import type { ImporterDialogProps } from './types';
 

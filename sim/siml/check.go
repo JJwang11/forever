@@ -86,7 +86,9 @@ func (t *typer) checkReferences(declarations []*variableDecl, groups []nameUse, 
 	for _, use := range t.variableUses {
 		t.site = use.site
 		n := use.node
-		res := resolveVariable(n.name, n.braced, declaredIn(visible, use.scope))
+		// The sim finds a reference among the value variables only; a group's own variables and a reference's
+		// `with` replace one of the same name and declare none (SPEC.md §7.5).
+		res := resolveVariable(n.name, n.braced, declaredIn(visible, scope{}))
 		use.name(n.name)
 		switch {
 		case res.found:

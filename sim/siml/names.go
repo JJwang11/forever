@@ -32,7 +32,7 @@ const (
 	NamespaceSuffix      Namespace = "suffix"
 )
 
-// Every namespace, in the order SPEC.md §7.2 lists them, which is the order Holding reports them in.
+// Every namespace, in the order SPEC.md §7.1 lists them, which is the order Holding reports them in.
 func AllNamespaces() []Namespace {
 	return []Namespace{NamespaceSpell, NamespaceAura, NamespaceTargetAura, NamespaceTargetSpell, NamespacePetAura,
 		NamespaceItem, NamespaceEnchant, NamespaceSuffix}

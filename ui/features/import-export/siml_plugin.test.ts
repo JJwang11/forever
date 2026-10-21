@@ -35,19 +35,28 @@ const transform = async (text: string, id: string) => {
 	return { json: exported === undefined ? undefined : (JSON.parse(exported) as JsonObject), result, watched, warnings };
 };
 
-const HUNTERS_MARK = { spellId: 14325, rank: 4 };
+// The ActionID the name table gives a hunter's name of `kind`, without the specs that register it.
+const NAMES = JSON.parse(readFileSync(path.join(ROOT, 'sim/siml/names.json'), 'utf8')) as {
+	classes: { hunter: Record<string, Record<string, JsonObject>> };
+};
+const hunterId = (kind: string, name: string): JsonObject => {
+	const { registeredBy: _, ...id } = NAMES.classes.hunter[kind][name];
+	return id;
+};
+
+const HUNTERS_MARK = hunterId('spell', 'hunters_mark');
 const ROTATION = {
 	type: 'TypeAPL',
 	prepullActions: [{ action: { castSpell: { spellId: HUNTERS_MARK } }, doAtValue: { const: { val: '-22s' } } }],
 	priorityList: [
 		{
 			action: {
-				condition: { not: { val: { auraIsActive: { sourceUnit: { type: 'CurrentTarget' }, auraId: { spellId: 14325 } } } } },
+				condition: { not: { val: { auraIsActive: { sourceUnit: { type: 'CurrentTarget' }, auraId: hunterId('target_aura', 'hunters_mark') } } } },
 				castSpell: { spellId: HUNTERS_MARK },
 			},
 		},
-		{ action: { condition: { variableRef: { name: 'Use Summon Hawk' } }, castSpell: { spellId: { spellId: 1293527, rank: 4 } } } },
-		{ action: { castSpell: { spellId: { spellId: 2643 } } } },
+		{ action: { condition: { variableRef: { name: 'Use Summon Hawk' } }, castSpell: { spellId: hunterId('spell', 'summon_hawk') } } },
+		{ action: { castSpell: { spellId: hunterId('spell', 'multi_shot') } } },
 	],
 	valueVariables: [{ name: 'Use Summon Hawk', value: { const: { val: 'false' } } }],
 };

@@ -9,7 +9,8 @@ sim/siml/llm_head.txt for the part above "Actions". The full language is sim/sim
 - sim/siml/SPEC.md           the language; §6 rotations, §7 names, §8 what the protos derive, §13 diagnostics
 - sim/siml/names.json        every name a file may write, per class and namespace (generated: make siml-names)
 - sim/siml/forms.json        sections, units, short forms; everything else comes from the protos
-- sim/siml/testdata/         the corpus: parse/ (text and the JSON it reads as), errors/ (with .diag), format/, splice/
+- sim/siml/testdata/         the corpus: parse/ (text and the JSON it reads as), print/ (JSON and the text it prints
+                             as), errors/ (with .diag), format/, splice/, tables/ (name tables refused and accepted)
 - ui/specs/<class>/<spec>/   defaults.siml, apls/*.apl.siml, gear_sets/*.gear.siml, builds/*.siml (the presets)
 - cmd/wowsimcli/cmd/siml*.go the CLI; sim/siml/lsp the language server; tools/vscode-apl the VS Code extension
 
