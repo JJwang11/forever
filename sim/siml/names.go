@@ -71,6 +71,9 @@ type Names struct {
 	Items    map[string]int32
 	Enchants map[string]EnchantName
 	Suffixes map[string]int32
+	// The specs that know an item's effect only as an internal cooldown trigger, which only the ICD kinds find, by
+	// the item's name.
+	ICDOnlyItems map[string][]string
 
 	once  sync.Once
 	index *namesIndex
@@ -300,15 +303,16 @@ func ParseNames(data []byte) (*Names, error) {
 	if v == nil {
 		return nil, fmt.Errorf("names: the table is null")
 	}
-	top, err := object("the table", v, "classes", "enchants", "items", "shared", "suffixes")
+	top, err := object("the table", v, "classes", "enchants", "icdOnlyItems", "items", "shared", "suffixes")
 	if err != nil {
 		return nil, err
 	}
 	t := &Names{
-		Classes:  map[proto.Class]SpellNames{},
-		Items:    map[string]int32{},
-		Enchants: map[string]EnchantName{},
-		Suffixes: map[string]int32{},
+		Classes:      map[proto.Class]SpellNames{},
+		Items:        map[string]int32{},
+		Enchants:     map[string]EnchantName{},
+		Suffixes:     map[string]int32{},
+		ICDOnlyItems: map[string][]string{},
 	}
 	if t.Shared, err = spellNames("shared", top["shared"]); err != nil {
 		return nil, err
@@ -340,6 +344,33 @@ func ParseNames(data []byte) (*Names, error) {
 	}
 	if err := ids("suffixes", top["suffixes"], t.Suffixes); err != nil {
 		return nil, err
+	}
+	icdItems, err := object("icdOnlyItems", top["icdOnlyItems"])
+	if err != nil {
+		return nil, err
+	}
+	ix, err := loadIndex()
+	if err != nil {
+		return nil, err
+	}
+	for name, v := range icdItems {
+		where := "icdOnlyItems." + name
+		if _, ok := t.Items[name]; !ok {
+			return nil, fmt.Errorf("names: %s names no item of items", where)
+		}
+		specs, err := stringList(where, v)
+		if err != nil {
+			return nil, err
+		}
+		if len(specs) == 0 {
+			return nil, fmt.Errorf("names: %s lists no spec", where)
+		}
+		for _, spec := range specs {
+			if _, ok := ix.specs[spec]; !ok {
+				return nil, fmt.Errorf("names: %s lists %q, which is no spec", where, spec)
+			}
+		}
+		t.ICDOnlyItems[name] = specs
 	}
 	enchants, err := object("enchants", top["enchants"])
 	if err != nil {
@@ -582,6 +613,18 @@ func (t *Names) Encode() []byte {
 					slots[j] = quote(shortName(slotEnum, int32(s)))
 				}
 				fmt.Fprintf(b, "    %s: {\"effectId\": %d, \"slots\": [%s]}%s", quote(name), e.EffectID, strings.Join(slots, ", "), comma(i, len(names)))
+			}
+		}})
+	}
+	if len(t.ICDOnlyItems) > 0 {
+		sections = append(sections, section{"icdOnlyItems", func(b *bytes.Buffer) {
+			names := slices.Sorted(maps.Keys(t.ICDOnlyItems))
+			for i, name := range names {
+				specs := slices.Sorted(slices.Values(t.ICDOnlyItems[name]))
+				for j, s := range specs {
+					specs[j] = quote(s)
+				}
+				fmt.Fprintf(b, "    %s: [%s]%s", quote(name), strings.Join(specs, ", "), comma(i, len(names)))
 			}
 		}})
 	}

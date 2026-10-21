@@ -2199,6 +2199,15 @@
     "zandalar_signet_of_mojo": {"effectId": 2605, "slots": ["shoulder"]},
     "zandalar_signet_of_serenity": {"effectId": 2604, "slots": ["shoulder"]}
   },
+  "icdOnlyItems": {
+    "aegis_of_the_scarlet_commander": ["balance_druid", "dps_priest", "dps_warrior", "elemental_shaman", "enhancement_shaman", "feral_bear_druid", "feral_cat_druid", "healer_priest", "holy_paladin", "hunter", "mage", "protection_paladin", "protection_warrior", "restoration_druid", "restoration_shaman", "retribution_paladin", "rogue", "warlock"],
+    "darkspear": ["balance_druid", "dps_priest", "dps_warrior", "elemental_shaman", "enhancement_shaman", "feral_bear_druid", "feral_cat_druid", "healer_priest", "holy_paladin", "hunter", "mage", "protection_paladin", "protection_warrior", "restoration_druid", "restoration_shaman", "retribution_paladin", "rogue", "warlock"],
+    "force_reactive_disk": ["balance_druid", "dps_priest", "dps_warrior", "elemental_shaman", "enhancement_shaman", "feral_bear_druid", "feral_cat_druid", "healer_priest", "holy_paladin", "hunter", "mage", "protection_paladin", "protection_warrior", "restoration_druid", "restoration_shaman", "retribution_paladin", "rogue", "warlock"],
+    "scroll_of_imbue_manablade": ["mage"],
+    "scroll_of_imbue_spark": ["mage"],
+    "shadow_oil": ["balance_druid", "dps_priest", "dps_warrior", "elemental_shaman", "enhancement_shaman", "feral_bear_druid", "feral_cat_druid", "healer_priest", "holy_paladin", "hunter", "mage", "protection_paladin", "protection_warrior", "restoration_druid", "restoration_shaman", "retribution_paladin", "rogue", "warlock"],
+    "thick_obsidian_breastplate": ["balance_druid", "dps_priest", "dps_warrior", "elemental_shaman", "enhancement_shaman", "feral_bear_druid", "feral_cat_druid", "healer_priest", "holy_paladin", "hunter", "mage", "protection_paladin", "protection_warrior", "restoration_druid", "restoration_shaman", "retribution_paladin", "rogue", "warlock"]
+  },
   "items": {
     "a_bigger_shield": 260210,
     "a_lesson_in_destruction": 276897,

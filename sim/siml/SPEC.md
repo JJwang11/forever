@@ -872,6 +872,10 @@ meaning among the shared entries.
     "<name>": {"effectId": <effect id>, "slots": ["<slot>", …]},
     …
   },
+  "icdOnlyItems": {
+    "<item name>": ["<spec>", …],
+    …
+  },
   "items": {
     "<name>": <item id>,
     …
@@ -902,6 +906,10 @@ meaning among the shared entries.
   the aura only as an internal cooldown trigger, in byte order. For a file of one of those specs the sim finds it in
   `icd_is_ready`, `internal_cooldown` and `trigger_icd` and in no other aura position, where a name of it is
   `icd-trigger` (§13).
+- `icdOnlyItems` names the items whose effect the listed specs' builds list only as an internal cooldown trigger, by
+  an item name of `items`, with the specs in byte order. It is written again from the builds on each regeneration. For
+  a file of one of those specs, `item.<name>` in an aura position outside `icd_is_ready`, `internal_cooldown` and
+  `trigger_icd` is `icd-trigger`, as for an `aura` entry's `icdOnlyBy`.
 - `slots` lists, in `ItemSlot` order, the slots of the item types that the entry's enchant rows fit.
 - **Layout.** The keys of every object are in byte order, each entry is on a line of its own, and each level is
   indented two spaces. Empty objects are left out, lines end in LF, and the file ends in one newline. So a
@@ -913,7 +921,8 @@ meaning among the shared entries.
   It refuses a table that breaks any of these:
     - the table, each of its sections, each class and namespace, and each spell-like or enchant entry is an
       object; the table and the entries hold only the keys the form shows; `registeredBy` and `slots` are lists of
-      strings; `icdOnlyBy` is a list of strings on an `aura` entry, each a spec of its `registeredBy`;
+      strings; `icdOnlyBy` is a list of strings on an `aura` entry, each a spec of its `registeredBy`; each
+      `icdOnlyItems` entry names an item of `items` and is a non-empty list of field names of `Player`'s `spec` oneof;
     - every spell id, tag and rank, item id, effect id and random suffix id is a whole number in the range of
       `int32`;
     - every name matches `[a-z_][a-z0-9_]*` and is no reserved word (§4 note 6), which a file would never read as
@@ -1560,7 +1569,7 @@ are errors.
 | `unknown-slot`, `duplicate-slot`                                                                              | error    | §5.3                                                                  |
 | `unknown-name`                                                                                                | error    | §7.2; the message names where the name is, or a did-you-mean          |
 | `spell-variable`                                                                                              | error    | §7.2; while `ActionID` has no string member                           |
-| `icd-trigger`                                                                                                 | error    | §7.4; an aura in `icdOnlyBy` of the file's spec outside the ICD kinds |
+| `icd-trigger`                                                                                                 | error    | §7.4; an `icdOnlyBy` aura or an `icdOnlyItems` item outside ICD kinds |
 | `ambiguous-variable`                                                                                          | error    | §7.5                                                                  |
 | `duplicate-group`, `duplicate-variable`, `reference-cycle`                                                    | error    | §6.1, §7.5, §6.10; a `with` list that sets one variable twice (§9)    |
 | `undefined-variable`, `undefined-group`, `undefined-placeholder`, `undefined-sequence`                        | warning  | §7.5                                                                  |

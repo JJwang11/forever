@@ -1051,6 +1051,9 @@ func (t *typer) actionID(n node, ns Namespace) *proto.ActionID {
 			if !ok {
 				return nil
 			}
+			if ns == NamespaceAura && slices.Contains(t.names.ICDOnlyItems[n.name.text], t.spec) && !t.kind.readsICD() {
+				t.report("icd-trigger", fmt.Sprintf("item.%s is an internal cooldown trigger, which only icd_is_ready, internal_cooldown and trigger_icd find", n.name.text), n.name.span)
+			}
 			t.refs = append(t.refs, r)
 			t.mark(n.span)
 			return &proto.ActionID{RawId: &proto.ActionID_ItemId{ItemId: r.id}}

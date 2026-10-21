@@ -85,6 +85,7 @@ func Update(old *siml.Names, c *Collection, pin *Pin) (*siml.Names, *Report, err
 		u.sharedSpells(ns)
 	}
 	u.items()
+	u.icdItems()
 	u.enchants()
 	u.suffixes()
 	for _, p := range slices.SortedFunc(maps.Keys(before), func(a, b Pin) int { return strings.Compare(a.Name, b.Name) }) {
@@ -621,6 +622,16 @@ func enchantCandidate(row EnchantRow) candidate {
 // Adds an entry for every effect id and slots of the database's enchant rows that the table does not name. Rows
 // of one effect id that fit the same slots share one entry, named by the first of them; preference among new
 // entries is the lowest effect id, and no qualifier is readable.
+// The items whose effect a spec knows only as an internal cooldown trigger, written again from what the builds list.
+func (u *updater) icdItems() {
+	u.t.ICDOnlyItems = map[string][]string{}
+	for name, id := range u.t.Items {
+		if specs := u.c.ICDItems[id]; len(specs) > 0 {
+			u.t.ICDOnlyItems[name] = slices.Clone(specs)
+		}
+	}
+}
+
 func (u *updater) enchants() {
 	key := func(e siml.EnchantName) string { return enchantKey(e.EffectID, e.Slots) }
 	taken, holders, named := held(u.t.Enchants, key, func(e siml.EnchantName) (candidate, bool) {

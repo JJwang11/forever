@@ -182,7 +182,11 @@
 			"slots": ["main_hand", "off_hand"]
 		}
 	},
+	"icdOnlyItems": {
+		"icd_item": ["hunter"]
+	},
 	"items": {
+		"icd_item": 990211,
 		"adaptive_combat_assistant": 272437,
 		"badge_of_the_swarmguard": 21670,
 		"band_of_earthen_might": 21182,

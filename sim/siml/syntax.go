@@ -1134,11 +1134,8 @@ func (p *parser) use() stmt {
 	s := &useStmt{path: *p.string("the used file's path in quotes")}
 	if p.acceptWord("with") {
 		for {
-			if len(s.with) > 0 {
-				p.take()
-			}
 			s.with = append(s.with, p.varBind())
-			if !p.isPunct(",", 0) {
+			if !p.acceptPunct(",") {
 				break
 			}
 		}
@@ -1213,10 +1210,7 @@ func (p *parser) defDecl() stmt {
 
 // `[#] when <expr>:`, the colon ending its line.
 func (p *parser) when() stmt {
-	s := &whenStmt{hide: p.isPunct("#", 0)}
-	if s.hide {
-		p.take()
-	}
+	s := &whenStmt{hide: p.acceptPunct("#")}
 	p.take()
 	s.condition = p.expr()
 	if !p.isPunct(":", 0) || p.has(1) {
@@ -1284,8 +1278,7 @@ func (p *parser) entry() stmt {
 		return &messageEntryStmt{name: t.name(), args: args}
 	}
 	s := &fieldEntryStmt{name: t.name(), values: []node{p.term(entryEnds)}}
-	for p.isPunct(",", 0) {
-		p.take()
+	for p.acceptPunct(",") {
 		s.values = append(s.values, p.term(entryEnds))
 	}
 	p.finish("',' or the end of the entry")
@@ -1306,10 +1299,9 @@ func (p *parser) flags() stmt {
 		}
 		fl.span = p.from(t.start)
 		s.flags = append(s.flags, fl)
-		if !p.isPunct(",", 0) {
+		if !p.acceptPunct(",") {
 			break
 		}
-		p.take()
 	}
 	p.finish("',' or the end of the flags")
 	return s
@@ -1318,10 +1310,7 @@ func (p *parser) flags() stmt {
 // --- Rows (SPEC.md §6.3)
 
 func (p *parser) row(prepull bool) stmt {
-	s := &rowStmt{hide: p.isPunct("#", 0)}
-	if s.hide {
-		p.take()
-	}
+	s := &rowStmt{hide: p.acceptPunct("#")}
 	// Raw JSON alone is the whole row, its time included (SPEC.md §6.3).
 	rawRow := !s.hide && p.peekKind(0, tokRaw) && !p.has(1)
 	if prepull && !rawRow {
@@ -1425,26 +1414,18 @@ func (p *parser) step() node {
 		if p.acceptWord("until") {
 			s.until = p.expr()
 		}
-		if s.recast = p.isWord("recast", 0); s.recast {
-			p.take()
-		}
+		s.recast = p.acceptWord("recast")
 		s.span = p.from(start)
 		return s
 	case "wait":
 		p.take()
-		s := &waitStep{until: p.isWord("until", 0)}
-		if s.until {
-			p.take()
-		}
+		s := &waitStep{until: p.acceptWord("until")}
 		s.value = p.expr()
 		s.span = p.from(start)
 		return s
 	case "move":
 		p.take()
-		s := &moveStep{duration: p.isWord("for", 0)}
-		if s.duration {
-			p.take()
-		}
+		s := &moveStep{duration: p.acceptWord("for")}
 		s.value = p.expr()
 		s.span = p.from(start)
 		return s

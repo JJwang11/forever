@@ -18,6 +18,9 @@ type Collection struct {
 	Shared map[siml.Namespace]map[Identity]bool
 	// The specs of each class, by Player spec field name.
 	Specs map[proto.Class][]string
+	// The items whose effect a spec's build lists only as an internal cooldown trigger, by item id, with those
+	// specs in byte order.
+	ICDItems map[int32][]string
 
 	SpellNames map[int32]string // Game names by spell id.
 	Items      []Item           // In the database's order: its items, then its consumables and item icons.

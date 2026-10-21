@@ -35,6 +35,7 @@ func Collect(root string, old *siml.Names) (*Collection, error) {
 	db := database.Load()
 
 	c := &Collection{
+		ICDItems:   map[int32][]string{},
 		Registered: map[siml.Namespace]map[Identity]Registration{},
 		Classes:    map[proto.Class]map[siml.Namespace]map[Identity]bool{},
 		Shared:     map[siml.Namespace]map[Identity]bool{},
@@ -182,6 +183,12 @@ func set(m map[proto.Class]map[siml.Namespace]map[Identity]bool, class proto.Cla
 // Merges what a build registered into the registrations, with the build's spec.
 func (c *Collection) add(b *build) {
 	spec := string(b.spec.info.Field.Name())
+	for _, id := range b.icd {
+		if !slices.Contains(c.ICDItems[id], spec) {
+			c.ICDItems[id] = append(c.ICDItems[id], spec)
+			slices.Sort(c.ICDItems[id])
+		}
+	}
 	for ns, ids := range b.found {
 		if c.Registered[ns] == nil {
 			c.Registered[ns] = map[Identity]Registration{}
@@ -373,6 +380,7 @@ type build struct {
 	variant   int              // Which option variant a build with no gear has; 0 for the defaults.
 
 	found   map[siml.Namespace]map[Identity]Registration // What the build registered.
+	icd     []int32                                      // The items whose effect the build lists only as an internal cooldown trigger.
 	attempt int                                          // Which attempt succeeded: 0 with every buff, 1 without buffs, 2 without talents either; -1 when none did.
 	errors  []string                                     // Why each failed attempt failed.
 }
@@ -435,7 +443,7 @@ func (b *build) run() {
 			b.errors = append(b.errors, fmt.Sprintf("%s: %v", labels[i], err))
 			continue
 		}
-		b.found, b.attempt = registrations(result), i
+		b.found, b.icd, b.attempt = registrations(result), icdItems(result), i
 		return
 	}
 	b.attempt = -1
@@ -467,6 +475,20 @@ func computeStats(player *proto.Player, buffs bool, encounter *proto.Encounter) 
 		return nil, errors.New(result.ErrorResult)
 	}
 	return result, nil
+}
+
+// The items whose effect the player lists only as an internal cooldown trigger, which only the ICD kinds find
+// (aura(item.x).is_active does not).
+func icdItems(result *proto.ComputeStatsResult) []int32 {
+	metadata := result.RaidStats.Parties[0].Players[0].Metadata
+	var out []int32
+	for _, aura := range metadata.IcdAuras {
+		id := aura.Id.GetItemId()
+		if id != 0 && !slices.ContainsFunc(metadata.Auras, func(a *proto.AuraStats) bool { return a.Id.GetItemId() == id }) {
+			out = append(out, id)
+		}
+	}
+	return out
 }
 
 // What a build registered, by namespace: the spell ids of the player's spells and auras, its pets' auras, and the
