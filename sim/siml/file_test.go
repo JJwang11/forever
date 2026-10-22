@@ -182,7 +182,7 @@ func TestReadFile(t *testing.T) {
 
 // A file with an error is not formatted; its diagnostics are the error.
 func TestFormatError(t *testing.T) {
-	_, err := Format("x.apl.siml", []byte("siml 1\nspec hunter\n\npriority:\n  cast x\n"), &Names{})
+	_, err := Format("x.apl.siml", []byte("siml 1\nspec hunter\n\npriority:\n  cast x\n"), &Names{}, nil)
 	var diags Diagnostics
 	if !errors.As(err, &diags) || len(diags) != 1 || diags[0].Code != "unknown-name" {
 		t.Errorf("Format gave %v, want unknown-name", err)

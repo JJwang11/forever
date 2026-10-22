@@ -1,0 +1,8 @@
+siml 1
+spec hunter
+
+// What the hunter's rotations share. Each def reads in the rotation that calls it, so $use_summon_hawk and
+// $use_arcane_shot are that rotation's variables.
+def in_melee = self.unit_distance <= 5
+def at_range = self.unit_distance > 5
+def hawk_and_arcane = $use_summon_hawk and $use_arcane_shot

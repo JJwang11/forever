@@ -564,6 +564,42 @@ func whereIs(locations []Location) []string {
 	return out
 }
 
+// A def a used file declares: its calls here go to its line there, hover shows that line, completion offers it, and a
+// rename reaches both files.
+func TestImportedDef(t *testing.T) {
+	dir := t.TempDir()
+	usedPath, userPath := filepath.Join(dir, "a.apl.siml"), filepath.Join(dir, "b.apl.siml")
+	used := textLines("siml 1", "spec hunter", "", "def far(x) = spell(x).is_ready and self.unit_distance > 5")
+	user := textLines("siml 1", "spec hunter", `use "a.apl.siml"`, "", "priority:", "  cast multi_shot if far(multi_shot)", "  cast arcane_shot if ")
+	for path, text := range map[string]string{usedPath: used, userPath: user} {
+		if err := os.WriteFile(path, []byte(text), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	d := analyzeText(t, userPath, user)
+	at := positionOf(user, "far(", 1)
+	if got := whereIs(d.Definition(at)); len(got) != 1 || got[0] != "a.apl.siml 3:4" {
+		t.Errorf("definition %q, want a.apl.siml 3:4", got)
+	}
+	if h, ok := d.Hover(at, langCatalog()); !ok || !strings.Contains(h.Markdown, "def far(x) = spell(x).is_ready") {
+		t.Errorf("hover %q", h.Markdown)
+	}
+	if labels := labelsOf(d.Complete(Position{7, 23}, langCatalog())); !slices.Contains(labels, "far") {
+		t.Errorf("completion offers %q, without far", labels)
+	}
+	edits, err := d.Rename(at, "beyond")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got []string
+	for _, f := range edits {
+		got = append(got, fmt.Sprintf("%s %d %s", filepath.Base(f.Path), len(f.Edits), f.Edits[0].NewText))
+	}
+	if want := []string{"a.apl.siml 1 beyond", "b.apl.siml 1 beyond"}; !slices.Equal(got, want) {
+		t.Errorf("rename %q, want %q", got, want)
+	}
+}
+
 func TestWithBindDefinition(t *testing.T) {
 	settingText, setting := fixtureDoc(t, "hawks.apl.siml")
 	bind := positionOf(settingText, "$use_summon_hawk", 1)

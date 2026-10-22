@@ -763,63 +763,69 @@
 																		}
 																	},
 																	{
-																		"spellIsKnown": {
-																			"spellId": {
-																				"spellId": 14287,
-																				"rank": 8
-																			}
-																		}
-																	},
-																	{
-																		"cmp": {
-																			"op": "OpLe",
-																			"lhs": {
-																				"spellCurrentCost": {
-																					"spellId": {
-																						"spellId": 14287,
-																						"rank": 8
+																		"and": {
+																			"vals": [
+																				{
+																					"spellIsKnown": {
+																						"spellId": {
+																							"spellId": 14287,
+																							"rank": 8
+																						}
+																					}
+																				},
+																				{
+																					"cmp": {
+																						"op": "OpLe",
+																						"lhs": {
+																							"spellCurrentCost": {
+																								"spellId": {
+																									"spellId": 14287,
+																									"rank": 8
+																								}
+																							}
+																						},
+																						"rhs": {
+																							"currentMana": {}
+																						}
+																					}
+																				},
+																				{
+																					"cmp": {
+																						"op": "OpGt",
+																						"lhs": {
+																							"spellTimeToReady": {
+																								"spellId": {
+																									"spellId": 14287,
+																									"rank": 8
+																								}
+																							}
+																						},
+																						"rhs": {
+																							"const": {
+																								"val": "0s"
+																							}
+																						}
+																					}
+																				},
+																				{
+																					"cmp": {
+																						"op": "OpLe",
+																						"lhs": {
+																							"spellTimeToReady": {
+																								"spellId": {
+																									"spellId": 14287,
+																									"rank": 8
+																								}
+																							}
+																						},
+																						"rhs": {
+																							"const": {
+																								"val": "400ms"
+																							}
+																						}
 																					}
 																				}
-																			},
-																			"rhs": {
-																				"currentMana": {}
-																			}
-																		}
-																	},
-																	{
-																		"cmp": {
-																			"op": "OpGt",
-																			"lhs": {
-																				"spellTimeToReady": {
-																					"spellId": {
-																						"spellId": 14287,
-																						"rank": 8
-																					}
-																				}
-																			},
-																			"rhs": {
-																				"const": {
-																					"val": "0s"
-																				}
-																			}
-																		}
-																	},
-																	{
-																		"cmp": {
-																			"op": "OpLe",
-																			"lhs": {
-																				"spellTimeToReady": {
-																					"spellId": {
-																						"spellId": 14287,
-																						"rank": 8
-																					}
-																				}
-																			},
-																			"rhs": {
-																				"const": {
-																					"val": "400ms"
-																				}
-																			}
+																			]
 																		}
 																	}
 																]
@@ -834,59 +840,65 @@
 																		}
 																	},
 																	{
-																		"spellIsKnown": {
-																			"spellId": {
-																				"spellId": 2643
-																			}
-																		}
-																	},
-																	{
-																		"cmp": {
-																			"op": "OpLe",
-																			"lhs": {
-																				"spellCurrentCost": {
-																					"spellId": {
-																						"spellId": 2643
+																		"and": {
+																			"vals": [
+																				{
+																					"spellIsKnown": {
+																						"spellId": {
+																							"spellId": 2643
+																						}
+																					}
+																				},
+																				{
+																					"cmp": {
+																						"op": "OpLe",
+																						"lhs": {
+																							"spellCurrentCost": {
+																								"spellId": {
+																									"spellId": 2643
+																								}
+																							}
+																						},
+																						"rhs": {
+																							"currentMana": {}
+																						}
+																					}
+																				},
+																				{
+																					"cmp": {
+																						"op": "OpGt",
+																						"lhs": {
+																							"spellTimeToReady": {
+																								"spellId": {
+																									"spellId": 2643
+																								}
+																							}
+																						},
+																						"rhs": {
+																							"const": {
+																								"val": "0s"
+																							}
+																						}
+																					}
+																				},
+																				{
+																					"cmp": {
+																						"op": "OpLe",
+																						"lhs": {
+																							"spellTimeToReady": {
+																								"spellId": {
+																									"spellId": 2643
+																								}
+																							}
+																						},
+																						"rhs": {
+																							"const": {
+																								"val": "400ms"
+																							}
+																						}
 																					}
 																				}
-																			},
-																			"rhs": {
-																				"currentMana": {}
-																			}
-																		}
-																	},
-																	{
-																		"cmp": {
-																			"op": "OpGt",
-																			"lhs": {
-																				"spellTimeToReady": {
-																					"spellId": {
-																						"spellId": 2643
-																					}
-																				}
-																			},
-																			"rhs": {
-																				"const": {
-																					"val": "0s"
-																				}
-																			}
-																		}
-																	},
-																	{
-																		"cmp": {
-																			"op": "OpLe",
-																			"lhs": {
-																				"spellTimeToReady": {
-																					"spellId": {
-																						"spellId": 2643
-																					}
-																				}
-																			},
-																			"rhs": {
-																				"const": {
-																					"val": "400ms"
-																				}
-																			}
+																			]
 																		}
 																	}
 																]
@@ -1358,6 +1370,38 @@
 					}
 				},
 				{
+					"name": "Use Aimed Shot",
+					"value": {
+						"const": {
+							"val": "false"
+						}
+					}
+				},
+				{
+					"name": "Use Multi-Shot",
+					"value": {
+						"const": {
+							"val": "true"
+						}
+					}
+				},
+				{
+					"name": "Use Arcane Shot",
+					"value": {
+						"const": {
+							"val": "true"
+						}
+					}
+				},
+				{
+					"name": "Use Summon Hawk",
+					"value": {
+						"const": {
+							"val": "false"
+						}
+					}
+				},
+				{
 					"name": "Ranged range",
 					"value": {
 						"const": {
@@ -1680,38 +1724,6 @@
 									"name": "Weave done"
 								}
 							}
-						}
-					}
-				},
-				{
-					"name": "Use Aimed Shot",
-					"value": {
-						"const": {
-							"val": "false"
-						}
-					}
-				},
-				{
-					"name": "Use Multi-Shot",
-					"value": {
-						"const": {
-							"val": "true"
-						}
-					}
-				},
-				{
-					"name": "Use Arcane Shot",
-					"value": {
-						"const": {
-							"val": "true"
-						}
-					}
-				},
-				{
-					"name": "Use Summon Hawk",
-					"value": {
-						"const": {
-							"val": "false"
 						}
 					}
 				}

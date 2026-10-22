@@ -1,5 +1,6 @@
 siml 1
 spec hunter
+use "common.apl.siml"
 
 var ${Use Aimed Shot} = true
 var ${Use Multi-Shot} = false
@@ -19,10 +20,8 @@ priority:
   cast sniper_shot
       if $use_sniper_shot
       and (aura(rapid_fire).is_active or aura(quick_shots).is_active)
-  reset_sequence("HHA") if ($use_summon_hawk and $use_arcane_shot) and sequence("HHA").is_complete
-  sequence "HHA" [cast summon_hawk, cast summon_hawk, cast arcane_shot]
-      if $use_summon_hawk
-      and $use_arcane_shot
+  reset_sequence("HHA") if hawk_and_arcane and sequence("HHA").is_complete
+  sequence "HHA" [cast summon_hawk, cast summon_hawk, cast arcane_shot] if hawk_and_arcane
   cast summon_hawk if $use_summon_hawk and not $use_arcane_shot
   cast arcane_shot if $use_arcane_shot and not $use_summon_hawk
   cast multi_shot if $use_multi_shot

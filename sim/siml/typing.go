@@ -97,6 +97,9 @@ func (t *typer) in(keys ...any) func() {
 
 // Records that the text at writes the current JSON path.
 func (t *typer) mark(at span) {
+	if t.lines != nil && at.end > len(t.lines.src) {
+		return // In a used file's def.
+	}
 	t.spans = append(t.spans, pathSpan{span: at, path: append([]any{}, t.at...)})
 }
 
@@ -359,7 +362,7 @@ func (t *typer) kindBody(k *aplKind, args *argList) protoreflect.Message {
 
 // `kind` or `kind(args)`, or a call of a def, which reads as the def's value.
 func (t *typer) valueCall(c *callNode) *proto.APLValue {
-	if d := t.defs.byName[c.name.text]; d != nil {
+	if d := t.defs.lookup(c.name.text); d != nil {
 		return t.expand(c, d)
 	}
 	k := t.ix.valueKinds[c.name.text]
@@ -378,7 +381,7 @@ func (t *typer) unknownKind(name string, value bool) string {
 	if value {
 		noun, kinds, others = "value", t.ix.valueKinds, t.ix.actionKinds
 	}
-	if !value && t.defs.byName[name] != nil {
+	if !value && t.defs.lookup(name) != nil {
 		return fmt.Sprintf("%s is a def, which reads as a value, and an action goes here", name)
 	}
 	if others[name] != nil {

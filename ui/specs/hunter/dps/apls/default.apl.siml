@@ -1,44 +1,13 @@
 siml 1
 spec hunter
+use "weave_common.apl.siml" with $wait_at_melee = max(input_delay, $time_to_weave)
 
 var ${Melee weave} = true
 var ${Time to weave} = 100ms
-var ${Ranged range} = 12
-var ${Walk-in range} = 4.99
-var ${Wait at melee} = max(input_delay, $time_to_weave)
-var ${Max Auto Shot delay} = 1.2s
-var ${Max long weave delay} = 4s
-var ${Shoot spot} = max($ranged_range, 11.67)
-var ${Melee spot} = min($walk_in_range, 4.99)
-var ${Run speed} = self.unit_movement_speed
-var ${Time to melee} = 1s * ((self.unit_distance - $melee_spot) / $run_speed)
-var ${Time to range} = 1s * (($shoot_spot - $melee_spot) / $run_speed)
-var ${Time to walk in} = auto_time_to_next(main_hand_auto) - $time_to_melee - input_delay
-var ${Weave done} =
-    max(auto_time_to_next(main_hand_auto), $time_to_melee) + $time_to_range + ($wait_at_melee + input_delay)
-var ${Allowed delay} =
-    max($max_auto_shot_delay, min($max_long_weave_delay, $weave_done - auto_swing_time(ranged) + 1s))
-var ${Weave fits} = auto_time_to_next(ranged_auto) + $allowed_delay >= $weave_done
 var ${Use Aimed Shot} = false
 var ${Use Multi-Shot} = true
 var ${Use Arcane Shot} = true
 var ${Use Summon Hawk} = false
-
-def in_melee = self.unit_distance <= 5
-def at_range = self.unit_distance > 5
-def hawk_and_arcane = $use_summon_hawk and $use_arcane_shot
-def walk_in_now =
-    $time_to_walk_in <= 0s
-    and $weave_fits
-    and auto_time_to_next(ranged_auto) > 500ms
-    and at_range
-def kick_wait = max(spell(strider_kick).time_to_ready, gcd_time_to_ready)
-def shot_soon(wanted, x) =
-    wanted
-    and spell(x).is_known
-    and spell(x).current_cost <= current_mana
-    and spell(x).time_to_ready > 0s
-    and spell(x).time_to_ready <= 400ms
 
 prepull:
   -22s cast hunters_mark
@@ -66,16 +35,11 @@ priority:
 
 group "Weave":
   wait gcd_time_to_ready if gcd_time_to_ready > 0s and gcd_time_to_ready <= 400ms
-  wait kick_wait
-      if in_melee
-      and spell(strider_kick).is_known
-      and spell(strider_kick).current_cost <= current_mana
-      and kick_wait > 0s
-      and kick_wait <= 400ms
+  wait kick_wait if kick_soon
   wait min(400ms, max(input_delay, 0s))
       if at_range
       and gcd_is_ready
-      and (shot_soon($use_arcane_shot, arcane_shot) or shot_soon($use_multi_shot, multi_shot))
+      and ($use_arcane_shot and shot_soon(arcane_shot) or $use_multi_shot and shot_soon(multi_shot))
   wait min($wait_at_melee - auto_time_since_last(main_hand_auto), max(gcd_time_to_ready, input_delay))
   wait min(auto_time_to_next(main_hand_auto) + input_delay, max(gcd_time_to_ready, input_delay))
       if in_melee

@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/wowsims/forever/sim/core/proto"
+	googleProto "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
@@ -38,6 +39,9 @@ type typedFile struct {
 	entries      map[stmt][]entryWrite         // What each entry line and slot row writes.
 	withs        map[stmt][]*proto.APLValue    // The values each use line's with list gives, nil where one does not read.
 	used         map[stmt]*typedFile           // The file each use line reads, typed, where one was read.
+	usedPaths    map[stmt]string               // The path each of those is read at.
+	usedDeclared []declared                    // The variables outside groups that used files declare, which this file's rows may name.
+	ownRotation  *proto.APLRotation            // The rotation this file writes alone, when used files bring more; nil when they bring none.
 	whens        map[*whenStmt]*proto.APLValue // Each when line's condition, read on its own.
 	declarations []*variableDecl
 	explicitType bool // Whether an apl: entry of the file, or of a file it uses, sets the rotation type.
@@ -79,18 +83,19 @@ func resolveUse(from, target string) string {
 func typeFile(ix *schemaIndex, names *Names, tree *syntaxTree, kind Kind, u *uses) *typedFile {
 	t := newTyper(ix, names)
 	f := &typedFile{
-		kind:     kind,
-		tree:     tree,
-		settings: &proto.IndividualSimSettings{},
-		encoded:  map[string]protoreflect.Message{},
-		present:  presentSections(ix, tree),
-		typer:    t,
-		written:  map[stmt]protoreflect.Message{},
-		paths:    map[stmt][]any{},
-		entries:  map[stmt][]entryWrite{},
-		withs:    map[stmt][]*proto.APLValue{},
-		used:     map[stmt]*typedFile{},
-		whens:    map[*whenStmt]*proto.APLValue{},
+		kind:      kind,
+		tree:      tree,
+		settings:  &proto.IndividualSimSettings{},
+		encoded:   map[string]protoreflect.Message{},
+		present:   presentSections(ix, tree),
+		typer:     t,
+		written:   map[stmt]protoreflect.Message{},
+		paths:     map[stmt][]any{},
+		entries:   map[stmt][]entryWrite{},
+		withs:     map[stmt][]*proto.APLValue{},
+		used:      map[stmt]*typedFile{},
+		usedPaths: map[stmt]string{},
+		whens:     map[*whenStmt]*proto.APLValue{},
 	}
 	f.spec = typeSpec(t, tree, kind)
 	if f.spec != nil {
@@ -113,6 +118,7 @@ func typeFile(ix *schemaIndex, names *Names, tree *syntaxTree, kind Kind, u *use
 	}
 
 	used := f.readUses(u)
+	f.importDefs()
 	// A section file's own section is present when it writes it, and otherwise when no used file brings it.
 	if own := ix.sections[kind.Section]; own != nil && !used.present.has(own.Name) {
 		f.present.add(own.Name)
@@ -130,8 +136,14 @@ func typeFile(ix *schemaIndex, names *Names, tree *syntaxTree, kind Kind, u *use
 	f.encodeSimple()
 
 	t.checkReferences(rotation.declarations, rotation.groups, used.declared)
-	t.checkDefsUsed()
+	if f.writesRows() {
+		t.checkDefsUsed()
+	}
+	f.usedDeclared = slices.DeleteFunc(slices.Clone(used.declared.variables), func(d declared) bool { return d.scope.inGroup })
 
+	if len(used.settings) > 0 && f.settings.GetPlayer().GetRotation() != nil {
+		f.ownRotation = googleProto.Clone(f.settings.GetPlayer().GetRotation()).(*proto.APLRotation)
+	}
 	for _, s := range used.settings {
 		merge(f.settings.ProtoReflect(), s.ProtoReflect())
 	}
@@ -147,6 +159,9 @@ func typeFile(ix *schemaIndex, names *Names, tree *syntaxTree, kind Kind, u *use
 				r.Type = proto.APLRotation_TypeSimple
 			}
 		}
+		if f.ownRotation != nil {
+			f.ownRotation.Type = r.Type
+		}
 	}
 	for _, key := range f.present.keys {
 		if c := categoryOf(ix, key); c != "" && !slices.Contains(f.categories, c) {
@@ -156,7 +171,19 @@ func typeFile(ix *schemaIndex, names *Names, tree *syntaxTree, kind Kind, u *use
 	slices.SortFunc(f.categories, func(a, b string) int { return strings.Index(categoryOrder, a) - strings.Index(categoryOrder, b) })
 	f.declarations = rotation.declarations
 	f.diags = t.diags
+	// The names a used file's def writes are that file's, and its own read reports them.
+	inUsed := func(at span) bool { return at.end > len(tree.lines.src) }
+	t.refs = slices.DeleteFunc(t.refs, func(r nameRef) bool { return inUsed(r.span) })
+	t.rawRefs = slices.DeleteFunc(t.rawRefs, inUsed)
 	return f
+}
+
+// The rotation as this file writes it, without what used files bring.
+func (f *typedFile) writtenRotation() *proto.APLRotation {
+	if f.ownRotation != nil {
+		return f.ownRotation
+	}
+	return f.settings.GetPlayer().GetRotation()
 }
 
 func (f *typedFile) player() *proto.Player {
@@ -243,6 +270,27 @@ func presentSections(ix *schemaIndex, tree *syntaxTree) *keySet {
 		}
 	}
 	return present
+}
+
+// Whether the file, or a file it uses, writes an apl: entry, such as type, beyond var and def lines.
+func (f *typedFile) writesAPLEntries() bool {
+	for _, s := range f.tree.sections {
+		if s.name == sectionAPL && s.group == nil && slices.ContainsFunc(s.body, isEntry) {
+			return true
+		}
+	}
+	for _, used := range f.used {
+		if used.writesAPLEntries() {
+			return true
+		}
+	}
+	return false
+}
+
+// Whether the file writes a rotation row. A file with none holds defs and variables for the files that use it, so a
+// def no line of its own calls is no warning there.
+func (f *typedFile) writesRows() bool {
+	return slices.ContainsFunc(f.tree.statements, func(s stmt) bool { _, ok := s.(*rowStmt); return ok })
 }
 
 func groupKey(name string) string { return sectionGroup + " " + jsonString(name) }
@@ -470,6 +518,7 @@ type usedFiles struct {
 // The variables and groups used rotations declare, which a file's references may name.
 type usedDeclarations struct {
 	variables []declared
+	from      map[string]string          // The used file that declares each variable outside groups.
 	groups    map[string]map[string]bool // Each group's placeholders.
 }
 
@@ -479,8 +528,9 @@ func (f *typedFile) readUses(u *uses) usedFiles {
 	t := f.typer
 	ix := t.ix
 	allowed := fileSections(ix, f.kind)
-	used := usedFiles{present: newKeySet(), declared: usedDeclarations{groups: map[string]map[string]bool{}}}
+	used := usedFiles{present: newKeySet(), declared: usedDeclarations{from: map[string]string{}, groups: map[string]map[string]bool{}}}
 	broughtBy := map[string]string{} // The used file that brought each key of used.present.
+	aplEntriesFrom := ""             // The used file that brought apl: entries.
 	for _, s := range f.tree.top {
 		use, ok := s.(*useStmt)
 		if !ok {
@@ -516,6 +566,7 @@ func (f *typedFile) readUses(u *uses) usedFiles {
 		}
 		file := readFile(ix, t.names, sourceText(text), kindOf(path), &uses{path: path, open: u.open, chain: append(slices.Clone(u.chain), path)})
 		f.used[use] = file
+		f.usedPaths[use] = path
 		// The used file's first error stands for all of them; the file itself shows the rest.
 		diags := file.tree.lines.diagnostics(path, file.diags)
 		if i := slices.IndexFunc(diags, func(d Diagnostic) bool { return d.Severity == Error }); i >= 0 {
@@ -530,6 +581,10 @@ func (f *typedFile) readUses(u *uses) usedFiles {
 		sources := newKeySet()           // Where the keys already present came from: this file, or the used file that brought one.
 		clashes := map[string][]string{} // The keys of each source.
 		for _, key := range file.present.keys {
+			// Variables of several files go together; only apl: entries such as type clash.
+			if key == sectionAPL && !(file.writesAPLEntries() && (f.writesAPLEntries() || aplEntriesFrom != "")) {
+				continue
+			}
 			if f.present.has(key) || used.present.has(key) {
 				source := "this file"
 				if !f.present.has(key) {
@@ -568,9 +623,26 @@ func (f *typedFile) readUses(u *uses) usedFiles {
 		} else {
 			f.withs[use] = f.setVariables(rotation, use.with, path)
 		}
+		if file.writesAPLEntries() && aplEntriesFrom == "" {
+			aplEntriesFrom = path
+		}
 		used.settings = append(used.settings, file.settings)
 		used.explicitType = used.explicitType || file.explicitType
 		declared := declaredBy(rotation)
+		var twice []string
+		for _, v := range declared.variables {
+			if v.scope.inGroup {
+				continue
+			}
+			if other, ok := used.declared.from[v.name]; ok {
+				twice = append(twice, fmt.Sprintf("%s is declared in both %s and %s", v.name, other, path))
+			} else {
+				used.declared.from[v.name] = path
+			}
+		}
+		if len(twice) > 0 {
+			t.report("duplicate-variable", strings.Join(twice, "; "), at)
+		}
 		used.declared.variables = append(used.declared.variables, declared.variables...)
 		for group, placeholders := range declared.groups {
 			used.declared.groups[group] = placeholders

@@ -36,7 +36,8 @@ diagnostics. Names complete from sim/siml/names.json, items from the database. V
 
 - `x.apl.siml` a rotation; `x.gear.siml` a gear set (no spec line needed); `x.siml` a full setup with sections.
 - First lines: `siml 1`, then `spec <Player spec oneof field>` (hunter, dps_warrior, retribution_paladin, …), then in
-  an x.siml optionally `talents "…"` and `use "path" [with $var = value, …]` (takes another file's sections in).
+  an x.siml optionally `talents "…"` and `use "path" [with $var = value, …]` (takes another file's sections, variables
+  and defs in; a rotation file of only var and def lines shares them between rotations).
 - `// comment` anywhere (never reaches the proto); `/// note` above a priority or group row is its notes;
   `# ` before a row hides it (kept with "hide": true). Indent with 2 spaces; a long row continues on deeper lines.
 - Raw JSON in backticks stands for anything with no SIML form: `` cast `{"spellId":31016}` ``.

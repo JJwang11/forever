@@ -828,7 +828,7 @@ func (d *Doc) editDef(e AplEdit) ([]TextEdit, error) {
 		return nil, errors.New("a def needs a value")
 	}
 	line := defText(e.Name, e.Params, e.Text)
-	back := readFile(d.ix, d.names, d.src[:def.start]+line+d.src[def.end:], f.kind, nil)
+	back := d.readBack(d.src[:def.start]+line+d.src[def.end:], f.kind)
 	if problem := firstError(back); problem != "" {
 		return nil, errors.New("the def has an error: " + problem)
 	}

@@ -79,6 +79,9 @@ func (t *typer) checkReferences(declarations []*variableDecl, groups []nameUse, 
 			t.report("duplicate-variable", d.name+" is declared twice"+in, d.span)
 		}
 		seen[d.scope][d.name] = true
+		if from, ok := used.from[d.name]; ok && !d.scope.inGroup {
+			t.report("duplicate-variable", fmt.Sprintf("%s is declared in both this file and %s; set it with use … with", d.name, from), d.span)
+		}
 	}
 
 	visible := append(declaredNames(declarations), used.variables...)

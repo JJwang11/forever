@@ -424,7 +424,7 @@ group header it is one of the group's `variables`. Anywhere else, a `when` body 
 `misplaced-var`.
 
 **Duplicates.** A duplicate group name is `duplicate-group`. A duplicate variable name in one scope is
-`duplicate-variable`.
+`duplicate-variable`, and so is a variable outside the groups that this file and a used file both declare (§9).
 
 ### 6.2 Rotation type
 
@@ -709,8 +709,13 @@ name"). A def whose value is not a name gets there what its value gets where a n
 **Where.** At top level or under `apl:`, where a rotation `var` line goes. Anywhere else it is `misplaced-def`, at
 `def`, and the line is still read. A def may be called anywhere in its file, before or after its line.
 
-**Scope.** A def belongs to its file. A file that `use`s another (§9) does not see its defs, and `use … with` cannot
-set one. So `format`, which reads one file, reads every call.
+**Scope.** A def belongs to its file and to the files that `use` it (§9): a file sees its own defs, those of the files
+it uses, and those of the files these use in turn. `use … with` cannot set one. A used file's def reads at the call
+like any other, so the variables and names in its value are read in the calling file, and a diagnostic in its value
+names the used file: `(in def far, at shared.apl.siml:4:5)`. A def named as one of this file's, or that two used files
+declare, is `duplicate-def`, at the `use` line that brings the second. A file that holds such shared defs and
+variables needs no row: `apls/weave_common.apl.siml` of the hunter holds the walk times and conditions both weave
+rotations read.
 
 **Calls.**
 
@@ -743,7 +748,8 @@ set one. So `format`, which reads one file, reads every call.
   `duplicate-parameter`, at the second.
 - A def that calls itself, directly or through other defs, is `reference-cycle` at its name. Its calls read as nothing
   and report nothing more.
-- A def that no row, `var`, `when`, `with` or other def calls is the warning `unused-def`, at its name. A parameter its
+- A def that no row, `var`, `when`, `with` or other def calls is the warning `unused-def`, at its name, in a file
+  that writes a row; a file with no row holds its defs for the files that use it. A parameter its
   value never mentions is the warning `unused-parameter`, at the parameter.
 
 `format` keeps every def line and every call (§12.3), and `print` writes neither.
@@ -1261,14 +1267,19 @@ use "default.apl.siml" with $use_summon_hawk = true
 ```
 
 - **What it takes.** `use` takes every section of the named file into this one, and the sections it takes in
-  turn. The used file is read as the kind its own name gives, and its names with its own `spec` line (§7.1).
+  turn, with its variables and its defs (§6.10). The used file is read as the kind its own name gives, and its
+  names with its own `spec` line (§7.1).
 - **Order.** This file's sections come first, then each used file's in the order of the `use` lines, which
-  decides the order of the groups.
+  decides the order of the groups and of the variables.
 - **The path.** It is read against the folder of the using file, with `/` or `\` between parts and `.` and `..`
   resolved; a path that starts with `/`, `\` or a drive (`C:\`) is read as it is.
 - **Conflicts.** A section present in both files, or brought by two used files, is `section-conflict`. Two
   groups conflict when they share a name, and two talents lines conflict too. A `def` writes no section, so a
-  file whose rotation part is only defs takes in the used rotation whole. The message names where each
+  file whose rotation part is only defs takes in the used rotation whole. Variables are no section either: those
+  of every file go together, and only `apl:` entries such as `type` conflict as `apl:`. A variable outside the
+  groups that this file and a used file both declare is `duplicate-variable` at this file's `var` line, and one that
+  two used files declare is `duplicate-variable` at the `use` line of the second; `with` sets a used file's
+  variable. A def two of the files declare is `duplicate-def` (§6.10). The message names where each
   section was first: this file, or the used file that brought it. A section file that uses a section its kind
   does not hold, or a talents line (§3.3), is `section-not-allowed`. Each is reported once per `use` line,
   listing the sections.
@@ -1277,14 +1288,15 @@ use "default.apl.siml" with $use_summon_hawk = true
   unknown variable is `with-unknown-variable` and one that matches several is `ambiguous-variable`, each at the
   variable, and `with` on a file with no rotation is `with-not-rotation`, at the first variable of the list. A
   list that sets one variable twice is `duplicate-variable`, at the second.
-  Names in `with` values are read in the using file, and variables in them are the used rotation's.
+  Names in `with` values are read in the using file, and variables in them are this file's and the used rotation's.
 - **References.** This file's rows may refer to the variables and groups that a used rotation declares.
 - **Errors in the used file.** The used file's first error, in the order of §13, is reported at the `use` line
   with its own code, and its message names the used file's line and column; the other checks of that `use`
   line are not made. A cycle is `use-cycle`, reported in the file whose `use`
   closes it, and a missing file is `use-not-found`.
 - **Hosts without file access.** A host that cannot read files, such as the site importer, reports
-  `use-refused`. `format` reads one file and never follows `use`.
+  `use-refused`. `format` follows `use` where it can read files, for the variables and defs the used files declare,
+  and writes this file's text alone; without file access it reads the file alone.
 - **Where the codes sit.** Every code of this section but those of `with` is reported at the `use` line's
   path.
 - **Exports.** They never write `use`.
@@ -1543,39 +1555,39 @@ JSON does:
 Each diagnostic has a range, a severity, a code and a message. In repository files under `ui/specs`, warnings
 are errors.
 
-| Code                                                                                                          | Severity | When                                                                  |
-| ------------------------------------------------------------------------------------------------------------- | -------- | --------------------------------------------------------------------- |
-| `bad-character`                                                                                               | error    | a character that starts no token                                      |
-| `unclosed-string`, `unclosed-raw`, `unclosed-bracket`                                                         | error    | end of line or file inside one                                        |
-| `expected-name`                                                                                               | error    | `$` or `%` not followed by a name ("expected a name after $")         |
-| `missing-version`, `unsupported-version`                                                                      | error    | §3.3                                                                  |
-| `misplaced-statement`                                                                                         | error    | §3.3, and a group file's line before its first header (§1)            |
-| `indented-header`, `unknown-section`, `section-not-allowed`, `duplicate-section`                              | error    | §3.2                                                                  |
-| `misplaced-note`, `misplaced-var`, `bad-hidden-row`                                                           | error    | §10, §6.1, §6.3                                                       |
-| `misplaced-when`, `misplaced-def`                                                                             | error    | §6.9, §6.10                                                           |
-| `empty-when`                                                                                                  | warning  | §6.9                                                                  |
-| `missing-time`, `unexpected-time`                                                                             | error    | a prepull row without a time, or another row with one                 |
-| `spec-required`, `unknown-spec`, `spec-mismatch`                                                              | error    | §3.3, §9                                                              |
-| `use-not-found`, `use-cycle`, `use-refused`, `section-conflict`, `with-unknown-variable`, `with-not-rotation` | error    | §9                                                                    |
-| `parse`                                                                                                       | error    | an unexpected token, listing what was expected; §4 note 10            |
-| `write-not`                                                                                                   | error    | `!` ("write not")                                                     |
-| `write-and`, `write-or`                                                                                       | error    | `&&`/`&`, `\|\|`/`\|` ("write and" / "write or")                      |
-| `write-eq`                                                                                                    | error    | `=` where a comparison is expected ("write == to compare")            |
-| `chained-comparison`                                                                                          | error    | `a < b < c` ("comparisons do not chain: write a < b and b < c")       |
-| `expected-if`                                                                                                 | error    | tokens after a complete action ("a condition starts with if")         |
-| `args-on-head`                                                                                                | error    | `aura(x, f=v).p` ("arguments go on the property: aura(x).p(f=v)")     |
-| `unknown-kind`, `unknown-property`, `unknown-field`, `duplicate-field`, `positional-not-allowed`              | error    | §8.3, §5.2; each message carries a did-you-mean                       |
-| `wrong-type`, `unknown-enum`, `bad-literal`, `bad-raw`                                                        | error    | a value that does not fit its field                                   |
-| `unknown-slot`, `duplicate-slot`                                                                              | error    | §5.3                                                                  |
-| `unknown-name`                                                                                                | error    | §7.2; the message names where the name is, or a did-you-mean          |
-| `spell-variable`                                                                                              | error    | §7.2; while `ActionID` has no string member                           |
-| `icd-trigger`                                                                                                 | error    | §7.4; an `icdOnlyBy` aura or an `icdOnlyItems` item outside ICD kinds |
-| `ambiguous-variable`                                                                                          | error    | §7.5                                                                  |
-| `duplicate-group`, `duplicate-variable`, `reference-cycle`                                                    | error    | §6.1, §7.5, §6.10; a `with` list that sets one variable twice (§9)    |
-| `undefined-variable`, `undefined-group`, `undefined-placeholder`, `undefined-sequence`                        | warning  | §7.5                                                                  |
-| `def-shadows`, `duplicate-def`, `duplicate-parameter`, `def-arity`, `positional-only`                         | error    | §6.10                                                                 |
-| `unused-def`, `unused-parameter`                                                                              | warning  | §6.10                                                                 |
-| `raw-ref`                                                                                                     | error    | §7.3; reported by the repository check only, never by the parser      |
+| Code                                                                                                          | Severity | When                                                                                       |
+| ------------------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------ |
+| `bad-character`                                                                                               | error    | a character that starts no token                                                           |
+| `unclosed-string`, `unclosed-raw`, `unclosed-bracket`                                                         | error    | end of line or file inside one                                                             |
+| `expected-name`                                                                                               | error    | `$` or `%` not followed by a name ("expected a name after $")                              |
+| `missing-version`, `unsupported-version`                                                                      | error    | §3.3                                                                                       |
+| `misplaced-statement`                                                                                         | error    | §3.3, and a group file's line before its first header (§1)                                 |
+| `indented-header`, `unknown-section`, `section-not-allowed`, `duplicate-section`                              | error    | §3.2                                                                                       |
+| `misplaced-note`, `misplaced-var`, `bad-hidden-row`                                                           | error    | §10, §6.1, §6.3                                                                            |
+| `misplaced-when`, `misplaced-def`                                                                             | error    | §6.9, §6.10                                                                                |
+| `empty-when`                                                                                                  | warning  | §6.9                                                                                       |
+| `missing-time`, `unexpected-time`                                                                             | error    | a prepull row without a time, or another row with one                                      |
+| `spec-required`, `unknown-spec`, `spec-mismatch`                                                              | error    | §3.3, §9                                                                                   |
+| `use-not-found`, `use-cycle`, `use-refused`, `section-conflict`, `with-unknown-variable`, `with-not-rotation` | error    | §9                                                                                         |
+| `parse`                                                                                                       | error    | an unexpected token, listing what was expected; §4 note 10                                 |
+| `write-not`                                                                                                   | error    | `!` ("write not")                                                                          |
+| `write-and`, `write-or`                                                                                       | error    | `&&`/`&`, `\|\|`/`\|` ("write and" / "write or")                                           |
+| `write-eq`                                                                                                    | error    | `=` where a comparison is expected ("write == to compare")                                 |
+| `chained-comparison`                                                                                          | error    | `a < b < c` ("comparisons do not chain: write a < b and b < c")                            |
+| `expected-if`                                                                                                 | error    | tokens after a complete action ("a condition starts with if")                              |
+| `args-on-head`                                                                                                | error    | `aura(x, f=v).p` ("arguments go on the property: aura(x).p(f=v)")                          |
+| `unknown-kind`, `unknown-property`, `unknown-field`, `duplicate-field`, `positional-not-allowed`              | error    | §8.3, §5.2; each message carries a did-you-mean                                            |
+| `wrong-type`, `unknown-enum`, `bad-literal`, `bad-raw`                                                        | error    | a value that does not fit its field                                                        |
+| `unknown-slot`, `duplicate-slot`                                                                              | error    | §5.3                                                                                       |
+| `unknown-name`                                                                                                | error    | §7.2; the message names where the name is, or a did-you-mean                               |
+| `spell-variable`                                                                                              | error    | §7.2; while `ActionID` has no string member                                                |
+| `icd-trigger`                                                                                                 | error    | §7.4; an `icdOnlyBy` aura or an `icdOnlyItems` item outside ICD kinds                      |
+| `ambiguous-variable`                                                                                          | error    | §7.5                                                                                       |
+| `duplicate-group`, `duplicate-variable`, `reference-cycle`                                                    | error    | §6.1, §7.5, §6.10; a variable two files declare, or a `with` list that sets one twice (§9) |
+| `undefined-variable`, `undefined-group`, `undefined-placeholder`, `undefined-sequence`                        | warning  | §7.5                                                                                       |
+| `def-shadows`, `duplicate-def`, `duplicate-parameter`, `def-arity`, `positional-only`                         | error    | §6.10; a def two files declare, at the `use` line (§9)                                     |
+| `unused-def`, `unused-parameter`                                                                              | warning  | §6.10                                                                                      |
+| `raw-ref`                                                                                                     | error    | §7.3; reported by the repository check only, never by the parser                           |
 
 **Recovery.** Each statement is read on its own, so a bad statement costs only itself. A file with any error
 produces no proto. The diagnostics are exactly these:
@@ -1703,45 +1715,14 @@ show `//`; `print` writes none. Each file reads back to the proto it prints (§1
 ```
 siml 1
 spec hunter
+use "weave_common.apl.siml" with $wait_at_melee = max(input_delay, $time_to_weave)
 
 var ${Melee weave} = true
 var ${Time to weave} = 100ms
-var ${Ranged range} = 12
-var ${Walk-in range} = 4.99
-var ${Wait at melee} = max(input_delay, $time_to_weave)
-var ${Max Auto Shot delay} = 1.2s
-var ${Max long weave delay} = 4s
-var ${Shoot spot} = max($ranged_range, 11.67)
-var ${Melee spot} = min($walk_in_range, 4.99)
-var ${Run speed} = self.unit_movement_speed
-var ${Time to melee} = 1s * ((self.unit_distance - $melee_spot) / $run_speed)
-var ${Time to range} = 1s * (($shoot_spot - $melee_spot) / $run_speed)
-var ${Time to walk in} = auto_time_to_next(main_hand_auto) - $time_to_melee - input_delay
-var ${Weave done} =
-    max(auto_time_to_next(main_hand_auto), $time_to_melee) + $time_to_range + ($wait_at_melee + input_delay)
-var ${Allowed delay} =
-    max($max_auto_shot_delay, min($max_long_weave_delay, $weave_done - auto_swing_time(ranged) + 1s))
-var ${Weave fits} = auto_time_to_next(ranged_auto) + $allowed_delay >= $weave_done
 var ${Use Aimed Shot} = false
 var ${Use Multi-Shot} = true
 var ${Use Arcane Shot} = true
 var ${Use Summon Hawk} = false
-
-def in_melee = self.unit_distance <= 5
-def at_range = self.unit_distance > 5
-def hawk_and_arcane = $use_summon_hawk and $use_arcane_shot
-def walk_in_now =
-    $time_to_walk_in <= 0s
-    and $weave_fits
-    and auto_time_to_next(ranged_auto) > 500ms
-    and at_range
-def kick_wait = max(spell(strider_kick).time_to_ready, gcd_time_to_ready)
-def shot_soon(wanted, x) =
-    wanted
-    and spell(x).is_known
-    and spell(x).current_cost <= current_mana
-    and spell(x).time_to_ready > 0s
-    and spell(x).time_to_ready <= 400ms
 
 prepull:
   -22s cast hunters_mark
@@ -1769,16 +1750,11 @@ priority:
 
 group "Weave":
   wait gcd_time_to_ready if gcd_time_to_ready > 0s and gcd_time_to_ready <= 400ms
-  wait kick_wait
-      if in_melee
-      and spell(strider_kick).is_known
-      and spell(strider_kick).current_cost <= current_mana
-      and kick_wait > 0s
-      and kick_wait <= 400ms
+  wait kick_wait if kick_soon
   wait min(400ms, max(input_delay, 0s))
       if at_range
       and gcd_is_ready
-      and (shot_soon($use_arcane_shot, arcane_shot) or shot_soon($use_multi_shot, multi_shot))
+      and ($use_arcane_shot and shot_soon(arcane_shot) or $use_multi_shot and shot_soon(multi_shot))
   wait min($wait_at_melee - auto_time_since_last(main_hand_auto), max(gcd_time_to_ready, input_delay))
   wait min(auto_time_to_next(main_hand_auto) + input_delay, max(gcd_time_to_ready, input_delay))
       if in_melee
@@ -1797,10 +1773,13 @@ Some notes on this file:
 
 - The JSON's `"type": "TypeAPL"` is inferred from the file kind (§6.2).
 - `"true"` and `"false"` consts print bare.
-- `$ranged_range` folds to `Ranged range`, while the proto keeps the exact names that
+- The walk times and the weave's conditions come from `apls/weave_common.apl.siml`, which `apls/clean_weave.apl.siml`
+  uses too, and which takes `in_melee`, `at_range` and `hawk_and_arcane` from `apls/common.apl.siml` (§9). Their
+  variables follow this file's in the proto, and `with` sets `Wait at melee` from this file's `$time_to_weave`.
+- `$shoot_spot` folds to `Shoot spot`, which the used file declares, while the proto keeps the exact names that
   `ui/specs/hunter/dps/spec.ts` sets.
-- `shot_soon($use_arcane_shot, arcane_shot)` reads as the def's value with its arguments for `wanted` and `x` (§6.10),
-  in parentheses within the row's `or`; `in_melee` and `at_range` stand for their comparisons wherever they are called.
+- `shot_soon(arcane_shot)` reads as the used file's def with `arcane_shot` for `x` (§6.10), in parentheses within the
+  row's `and`.
 - The three rows under `when walk_in_now:` each read as `<row> if walk_in_now` (§6.9), so `print` writes the def's
   four conditions on each of them.
 

@@ -2,6 +2,7 @@ package siml
 
 import (
 	"fmt"
+	"maps"
 	"slices"
 	"strconv"
 	"strings"
@@ -14,21 +15,54 @@ import (
 
 // A file's defs, as typing reads them.
 type defTyping struct {
-	byName map[string]*defStmt
-	cyclic map[*defStmt]bool             // A def that calls itself through other defs, which no call expands.
-	used   map[*defStmt]bool             // Called by a row, var line, when line, with list or other def.
-	values map[*proto.APLValue]*callNode // The value each call reads as, which format writes as the call.
-	count  int                           // The calls expanded so far.
+	byName   map[string]*defStmt     // The file's own defs.
+	imported map[string]*importedDef // The defs of the files it uses, and of the files those use in turn (SPEC.md §9).
+	from     map[*defStmt]*importedDef
+	cyclic   map[*defStmt]bool             // A def that calls itself through other defs, which no call expands.
+	used     map[*defStmt]bool             // Called by a row, var line, when line, with list or other def.
+	values   map[*proto.APLValue]*callNode // The value each call reads as, which format writes as the call.
+	count    int                           // The calls expanded so far.
 }
 
 // How many calls a file's defs expand at most, so that defs that call each other several times stay quick to read.
 const maxExpansions = 1 << 16
 
+// A def a used file declares. Its spans are offset by base, past the text of this file and of the files taken in
+// before it, so a diagnostic in its value is told apart from one in the arguments a call here passes it.
+type importedDef struct {
+	*defStmt
+	path  string   // The file that declares it.
+	lines *lineMap // That file's text.
+	base  int
+}
+
+// The def a call of name reads: the file's own, else one a used file declares.
+func (d *defTyping) lookup(name string) *defStmt {
+	if own := d.byName[name]; own != nil {
+		return own
+	}
+	if in := d.imported[name]; in != nil {
+		return in.defStmt
+	}
+	return nil
+}
+
 // A def call being read, within the calls being read around it.
 type expansion struct {
 	def   *defStmt
+	from  *importedDef // Where the def comes from, when a used file declares it.
 	call  span
 	outer *expansion
+}
+
+// Where offset, a place in the def's value or name, is: line and column, after the path for a used file's def.
+func (e *expansion) where(offset int, lines *lineMap) string {
+	if e.from != nil {
+		at := e.from.lines.position(offset - e.from.base)
+		return fmt.Sprintf("%s:%d:%d", e.from.path, at.Line, at.Col)
+	}
+	at := lines.position(offset)
+	return fmt.Sprintf("%d:%d", at.Line, at.Col)
 }
 
 // d as the calls being read report it: at the call when it lies in the def's value, its place in the def added to
@@ -39,13 +73,11 @@ func (e *expansion) relocate(d diag, lines *lineMap) diag {
 		value := e.def.value.pos()
 		switch {
 		case value.start <= d.start && d.end <= value.end:
-			at := lines.position(d.start)
-			d.message += fmt.Sprintf(" (in def %s, at %d:%d)", e.def.name.text, at.Line, at.Col)
+			d.message += fmt.Sprintf(" (in def %s, at %s)", e.def.name.text, e.where(d.start, lines))
 			d.span = e.call
 		case !argument:
 			argument = true
-			at := lines.position(e.def.name.start)
-			d.message += fmt.Sprintf(" (passed to def %s, at %d:%d)", e.def.name.text, at.Line, at.Col)
+			d.message += fmt.Sprintf(" (passed to def %s, at %s)", e.def.name.text, e.where(e.def.name.start, lines))
 		}
 	}
 	return d
@@ -58,7 +90,7 @@ func (d *defStmt) isParam(word string) bool {
 // Reads the file's defs, wherever they are, reporting what SPEC.md §6.10 refuses: a name that means something else, a
 // def or parameter written twice, a parameter its value never mentions, and a def that calls itself.
 func (t *typer) readDefs(tree *syntaxTree) {
-	t.defs = defTyping{byName: map[string]*defStmt{}, cyclic: map[*defStmt]bool{}, used: map[*defStmt]bool{}, values: map[*proto.APLValue]*callNode{}}
+	t.defs = defTyping{byName: map[string]*defStmt{}, imported: map[string]*importedDef{}, from: map[*defStmt]*importedDef{}, cyclic: map[*defStmt]bool{}, used: map[*defStmt]bool{}, values: map[*proto.APLValue]*callNode{}}
 	var defs []*defStmt
 	for _, s := range tree.inFileOrder() {
 		d, ok := s.(*defStmt)
@@ -147,7 +179,7 @@ func (t *typer) checkDefsUsed() {
 
 // Reads what follows as d's value at the call c, so a diagnostic in it moves to the call; gives what ends the call.
 func (t *typer) callSite(d *defStmt, c *callNode) func() {
-	t.site = &expansion{def: d, call: c.span, outer: t.site}
+	t.site = &expansion{def: d, from: t.defs.from[d], call: c.span, outer: t.site}
 	return func() { t.site = t.site.outer }
 }
 
@@ -208,7 +240,7 @@ func (t *typer) named(n node) (value node, done func(), ok bool) {
 	if !isCall || c.args != nil {
 		return nil, nil, false
 	}
-	d := t.defs.byName[c.name.text]
+	d := t.defs.lookup(c.name.text)
 	if d == nil {
 		return nil, nil, false
 	}
@@ -293,6 +325,132 @@ func (t *typer) substitute(n node, args map[string]node) (node, bool) {
 	}
 	out := sub(n)
 	return out, ok
+}
+
+// Takes in the defs of the files the use lines read, and of the files those use in turn, each file once (SPEC.md §9).
+// A def named as one of this file's, or as one another used file declares, is duplicate-def at the use line that
+// brings it.
+func (f *typedFile) importDefs() {
+	t := f.typer
+	base := len(t.lines.src) + 1
+	taken := map[string]bool{}
+	for _, s := range f.tree.top {
+		use, ok := s.(*useStmt)
+		if !ok || f.used[use] == nil {
+			continue
+		}
+		var clashes []string
+		var take func(u *typedFile, path string)
+		take = func(u *typedFile, path string) {
+			if taken[path] {
+				return
+			}
+			taken[path] = true
+			for _, name := range slices.Sorted(maps.Keys(u.typer.defs.byName)) {
+				d := u.typer.defs.byName[name]
+				if t.defs.byName[name] != nil {
+					clashes = append(clashes, fmt.Sprintf("%s is in both this file and %s", name, path))
+					continue
+				}
+				if other := t.defs.imported[name]; other != nil {
+					clashes = append(clashes, fmt.Sprintf("%s is in both %s and %s", name, other.path, path))
+					continue
+				}
+				in := &importedDef{defStmt: shiftedDef(d, base), path: path, lines: u.typer.lines, base: base}
+				t.defs.imported[name] = in
+				t.defs.from[in.defStmt] = in
+				t.defs.cyclic[in.defStmt] = u.typer.defs.cyclic[d]
+			}
+			base += len(u.typer.lines.src) + 1
+			for _, s := range u.tree.top {
+				if x, ok := s.(*useStmt); ok && u.used[x] != nil {
+					take(u.used[x], resolveUse(path, x.path.value))
+				}
+			}
+		}
+		take(f.used[use], f.usedPaths[use])
+		if len(clashes) > 0 {
+			t.report("duplicate-def", "the def "+strings.Join(clashes, "; the def "), use.path.span)
+		}
+	}
+}
+
+// A copy of d with every span of its name, parameters and value moved on by by.
+func shiftedDef(d *defStmt, by int) *defStmt {
+	at := func(s span) span { return span{start: s.start + by, end: s.end + by} }
+	moved := func(n name) name { return name{span: at(n.span), text: n.text} }
+	var shift func(n node) node
+	args := func(l *argList) *argList {
+		if l == nil {
+			return nil
+		}
+		out := &argList{span: at(l.span), items: make([]arg, len(l.items))}
+		for i, a := range l.items {
+			out.items[i] = arg{span: at(a.span), value: shift(a.value)}
+			if a.name != nil {
+				n := moved(*a.name)
+				out.items[i].name = &n
+			}
+		}
+		return out
+	}
+	all := func(nodes []node) []node {
+		out := make([]node, len(nodes))
+		for i, x := range nodes {
+			out[i] = shift(x)
+		}
+		return out
+	}
+	shift = func(n node) node {
+		switch x := n.(type) {
+		case *literalNode:
+			return &literalNode{span: at(x.span), text: x.text}
+		case *stringNode:
+			return &stringNode{span: at(x.span), value: x.value}
+		case *boolNode:
+			return &boolNode{span: at(x.span), value: x.value}
+		case *noneNode:
+			return &noneNode{span: at(x.span)}
+		case *varNode:
+			return &varNode{span: at(x.span), name: x.name, braced: x.braced}
+		case *placeholderNode:
+			return &placeholderNode{span: at(x.span), name: x.name, braced: x.braced}
+		case *rawNode:
+			return &rawNode{span: at(x.span), json: x.json}
+		case *parenNode:
+			return &parenNode{span: at(x.span), expr: shift(x.expr)}
+		case *notNode:
+			return &notNode{span: at(x.span), operand: shift(x.operand)}
+		case *logicNode:
+			return &logicNode{span: at(x.span), op: x.op, operands: all(x.operands)}
+		case *compareNode:
+			return &compareNode{span: at(x.span), op: x.op, left: shift(x.left), right: shift(x.right)}
+		case *mathNode:
+			return &mathNode{span: at(x.span), op: x.op, left: shift(x.left), right: shift(x.right)}
+		case *callNode:
+			return &callNode{span: at(x.span), name: moved(x.name), args: args(x.args)}
+		case *memberNode:
+			return &memberNode{span: at(x.span), object: moved(x.object), name: moved(x.name)}
+		case *accessorNode:
+			out := &accessorNode{span: at(x.span), head: moved(x.head), subject: shift(x.subject), prop: moved(x.prop), args: args(x.args)}
+			if x.unit != nil {
+				u := moved(*x.unit)
+				out.unit = &u
+			}
+			return out
+		case *listNode:
+			return &listNode{span: at(x.span), items: all(x.items)}
+		}
+		return n
+	}
+	out := *d
+	out.name = moved(d.name)
+	out.params = make([]name, len(d.params))
+	for i, p := range d.params {
+		out.params[i] = moved(p)
+	}
+	out.value = shift(d.value)
+	return &out
 }
 
 // A node as it is written, laid out as SIML lays out an expression (SPEC.md §12.3): single spaces around operators,

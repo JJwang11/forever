@@ -68,6 +68,9 @@ A spec's presets are SIML files under `ui/specs/<class>/<spec>/`. `sim/siml/SPEC
 - `builds/<name>.siml` holds a Go suite's test build (`core.GetTestBuild`), a whole setup, or a preset build the
   site offers, which states only what it changes over `defaults.siml`. A `use` line takes a gear set or a rotation
   from its own file, by a path from the build's folder: `use "../gear_sets/p1.gear.siml"`.
+- Rotations that share variables and defs `use` one file that holds only those, as the hunter's weave rotations use
+  `apls/weave_common.apl.siml` (SPEC.md §9): its defs and variables read in each rotation, which adds its own and
+  sets a shared variable's value with `use … with`.
 - `defaults.siml` holds the setup the spec's page starts with, a whole setup in the same form, with what the page
   sets on top of it stated: the race, `reaction_time_ms 100`, the rotation type (`apl: type auto` when the spec has
   no default rotation), for a tank `in_front_of_target` and `tanks player1`, and for a healer `target_dummies 9`.

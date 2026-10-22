@@ -126,7 +126,7 @@ func (d *Doc) readWords() []wordRole {
 		if e.args == nil && parameter(e.name) {
 			return
 		}
-		if d.typed.typer.defs.byName[e.name.text] != nil {
+		if d.typed.typer.defs.lookup(e.name.text) != nil {
 			push(e.name.span, wordRole{role: "def"})
 			args(e.args, nil, nil)
 			return
@@ -435,8 +435,8 @@ func (d *Doc) hover(at Position, c *DatabaseCatalog) (Hover, bool) {
 		parts := []string{what}
 		if home, declaration, ok := d.declarationOf(o); ok {
 			text := home.lineText(declaration.start)
-			if def := d.typed.typer.defs.byName[o.name]; o.kind == "def" && def != nil {
-				text = strings.Join(statementLines(defLine(def, d.src, 0)), "\n")
+			if def := home.typed.typer.defs.byName[o.name]; o.kind == "def" && def != nil {
+				text = strings.Join(statementLines(defLine(def, home.src, 0)), "\n")
 			}
 			parts = append(parts, fence(text, "siml"))
 			if expansion := d.expansionAt(o.span); o.kind == "def" && expansion != "" {

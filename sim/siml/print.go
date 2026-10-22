@@ -156,6 +156,7 @@ type printer struct {
 	kind         kindScope   // The kind whose own fields are being printed.
 	// The values def calls read as, which format writes as the calls.
 	calls map[*proto.APLValue]string
+	uses  *uses // How format reads the printed text back: following its use lines, or nil for one file alone.
 }
 
 // The call a value is read from, as format writes it, or "".
@@ -1297,7 +1298,7 @@ func (f *typedFile) writtenJSON(s stmt) (string, bool) {
 func verified(p *printer, kind Kind, items []*item) string {
 	for {
 		out := layout(items)
-		f := readFile(p.ix, p.names, out, kind, nil)
+		f := readFile(p.ix, p.names, out, kind, p.uses)
 		var read []stmt
 		for _, s := range f.tree.inFileOrder() {
 			if readsBack(s) {

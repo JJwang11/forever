@@ -77,7 +77,7 @@ func (s *server) request(ctx context.Context, method string, params json.RawMess
 	case "textDocument/semanticTokens/full":
 		return s.withDoc(uri, SemanticTokens{Data: []uint32{}}, func(a *analysis) any { return semanticTokens(a.doc) })
 	case "textDocument/formatting":
-		return s.withDoc(uri, []TextEdit{}, func(a *analysis) any { return formatting(a) })
+		return s.withDoc(uri, []TextEdit{}, func(a *analysis) any { return formatting(a, s.openerLocked(nil)) })
 	case "textDocument/codeAction":
 		return s.withDoc(uri, []CodeAction{}, func(a *analysis) any {
 			out := []CodeAction{}
@@ -208,10 +208,11 @@ func semanticTokens(d *siml.Doc) SemanticTokens {
 }
 
 // The file as format writes it (SPEC.md §12.1), as the one smallest edit that turns the text into it, so the editor
-// keeps the cursor and folding outside it and undo restores it in one step; none while the text has an error.
-func formatting(a *analysis) []TextEdit {
+// keeps the cursor and folding outside it and undo restores it in one step; none while the text has an error. The
+// files its use lines name are read through open.
+func formatting(a *analysis, open siml.Opener) []TextEdit {
 	text := a.doc.Text()
-	formatted, err := siml.Format(a.doc.Path(), []byte(text), a.names)
+	formatted, err := siml.Format(a.doc.Path(), []byte(text), a.names, open)
 	if err != nil {
 		return []TextEdit{}
 	}

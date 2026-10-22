@@ -53,12 +53,19 @@ func (d *Doc) aplFile() (*typedFile, error) {
 	case hasError(f.diags):
 		return nil, errors.New("the text has errors; fix them to edit the rotation")
 	}
+	// A used file that brings only variables and defs leaves the rows to this file.
 	for _, s := range f.tree.top {
-		if use, ok := s.(*useStmt); ok {
+		if use, ok := s.(*useStmt); ok && slices.ContainsFunc(f.used[use].present.keys, func(key string) bool { return key != sectionAPL }) {
 			return nil, fmt.Errorf("the rotation is put together with %s; edit it as text", use.path.value)
 		}
 	}
 	return f, nil
+}
+
+// How the panel's edits read the edited text back: following its use lines as the text was read.
+func (d *Doc) readBack(src string, kind Kind) *typedFile {
+	self := resolveUse("", d.path)
+	return readFile(d.ix, d.names, src, kind, &uses{refused: d.open == nil, path: self, open: d.open, chain: []string{self}})
 }
 
 // The edits that apply edits, in order, to the rotation the text writes: only the statements they change are printed
@@ -96,13 +103,13 @@ func (d *Doc) Splice(edits []AplEdit) ([]TextEdit, error) {
 	}
 	for round := 0; round < spliceRounds; round++ {
 		out := w().statements()
-		back := readFile(d.ix, d.names, out.result(), f.kind, nil)
+		back := d.readBack(out.result(), f.kind)
 		// The forms the printer writes read back, so an error is the edited rotation's own: a cycle, or a name written
 		// twice.
 		if problem := firstError(back); problem != "" {
 			return nil, errors.New("the edited rotation has an error: " + problem)
 		}
-		got := back.settings.GetPlayer().GetRotation()
+		got := back.writtenRotation()
 		// A def call an edit writes reads as what the new text gives it, which the statements around it then hold.
 		if m.adopt(back, got) {
 			round--
@@ -576,7 +583,7 @@ func columnOf(s stmt, lines *lineMap) int {
 
 func newRotationModel(ix *schemaIndex, f *typedFile) *rotationModel {
 	lines := f.tree.lines
-	m := &rotationModel{ix: ix, f: f, lines: lines, rotation: f.settings.GetPlayer().GetRotation(), blocks: map[*whenStmt]*spliceWhen{}, dropped: map[*whenStmt]bool{}, gone: map[*defStmt]bool{}}
+	m := &rotationModel{ix: ix, f: f, lines: lines, rotation: f.writtenRotation(), blocks: map[*whenStmt]*spliceWhen{}, dropped: map[*whenStmt]bool{}, gone: map[*defStmt]bool{}}
 	if m.rotation == nil {
 		m.rotation = &proto.APLRotation{}
 	}

@@ -100,7 +100,7 @@ func TestSpliceCases(t *testing.T) {
 			}
 			// A file in canonical form stays in it.
 			for _, src := range [][]byte{text, want} {
-				if formatted, err := Format(file, src, names); err != nil || string(formatted) != string(src) {
+				if formatted, err := Format(file, src, names, nil); err != nil || string(formatted) != string(src) {
 					t.Errorf("format changes the text (%v):\n%s", err, formatted)
 				}
 			}
@@ -182,7 +182,9 @@ func TestSplice(t *testing.T) {
 	})
 
 	t.Run("refuses a file of another kind, a text with errors, and a rotation put together from other files", func(t *testing.T) {
-		open := func(string) ([]byte, error) { return []byte(textLines("siml 1", "spec hunter")), nil }
+		open := func(string) ([]byte, error) {
+			return []byte(textLines("siml 1", "spec hunter", "", "priority:", "  cast arcane_shot")), nil
+		}
 		for _, c := range []struct{ path, text, want string }{
 			{"x.siml", spliceRows, "the panel edits the rotation of an x.apl.siml file"},
 			{splicePath, strings.Replace(spliceRows, "cast multi_shot", "cast multi", 1), "the text has errors; fix them to edit the rotation"},
@@ -191,6 +193,23 @@ func TestSplice(t *testing.T) {
 			if got := spliceRefused(t, c.path, c.text, "[]", open); got != c.want {
 				t.Errorf("got %q, want %q", got, c.want)
 			}
+		}
+	})
+
+	t.Run("edits a rotation whose used file brings only variables and defs, reading its calls and references back", func(t *testing.T) {
+		used := textLines("siml 1", "spec hunter", "", "var $range = 12", "def far = self.unit_distance > $range")
+		open := func(string) ([]byte, error) { return []byte(used), nil }
+		text := textLines("siml 1", "spec hunter", `use "y.apl.siml"`, "", "var $a = 1", "", "priority:", "  cast multi_shot if far", "  cast arcane_shot")
+		d := Analyze(splicePath, []byte(text), corpusNames(t), open)
+		out, err := d.Splice(aplEdits(t, `[{"op":"set","path":["valueVariables",0,"value"],"value":{"variableRef":{"name":"range"}}}]`))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(out) != 1 || out[0].NewText != "var $a = $range\n" {
+			t.Errorf("edits %+v", out)
+		}
+		if _, err := d.Splice(aplEdits(t, `[{"op":"set","path":["valueVariables",1,"value"],"value":{"const":{"val":"3"}}}]`)); err == nil || !strings.Contains(err.Error(), "valueVariables[1] does not exist") {
+			t.Errorf("an edit of the used file's variable: %v", err)
 		}
 	})
 

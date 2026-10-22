@@ -21,7 +21,7 @@ type occurrence struct {
 	definition bool
 	scope      scope  // The group a variable or placeholder belongs to; for a parameter, its def's name as the group.
 	resolved   bool   // Whether this file, or the file a use … with bind sets a variable of, declares what it names.
-	file       string // For a use … with bind: the file that declares the variable it sets.
+	file       string // The used file that declares what it names, for a use … with bind or a used file's def.
 }
 
 // Visits every node under n, parents before children in the order the text writes them, with the node that holds it.
@@ -264,6 +264,10 @@ func (d *Doc) readOccurrences() []occurrence {
 					out = append(out, occurrence{kind: "def", name: x.name.text, span: x.name.span, resolved: true})
 					break
 				}
+				if in := d.typed.typer.defs.imported[x.name.text]; in != nil {
+					out = append(out, occurrence{kind: "def", name: x.name.text, span: x.name.span, resolved: true, file: in.path})
+					break
+				}
 				kind := ix.actionKinds[x.name.text]
 				if kind == nil {
 					kind = ix.valueKinds[x.name.text]
@@ -490,8 +494,8 @@ func (f foundOccurrence) location() Location {
 	return Location{Path: f.doc.path, Range: f.doc.rangeOf(f.o.span)}
 }
 
-// Every occurrence of what key names in home, and, for a group or a variable outside the groups of a saved file, the
-// occurrences that name it through a use line in the .siml files near home and in from.
+// Every occurrence of what key names in home, and, for a group, a def or a variable outside the groups of a saved
+// file, the occurrences that name it through a use line in the .siml files near home and in from.
 func everywhere(home *Doc, key occurrence, from *Doc) []foundOccurrence {
 	var out []foundOccurrence
 	for _, o := range home.occurrences() {
@@ -499,7 +503,7 @@ func everywhere(home *Doc, key occurrence, from *Doc) []foundOccurrence {
 			out = append(out, foundOccurrence{home, o})
 		}
 	}
-	if key.kind != "variable" && key.kind != "group" || key.scope.inGroup || home.path == "" {
+	if key.kind != "variable" && key.kind != "group" && key.kind != "def" || key.scope.inGroup || home.path == "" {
 		return out
 	}
 	files := nearbyFiles(home.path)

@@ -402,7 +402,7 @@ func simlFmt(out, errOut io.Writer, args []string) error {
 			problems = repositoryProblems(doc, catalog, path, f)
 		}
 		// A file that Format finds an error in has that error in its parse too, so it fails.
-		formatted, err := siml.Format(path, src, names)
+		formatted, err := siml.Format(path, src, names, siml.ReadSource)
 		if diags := (siml.Diagnostics{}); err != nil && !errors.As(err, &diags) {
 			return err
 		}

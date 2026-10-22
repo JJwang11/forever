@@ -384,7 +384,8 @@ func (b *completer) values() {
 	b.units(true)
 }
 
-// The file's defs, each with its parameters, and the parameters of the def whose value the cursor is in.
+// The file's defs and those of the files it uses, each with its parameters, and the parameters of the def whose value
+// the cursor is in.
 func (b *completer) defs() {
 	for _, p := range b.ctx.params {
 		b.add(p, CompletionTypeParameter, ranked(0).with("", "parameter"))
@@ -404,6 +405,22 @@ func (b *completer) defs() {
 			signature, insert = o.name+"("+strings.Join(p, ", ")+")", o.name+"("
 		}
 		b.add(o.name, CompletionFunction, ranked(1).with(insert, "def "+signature))
+	}
+	if b.d.typed == nil {
+		return
+	}
+	imported := b.d.typed.typer.defs.imported
+	for _, name := range slices.Sorted(maps.Keys(imported)) {
+		in := imported[name]
+		signature, insert := name, name
+		if len(in.params) > 0 {
+			p := make([]string, len(in.params))
+			for i, x := range in.params {
+				p[i] = x.text
+			}
+			signature, insert = name+"("+strings.Join(p, ", ")+")", name+"("
+		}
+		b.add(name, CompletionFunction, ranked(1).with(insert, "def "+signature+", from "+filepath.Base(in.path)))
 	}
 }
 
@@ -478,10 +495,15 @@ func (b *completer) refs(ns Namespace) {
 		b.add(n.Name, CompletionConstant, ranked(rank).with("", fmt.Sprintf("%s(%d%s)%s", game, n.Entry.SpellID, tag, from)))
 	}
 	if b.d.typed != nil {
-		defs := b.d.typed.typer.defs.byName
-		for _, name := range slices.Sorted(maps.Keys(defs)) {
-			if d := defs[name]; len(d.params) == 0 && b.names(d.value, ns) {
+		defs := b.d.typed.typer.defs
+		for _, name := range slices.Sorted(maps.Keys(defs.byName)) {
+			if d := defs.byName[name]; len(d.params) == 0 && b.names(d.value, ns) {
 				b.add(name, CompletionFunction, ranked(1).with("", "def "+name+" = "+nodeText(d.value, b.d.src)))
+			}
+		}
+		for _, name := range slices.Sorted(maps.Keys(defs.imported)) {
+			if d := defs.imported[name]; len(d.params) == 0 && b.names(d.value, ns) {
+				b.add(name, CompletionFunction, ranked(1).with("", "def "+name+" = "+nodeText(d.value, "")+", from "+filepath.Base(d.path)))
 			}
 		}
 	}

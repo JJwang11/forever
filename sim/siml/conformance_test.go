@@ -282,7 +282,7 @@ func TestFormatCases(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			got, err := Format(file, src, names)
+			got, err := Format(file, src, names, caseOpener(file))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -304,11 +304,11 @@ func TestCorpusRoundTrips(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			once, err := Format(file, src, names)
+			once, err := Format(file, src, names, caseOpener(file))
 			if err != nil {
 				t.Fatal(err)
 			}
-			if twice, err := Format(file, once, names); err != nil || string(twice) != string(once) {
+			if twice, err := Format(file, once, names, caseOpener(file)); err != nil || string(twice) != string(once) {
 				t.Errorf("format is no fixed point (%v)\nonce:\n%s\ntwice:\n%s", err, once, twice)
 			}
 			f, err := parseCase(t, file)
@@ -390,13 +390,14 @@ func TestSpecExamples(t *testing.T) {
 	if !slices.Equal(paths, want) {
 		t.Fatalf("the examples are %v, want %v", paths, want)
 	}
+	// An example's own text, else the committed file it uses, such as the hunter's apls/weave_common.apl.siml.
 	open := func(path string) ([]byte, error) {
 		for _, e := range examples {
 			if e.path == filepath.ToSlash(path) {
 				return []byte(e.text), nil
 			}
 		}
-		return nil, fs.ErrNotExist
+		return os.ReadFile(filepath.Join("..", "..", path))
 	}
 	names := readNames(t, "names.json")
 	for _, e := range examples {

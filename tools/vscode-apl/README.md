@@ -116,8 +116,9 @@ choice is written as its name.
   its parameters and value write its line, and deleting one writes each call as the value it reads as. An edit of a
   def that leaves a call with an error is refused.
 - **Read-only.** While the text has an error the panel shows the rotation as it last read, says where the first error
-  is, and makes no edits. A rotation put together with another file (`use "default.apl.siml" with …`) is shown with
-  the rows it uses and is edited as text.
+  is, and makes no edits. A rotation put together with another file's rows (`use "default.apl.siml" with …`) is
+  shown with the rows it uses and is edited as text. One whose used files bring only variables and defs
+  (`use "weave_common.apl.siml"`) edits as any other; their variables show in the list and edit in their own file.
 - **Refused edits.** An edit the server cannot splice, such as one through a row that does not exist or one that leaves
   the rotation with an error, is not made, and a warning says why. An edit the panel made before it saw someone else's
   change to the text is dropped, and the panel shows the text as it is.

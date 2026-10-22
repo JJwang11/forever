@@ -10,21 +10,27 @@ import (
 )
 
 // format (SPEC.md §12.1, §10): every statement of a file re-printed from its typed value, with the comments, notes
-// and single blank lines of the source kept. A file with errors is not formatted, and use lines are not followed:
-// format reads one file.
+// and single blank lines of the source kept. A file with errors is not formatted. The use lines are followed when
+// format can read files, for the defs and variables a used file declares, and only this file's text is printed.
 
-// Re-prints src, the text of the file at path, in canonical form, its names read and written with names. The error
-// is Diagnostics when the file has an error.
-func Format(path string, src []byte, names *Names) ([]byte, error) {
+// Re-prints src, the text of the file at path, in canonical form, its names read and written with names, and the
+// files its use lines name read through open; with a nil open, it reads the file alone. The error is Diagnostics
+// when the file has an error.
+func Format(path string, src []byte, names *Names, open Opener) ([]byte, error) {
 	ix, err := loadIndex()
 	if err != nil {
 		return nil, err
 	}
-	f := readFile(ix, names, sourceText(src), kindOf(path), nil)
+	var u *uses
+	if open != nil {
+		self := resolveUse("", path)
+		u = &uses{path: self, open: open, chain: []string{self}}
+	}
+	f := readFile(ix, names, sourceText(src), kindOf(path), u)
 	if hasError(f.diags) {
 		return nil, f.tree.lines.diagnostics(path, f.diags)
 	}
-	return []byte(f.format()), nil
+	return []byte(f.format(u)), nil
 }
 
 // The block a statement belongs to: the top-level lines, the statements under no header, or a section.
@@ -33,10 +39,11 @@ type block struct {
 	section *section
 }
 
-func (f *typedFile) format() string {
+func (f *typedFile) format(u *uses) string {
 	ix := f.typer.ix
 	tree := f.tree
-	p := &printer{ix: ix, names: f.typer.names, class: f.typer.class, declarations: declaredNames(f.declarations), calls: map[*proto.APLValue]string{}}
+	declarations := append(declaredNames(f.declarations), f.usedDeclared...)
+	p := &printer{ix: ix, names: f.typer.names, class: f.typer.class, declarations: declarations, calls: map[*proto.APLValue]string{}, uses: u}
 	for v, c := range f.typer.defs.values {
 		p.calls[v] = nodeText(c, tree.lines.src)
 	}
