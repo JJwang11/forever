@@ -2,6 +2,7 @@ import * as PresetUtils from '@app/preset_utils';
 import { Spec } from '@generated/proto/common';
 import { Hunter_Rotation_Playstyle as Playstyle } from '@generated/proto/hunter';
 
+import CleanWeaveAPL from './apls/clean_weave.apl.siml';
 import WeaveAPL from './apls/default.apl.siml';
 import WeaveHawkAPL from './apls/default_hawks.apl.siml';
 import MeleeAPL from './apls/melee.apl.siml';
@@ -41,6 +42,10 @@ export const TurretMultiAPLRotation = PresetUtils.makePresetAPLRotation('Turret 
 export const TurretHawkAPLRotation = PresetUtils.makePresetAPLRotation('Turret (Hawks)', TurretHawkAPL);
 export const WeaveAPLRotation = PresetUtils.makePresetAPLRotation('Melee Weave', WeaveAPL);
 export const WeaveHawkAPLRotation = PresetUtils.makePresetAPLRotation('Melee Weave (Hawks)', WeaveHawkAPL);
+// The weave with no toggles: every shot goes ahead of the weave, and a weave is a walk in for the next
+// swing that is back before the Auto Shot it delays is more than Max Auto Shot delay late (Max long weave
+// delay when one walk in and out outlasts an Auto Shot cycle). Walk times come from the run speed.
+export const CleanWeaveAPLRotation = PresetUtils.makePresetAPLRotation('Clean Weave', CleanWeaveAPL);
 export const MeleeAPLRotation = PresetUtils.makePresetAPLRotation('Melee', MeleeAPL);
 
 export const DefaultRotation = WeaveAPLRotation;

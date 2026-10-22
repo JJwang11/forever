@@ -1704,70 +1704,105 @@ show `//`; `print` writes none. Each file reads back to the proto it prints (§1
 siml 1
 spec hunter
 
-// Melee weave: shoot, step in for one main-hand swing, step back out before the next Auto Shot.
 var ${Melee weave} = true
-var ${Time to weave} = 400ms
-var ${Melee range} = 5.00
-var ${Ranged range} = 11.00
-var ${Starting weave distance} = $ranged_range
-var ${Move duration} = 1s * (($ranged_range - $melee_range) / 7)
-var ${Wait at melee} = max(input_delay, $time_to_weave - $move_duration * 2)
-var ${Auto Shot wait} = $move_duration + $wait_at_melee
-var ${Time to next weave} = auto_time_to_next(main_hand_auto)
+var ${Time to weave} = 100ms
+var ${Ranged range} = 12
+var ${Walk-in range} = 4.99
+var ${Wait at melee} = max(input_delay, $time_to_weave)
+var ${Max Auto Shot delay} = 1.2s
+var ${Max long weave delay} = 4s
+var ${Shoot spot} = max($ranged_range, 11.67)
+var ${Melee spot} = min($walk_in_range, 4.99)
+var ${Run speed} = self.unit_movement_speed
+var ${Time to melee} = 1s * ((self.unit_distance - $melee_spot) / $run_speed)
+var ${Time to range} = 1s * (($shoot_spot - $melee_spot) / $run_speed)
+var ${Time to walk in} = auto_time_to_next(main_hand_auto) - $time_to_melee - input_delay
+var ${Weave done} =
+    max(auto_time_to_next(main_hand_auto), $time_to_melee) + $time_to_range + ($wait_at_melee + input_delay)
+var ${Allowed delay} =
+    max($max_auto_shot_delay, min($max_long_weave_delay, $weave_done - auto_swing_time(ranged) + 1s))
+var ${Weave fits} = auto_time_to_next(ranged_auto) + $allowed_delay >= $weave_done
 var ${Use Aimed Shot} = false
 var ${Use Multi-Shot} = true
 var ${Use Arcane Shot} = true
 var ${Use Summon Hawk} = false
-def fits_weave(x) = spell(x).cast_time + $move_duration <= $time_to_next_weave or not $melee_weave
+
+def in_melee = self.unit_distance <= 5
+def at_range = self.unit_distance > 5
+def hawk_and_arcane = $use_summon_hawk and $use_arcane_shot
+def walk_in_now =
+    $time_to_walk_in <= 0s
+    and $weave_fits
+    and auto_time_to_next(ranged_auto) > 500ms
+    and at_range
+def kick_wait = max(spell(strider_kick).time_to_ready, gcd_time_to_ready)
+def shot_soon(wanted, x) =
+    wanted
+    and spell(x).is_known
+    and spell(x).current_cost <= current_mana
+    and spell(x).time_to_ready > 0s
+    and spell(x).time_to_ready <= 400ms
 
 prepull:
   -22s cast hunters_mark
   -20s cast aspect_of_the_hawk
-  -19s group "Move to starting range"
+  -19s move $shoot_spot if $melee_weave
 
 priority:
-  autocast_other_cooldowns if current_time >= 5s
+  autocast_other_cooldowns if current_time >= 5s and at_range
   cast hunters_mark if not target.aura(hunters_mark).is_active
-  group "Weave" if $melee_weave
+  cast raptor_strike_tag1
   cast mongoose_bite
   cast strider_kick
+  cast immolation_trap_14305 if in_melee
+  cast wing_clip
   cast serpent_sting if not dot(serpent_sting).is_active
-  reset_sequence("HHA") if ($use_summon_hawk and $use_arcane_shot) and sequence("HHA").is_complete
-  sequence "HHA" [cast summon_hawk, cast summon_hawk, cast arcane_shot]
-      if $use_summon_hawk
-      and $use_arcane_shot
+  reset_sequence("HHA") if hawk_and_arcane and sequence("HHA").is_complete
+  sequence "HHA" [cast summon_hawk, cast summon_hawk, cast arcane_shot] if hawk_and_arcane
   cast summon_hawk if $use_summon_hawk and not $use_arcane_shot
   cast arcane_shot if $use_arcane_shot and not $use_summon_hawk
-  cast multi_shot if $use_multi_shot and fits_weave(multi_shot)
-  cast aimed_shot if $use_aimed_shot and fits_weave(aimed_shot)
-  wait auto_time_to_next(main_hand_auto) - $move_duration
-      if $melee_weave
-      and auto_time_to_next(main_hand_auto) > $move_duration
-      and auto_time_to_next(ranged_auto) >= auto_time_to_next(main_hand_auto) - $move_duration + $auto_shot_wait
+  cast multi_shot if $use_multi_shot
+  cast aimed_shot
+      if $use_aimed_shot
+      and (spell(aimed_shot).cast_time + $time_to_melee <= auto_time_to_next(main_hand_auto) or not $melee_weave)
+  group "Weave" if $melee_weave
 
 group "Weave":
-  wait $wait_at_melee - auto_time_since_last(main_hand_auto)
-      if auto_time_since_last(main_hand_auto) < $wait_at_melee
-  move $starting_weave_distance
-      if auto_time_since_last(main_hand_auto) >= $wait_at_melee
-      and auto_time_to_next(main_hand_auto) > 0ms
-  move $melee_range
-      if auto_time_to_next(main_hand_auto) <= $move_duration
-      and auto_time_to_next(ranged_auto) >= $auto_shot_wait
-
-group "Move to starting range":
-  move $starting_weave_distance if $melee_weave
+  wait gcd_time_to_ready if gcd_time_to_ready > 0s and gcd_time_to_ready <= 400ms
+  wait kick_wait
+      if in_melee
+      and spell(strider_kick).is_known
+      and spell(strider_kick).current_cost <= current_mana
+      and kick_wait > 0s
+      and kick_wait <= 400ms
+  wait min(400ms, max(input_delay, 0s))
+      if at_range
+      and gcd_is_ready
+      and (shot_soon($use_arcane_shot, arcane_shot) or shot_soon($use_multi_shot, multi_shot))
+  wait min($wait_at_melee - auto_time_since_last(main_hand_auto), max(gcd_time_to_ready, input_delay))
+  wait min(auto_time_to_next(main_hand_auto) + input_delay, max(gcd_time_to_ready, input_delay))
+      if in_melee
+      and auto_time_to_next(main_hand_auto) <= min($time_to_range, auto_swing_time(main_hand) / 2)
+  when walk_in_now:
+    wait input_delay - auto_time_since_last(ranged_auto)
+    start_attack
+    move $melee_spot
+  move $shoot_spot
+  wait min($time_to_walk_in, max(gcd_time_to_ready, input_delay))
+      if $time_to_walk_in > 0s
+      and $weave_fits
 ```
 
 Some notes on this file:
 
 - The JSON's `"type": "TypeAPL"` is inferred from the file kind (§6.2).
 - `"true"` and `"false"` consts print bare.
-- `5.00` keeps its text.
 - `$ranged_range` folds to `Ranged range`, while the proto keeps the exact names that
   `ui/specs/hunter/dps/spec.ts` sets.
-- `fits_weave(multi_shot)` reads as the def's value with `multi_shot` for `x` (§6.10), in parentheses within the
-  row's `and`.
+- `shot_soon($use_arcane_shot, arcane_shot)` reads as the def's value with its arguments for `wanted` and `x` (§6.10),
+  in parentheses within the row's `or`; `in_melee` and `at_range` stand for their comparisons wherever they are called.
+- The three rows under `when walk_in_now:` each read as `<row> if walk_in_now` (§6.9), so `print` writes the def's
+  four conditions on each of them.
 
 The two variable presets are one-line files:
 

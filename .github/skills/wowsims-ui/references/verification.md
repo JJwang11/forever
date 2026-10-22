@@ -67,7 +67,9 @@ List the opt-outs with `/usr/bin/grep -rn "smoke: false" ui --include=*.stories.
 
 - **`build-ui`**: `npm ci` and `test:locales`, then `fmt`, `lint:js`, `lint:css`, `make ui/generated/proto/api.ts
 go-to-ts`, a `go build` of `wowsimcli` exported as `WOWSIMCLI` for the SIML imports (`running-locally.md`),
-  `type-check`, `test:unit`, the SIML extension's `npm run check` and `npm test` in `tools/vscode-apl`, `storybook:build`, and `make dist/forever/.dirstamp`. A pull request from this
+  `type-check`, `test:unit`, the SIML extension's `npm run check` and `npm test` in `tools/vscode-apl`, `storybook:build`,
+  and `make dist/forever/.dirstamp`, with `BUILD_COMMIT` set to the pull request's head so the page's release names it
+  rather than the merge commit. A pull request from this
   repository then gets its build deployed as a Cloudflare Pages preview at a hashed `*.wowsims-forever.pages.dev`
   address, linked from one comment on the pull request; fork pull requests skip it. `preview_cleanup.yml` deletes the
   deployments when the pull request closes.

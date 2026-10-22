@@ -67,6 +67,8 @@ type Simulation struct {
 	minTaskTime time.Duration
 	tasks       []Task
 
+	movingUnits []*Unit // Units on a walk, whose position advance keeps current.
+
 	isInPrepull bool
 }
 
@@ -443,6 +445,8 @@ func (sim *Simulation) reset() {
 	sim.tasks = sim.tasks[:0]
 	sim.minTaskTime = NeverExpires
 
+	sim.movingUnits = sim.movingUnits[:0]
+
 	sim.Environment.reset(sim)
 
 	sim.enableManaTicks()
@@ -590,6 +594,12 @@ func (sim *Simulation) advanceTasks() {
 // Advance moves time forward counting down auras, CDs, mana regen, etc
 func (sim *Simulation) advance(nextTime time.Duration) {
 	sim.CurrentTime = nextTime
+
+	// Whatever happens next reads where a walking unit is now: a range check, a missile's travel time,
+	// whether an auto attack still reaches.
+	for i := 0; i < len(sim.movingUnits); i++ {
+		sim.movingUnits[i].UpdatePosition(sim, false)
+	}
 
 	// this is a loop to handle duplicate ExecuteProportions, e.g. if they're both set to 100%, you reach
 	// execute phases 35% and 20% in the first advance() call.

@@ -1,6 +1,6 @@
 siml 1
 spec balance_druid
-talents "5532220115501351--505"
+talents "5232220115501351--505003"
 use "gear_sets/prebis.gear.siml"
 
 settings:

@@ -441,7 +441,17 @@
 			"from_player": "from #{{number}}",
 			"rank": "Rank {{rank}}"
 		},
-		"close": "Close"
+		"close": "Close",
+		"release_info": {
+			"game_version": "Game {{version}}",
+			"built": "Built {{date}}",
+			"commit_link": "View commit {{commit}} on GitHub",
+			"sim_build": "Sim build",
+			"changed": "Changed {{date}}",
+			"details": "Release details",
+			"presets": "{{spec}} presets",
+			"engine": "{{spec}} engine"
+		}
 	},
 	"sim": {
 		"title": "Forever {{spec}} {{class}} simulator",
@@ -1536,6 +1546,10 @@
 					"label": "Pet Attack",
 					"tooltip": "Works like /petattack in-game. Tells the pet to move/attack."
 				},
+				"start_attack": {
+					"label": "Start Attack",
+					"tooltip": "Works like /startattack in game. Turns the melee attack on, from any range: the off hand's first swing comes half a swing later, so starting it on the way in has the off hand nearer ready on arrival. Starting Auto Shot turns it off again."
+				},
 				"custom_rotation": {
 					"label": "Custom Rotation",
 					"tooltip": "INTERNAL ONLY"
@@ -1654,6 +1668,10 @@
 				"distance_to_unit": {
 					"label": "Distance to Unit",
 					"tooltip": "Distance to the unit"
+				},
+				"unit_movement_speed": {
+					"label": "Movement Speed",
+					"tooltip": "Run speed of the unit in yards per second, with its speed effects (7 for a player with none)"
 				},
 				"current_health": {
 					"label": "Current Health",
@@ -1845,7 +1863,7 @@
 				},
 				"aura_active": {
 					"label": "Aura Active",
-					"tooltip": "<b>True</b> if the aura is currently active, otherwise <b>False</b>. With reaction time, a proc only counts once it has been up for the player reaction time (configured in Settings), and your own auras still count for that long after they run out."
+					"tooltip": "<b>True</b> if the aura is currently active AND it has been active for at least as long as the player reaction time (configured in Settings), otherwise <b>False</b>."
 				},
 				"aura_active_with_reaction_time": {
 					"label": "[DEPRECATED] Aura Active (with Reaction Time)",
@@ -1925,6 +1943,10 @@
 				"druid_bleed_is_active": {
 					"label": "Bleed Is Active",
 					"tooltip": "<b>True</b> if one of your bleeds is on the target, or if <b>Assume Bleed Always Active</b> is enabled, otherwise <b>False</b>."
+				},
+				"druid_excess_energy": {
+					"label": "Excess Energy",
+					"tooltip": "Your current Energy minus what you need to keep for your upcoming Rip and Rake refreshes, after counting the Energy you will regenerate before each one. Spend on a builder only while it covers the builder's cost."
 				},
 				"dot_is_active_on_all_targets": {
 					"label": "Dot Is Active On All Targets",
@@ -2153,7 +2175,7 @@
 					"min_icd": "Min ICD",
 					"min_icd_tooltip": "If non-zero, filter out any procs that either lack an ICD or for which the ICD is smaller than the specified value (in seconds). This can be useful for certain snapshotting checks, since procs with low ICDs are often too weak to snapshot.",
 					"include_reaction_time": "Include Reaction Time",
-					"include_reaction_time_tooltip": "If checked, will use the configured <b>Input Delay</b>. For Aura Active, your own auras show up right away, but when they run out they only drop off after the delay.",
+					"include_reaction_time_tooltip": "If checked, will use the configured reaction time.",
 					"use_base_value": "Use base value",
 					"use_base_value_tooltip": "If checked, will compare the current DoT to the the base value (on encounter start) of the DoT.",
 					"variable_assignment_tooltip": "Value to assign to variable '{{variableName}}'"

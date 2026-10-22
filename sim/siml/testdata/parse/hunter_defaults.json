@@ -121,6 +121,6 @@
 				"specRotationJson": "{\"timeToWeave\":400,\"useMulti\":true,\"useArcane\":true,\"playstyle\":\"Weave\"}"
 			}
 		},
-		"distanceFromTarget": 11
+		"distanceFromTarget": 12
 	}
 }

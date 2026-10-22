@@ -123,6 +123,7 @@ item_swap(main|swap1)
 move(value)  (short form above)
 move_duration(value)  (short form above)
 pet_attack
+start_attack
 guardian_hotw_dps_rotation(caster|cat|hybrid)
 cast_warlock_assigned_curse(target: unit)
 custom_rotation
@@ -165,6 +166,7 @@ time_to_next_energy_tick
 energy_time_to_target(value)
 [unit.]unit_is_moving
 [unit.]unit_distance
+[unit.]unit_movement_speed
 gcd_is_ready
 gcd_time_to_ready
 auto_swing_time(main_hand|off_hand|ranged|wand)
@@ -188,6 +190,7 @@ warlock_is_assigned_curse(elements|recklessness|no_curse|weakness)
 warlock_active_pet(no_summon|imp|voidwalker|succubus|felhunter)
 protection_paladin_damage_taken_last_global
 [unit.]druid_bleed_is_active
+druid_excess_energy
 variable_ref(string)  (short form above)
 variable_placeholder(string)  (short form above)
 action_group_used(string)

@@ -228,14 +228,14 @@ func TestUseLinesAreReadAgainstThePath(t *testing.T) {
 	if err := os.WriteFile(path, []byte(text), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	using := "siml 1\nspec hunter\nuse \"default.apl.siml\" with $use_summon_hawk = true\n"
+	using := "siml 1\nspec hunter\nuse \"default.apl.siml\" with $use_multi_shot = false\n"
 	direct := runSimlSim(context.Background(), root, simlSimRequest{SIML: text, Path: path, Iterations: 10})
-	used := runSimlSim(context.Background(), root, simlSimRequest{SIML: using, Path: filepath.Join(filepath.Dir(path), "hawks.apl.siml"), Iterations: 10})
+	used := runSimlSim(context.Background(), root, simlSimRequest{SIML: using, Path: filepath.Join(filepath.Dir(path), "no_multi.apl.siml"), Iterations: 10})
 	if used.Error != "" || direct.Error != "" {
 		t.Fatalf("errors %q and %q", used.Error, direct.Error)
 	}
 	if len(used.Rows) != len(direct.Rows) || used.DPS == direct.DPS {
-		t.Errorf("with Summon Hawk on: %d rows and %v, the file it uses: %d rows and %v", len(used.Rows), used.DPS, len(direct.Rows), direct.DPS)
+		t.Errorf("with Multi-Shot off: %d rows and %v, the file it uses: %d rows and %v", len(used.Rows), used.DPS, len(direct.Rows), direct.DPS)
 	}
 }
 

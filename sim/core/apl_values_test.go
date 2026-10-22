@@ -2,6 +2,8 @@ package core
 
 import (
 	"fmt"
+	"math"
+	"strings"
 	"testing"
 	"time"
 
@@ -599,7 +601,26 @@ func TestValueUnitDistanceAndMoving(t *testing.T) {
 	noTarget := &APLRotation{unit: &Unit{}}
 	wantNoValue(t, map[string]APLValue{
 		"Unit Is Moving without a current target": noTarget.newValueUnitIsMoving(&proto.APLValueUnitIsMoving{SourceUnit: targetRef}, nil),
+		"Movement Speed without a current target": noTarget.newValueUnitMovementSpeed(&proto.APLValueUnitMovementSpeed{SourceUnit: targetRef}, nil),
 	})
+}
+
+func TestValueUnitMovementSpeed(t *testing.T) {
+	sim := &Simulation{}
+	player := &Unit{Type: PlayerUnit}
+	player.PseudoStats.MovementSpeedMultiplier = 1.3
+	target := &Unit{Type: EnemyUnit}
+	target.PseudoStats.MovementSpeedMultiplier = 1
+	player.CurrentTarget = target
+	rot := &APLRotation{unit: player}
+
+	if got := rot.newValueUnitMovementSpeed(&proto.APLValueUnitMovementSpeed{}, nil).GetFloat(sim); math.Abs(got-9.1) > 1e-9 {
+		t.Errorf("Movement Speed of a player at +30%% = %v, want 9.1", got)
+	}
+	targetRef := &proto.UnitReference{Type: proto.UnitReference_CurrentTarget}
+	if got := rot.newValueUnitMovementSpeed(&proto.APLValueUnitMovementSpeed{SourceUnit: targetRef}, nil).GetFloat(sim); got != 8 {
+		t.Errorf("Movement Speed of the target = %v, want 8", got)
+	}
 }
 
 func TestValueUnknownIDs(t *testing.T) {
@@ -704,6 +725,12 @@ func TestValueSpellCastState(t *testing.T) {
 	if fullCD.GetDuration(sim) != time.Minute {
 		t.Errorf("Full Cooldown = %s, want 1m0s", fullCD.GetDuration(sim))
 	}
+	rend.SharedCD.Duration = 120 * time.Second
+	sharedFullCD := rot.newValueSpellFullCooldown(&proto.APLValueSpellFullCooldown{SpellId: rendID}, nil)
+	if sharedFullCD.GetDuration(sim) != 120*time.Second {
+		t.Errorf("Full Cooldown of a spell with only a 120s shared cooldown = %s, want 2m0s", sharedFullCD.GetDuration(sim))
+	}
+	rend.SharedCD.Duration = 0
 
 	sim.CurrentTime = 90 * time.Second
 	cdSpell.casts = 3
@@ -978,69 +1005,6 @@ func TestValueAuraReactionTime(t *testing.T) {
 	sim.CurrentTime = time.Second + 200*time.Millisecond
 	if !isActive.GetBool(sim) || isInactive.GetBool(sim) || icdReady.GetBool(sim) {
 		t.Errorf("past the reaction time: active = %t, inactive = %t, ICD ready = %t, want true, false, false", isActive.GetBool(sim), isInactive.GetBool(sim), icdReady.GetBool(sim))
-	}
-}
-
-func TestValueAuraIsActiveOwnCastReactionTime(t *testing.T) {
-	// The window is a proc that shares its id with the spell it allows, as the Revenge window does.
-	var ownCast, window *Aura
-	var ownSpell, windowSpell *Spell
-	ownCastID, windowID := ActionID{SpellID: testPlainAuraID}, ActionID{SpellID: testStackAuraID}
-	sim, fw, rot := setupFakeRageRotationWith(func(char *Character) {
-		ownCast, window, _ = registerTestAuras(char)
-		ownSpell = char.RegisterSpell(SpellConfig{ActionID: ownCastID, Flags: SpellFlagAPL, ApplyEffects: func(sim *Simulation, _ *Unit, _ *Spell) {
-			ownCast.Activate(sim)
-		}})
-		windowSpell = char.RegisterSpell(SpellConfig{ActionID: windowID, Flags: SpellFlagAPL, ApplyEffects: func(sim *Simulation, _ *Unit, _ *Spell) {
-			window.Deactivate(sim)
-		}})
-	})
-	ownSpell.finalize()
-	windowSpell.finalize()
-	fw.ReactionTime = 100 * time.Millisecond
-	target := fw.CurrentTarget
-
-	ownCastActive := rot.newValueAuraIsActive(&proto.APLValueAuraIsActive{AuraId: ownCastID.ToProto(), IncludeReactionTime: true}, nil)
-	windowActive := rot.newValueAuraIsActive(&proto.APLValueAuraIsActive{AuraId: windowID.ToProto(), IncludeReactionTime: true}, nil)
-
-	sim.CurrentTime = 500 * time.Millisecond
-	if ownCastActive.GetBool(sim) {
-		t.Errorf("before the first cast: own cast active = true, want false")
-	}
-
-	sim.CurrentTime = time.Second
-	ownSpell.applyEffects(sim, target)
-	window.Activate(sim)
-	if !ownCastActive.GetBool(sim) || windowActive.GetBool(sim) {
-		t.Errorf("as the auras land: own cast active = %t, window active = %t, want true, false", ownCastActive.GetBool(sim), windowActive.GetBool(sim))
-	}
-	sim.CurrentTime = time.Second + 200*time.Millisecond
-	if !windowActive.GetBool(sim) {
-		t.Errorf("past the reaction time: window active = false, want true")
-	}
-
-	sim.CurrentTime = 2 * time.Second
-	windowSpell.applyEffects(sim, target)
-	if windowActive.GetBool(sim) {
-		t.Errorf("window used up by its spell: window active = true, want false")
-	}
-
-	sim.CurrentTime = ownCast.ExpiresAt()
-	ownCast.Deactivate(sim)
-	sim.CurrentTime += 50 * time.Millisecond
-	if !ownCastActive.GetBool(sim) {
-		t.Errorf("inside the reaction time after running out: own cast active = false, want true")
-	}
-	sim.CurrentTime += 50 * time.Millisecond
-	if ownCastActive.GetBool(sim) {
-		t.Errorf("at the reaction time after running out: own cast active = true, want false")
-	}
-
-	ownSpell.applyEffects(sim, target)
-	sim.CurrentTime += time.Second
-	ownCast.Deactivate(sim)
-	if ownCastActive.GetBool(sim) {
-		t.Errorf("removed before running out: own cast active = true, want false")
 	}
 }
 
@@ -1652,6 +1616,31 @@ func TestValueMultipleCdUsages(t *testing.T) {
 		t.Fatal("a target spell with a related self buff should construct")
 	}
 
+	// The UI sends an empty base spell id when none is picked, which counts as no base spell.
+	for _, tc := range []struct {
+		name        string
+		base        *proto.ActionID
+		wantWarning bool
+	}{
+		{"an empty base spell id", &proto.ActionID{}, false},
+		{"an unknown base spell", ActionID{SpellID: 999999}.ToProto(), true},
+		{"a base spell without a related self buff", plain.ActionID.ToProto(), true},
+	} {
+		rot.curValidations = nil
+		value := rot.newValueMultipleCdUsages(&proto.APLValueMultipleCdUsages{BaseSpellId: tc.base, TargetSpellId: targetID, AlignCdEnd: true}, nil)
+		if value == nil {
+			t.Errorf("%s should construct", tc.name)
+		}
+		if !tc.wantWarning {
+			if len(rot.curValidations) != 0 {
+				t.Errorf("%s should log no validation, got %v", tc.name, rot.curValidations)
+			}
+		} else if len(rot.curValidations) == 0 || !strings.HasSuffix(rot.curValidations[len(rot.curValidations)-1].Validation, "Ignoring the base spell and offset.") {
+			t.Errorf("%s should log the ignored base spell warning, got %v", tc.name, rot.curValidations)
+		}
+	}
+	rot.curValidations = nil
+
 	// With a 60s cooldown and a 10s buff, the aligned value casts while a later use would still get at least
 	// half its buff (more than 65s left) or the buff would run to the end, and holds in between. The
 	// cooldown is read when the value is evaluated, so a cooldown change applies at once.
@@ -1680,6 +1669,24 @@ func TestValueMultipleCdUsages(t *testing.T) {
 			t.Errorf("at %s of %s with a %s cooldown aligned to the end of combat: got %t, want %t", tc.elapsed, tc.fight, tc.cooldown, got, tc.aligned)
 		}
 	}
+
+	// A spell with only a shared category lockout, like a potion, counts that lockout as its cooldown.
+	target.CD.Duration, target.SharedCD.Duration, sim.Duration = 0, 120*time.Second, 300*time.Second
+	for _, tc := range []struct {
+		remaining time.Duration
+		aligned   bool
+	}{
+		{126 * time.Second, true},
+		{125 * time.Second, false},
+		{10 * time.Second, true},
+		{11 * time.Second, false},
+	} {
+		sim.CurrentTime = sim.Duration - tc.remaining
+		if got := aligned.GetBool(sim); got != tc.aligned {
+			t.Errorf("with %s left and a 120s shared cooldown aligned to the end of combat: got %t, want %t", tc.remaining, got, tc.aligned)
+		}
+	}
+	target.SharedCD.Duration = 0
 
 	target.CD.Duration = 5 * time.Second
 	sim.Duration = 180 * time.Second

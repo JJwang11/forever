@@ -13,7 +13,7 @@ export const Defaults = PresetUtils.specDefaultsFromSettings(Spec.SpecFeralBearD
 export const ROTATION_DEFAULT = PresetUtils.makePresetAPLRotation('APL', DefaultApl);
 
 export const BearTalents = PresetUtils.makePresetTalents('Bear', Defaults.talents);
-export const HybridTalents = PresetUtils.makePresetTalents('Hybrid', SavedTalents.create({ talentsString: '050022-05230332121131212051-04' }));
+export const HybridTalents = PresetUtils.makePresetTalents('Hybrid', SavedTalents.create({ talentsString: '050022-35230332121132212051-' }));
 
 // Leather at 60 with no set bonus and no proc, about the item level of the cat preset.
 export const Level60Gear = PresetUtils.makePresetGear('Level 60', Level60GearJson, {
