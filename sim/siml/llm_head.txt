@@ -11,7 +11,8 @@ sim/siml/llm_head.txt for the part above "Actions". The full language is sim/sim
 - sim/siml/forms.json        sections, units, short forms; everything else comes from the protos
 - sim/siml/testdata/         the corpus: parse/ (text and the JSON it reads as), print/ (JSON and the text it prints
                              as), errors/ (with .diag), format/, splice/, tables/ (name tables refused and accepted)
-- ui/specs/<class>/<spec>/   defaults.siml, apls/*.apl.siml, gear_sets/*.gear.siml, builds/*.siml (the presets)
+- ui/specs/hunter/dps/       defaults.siml, apls/*.apl.siml, gear_sets/*.gear.siml, builds/*.siml (the presets; the
+                             other specs keep JSON presets until they move to SIML)
 - cmd/wowsimcli/cmd/siml*.go the CLI; sim/siml/lsp the language server; tools/vscode-apl the VS Code extension
 
 ## CLI (build it with the database: go build --tags=with_db -o bin/wowsimcli ./cmd/wowsimcli)

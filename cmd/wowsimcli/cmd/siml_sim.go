@@ -185,14 +185,18 @@ func runSimlSim(ctx context.Context, root string, req simlSimRequest) simlSimRes
 		}
 	}
 
+	// A settings file supplies the whole character, so a spec with no defaults.siml sims with one too; the spec's
+	// field then names it.
 	folder, defaults, err := specDefaults(root, spec)
-	if err != nil {
-		return simlSimResult{Error: err.Error()}
-	}
 	var char *character
-	if req.SettingsFile != "" {
+	switch {
+	case req.SettingsFile != "":
+		if err != nil {
+			info, _ := siml.SpecOf(spec)
+			folder = string(info.Field.Name())
+		}
 		char, err = characterFromSettings(root, req.SettingsFile, spec, folder)
-	} else {
+	case err == nil:
 		char, err = characterFromRepo(root, folder, defaults, absolute(root, req.Path))
 	}
 	if err != nil {

@@ -41,7 +41,7 @@ func TestAfflictionWrack(t *testing.T) {
 }
 
 func runBuildSuite(t *testing.T, label string, buildFile string, otherRace proto.Race) {
-	build := core.GetTestBuild(proto.Class_ClassWarlock, "../../ui/specs/warlock/dps/builds", buildFile, core.ItemFilter{}, nil, nil)
+	build := core.GetTestBuildFromJSON(proto.Class_ClassWarlock, "../../ui/specs/warlock/dps/builds", buildFile, core.ItemFilter{}, nil, nil)
 	core.RunTestSuite(t, t.Name(), core.FullCharacterTestSuiteGenerator([]core.CharacterSuiteConfig{
 		{
 			Class:       proto.Class_ClassWarlock,

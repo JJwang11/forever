@@ -59,7 +59,7 @@ func imbueOptions(imbue proto.ShamanImbue) *proto.Player_EnhancementShaman {
 }
 
 // The Testing build's gear, talents and rotation.
-var testingBuild = core.GetTestBuild(proto.Class_ClassShaman, "../../../ui/specs/shaman/enhancement/builds", "testing",
+var testingBuild = core.GetTestBuildFromJSON(proto.Class_ClassShaman, "../../../ui/specs/shaman/enhancement/builds", "testing",
 	core.ItemFilter{}, nil, nil)
 
 var DefaultTalents = testingBuild.Talents

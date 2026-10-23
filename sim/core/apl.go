@@ -5,6 +5,7 @@ import (
 	"slices"
 
 	"github.com/wowsims/forever/sim/core/proto"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 type APLRotation struct {
@@ -641,6 +642,15 @@ func (apl *APLRotation) adoptChannelAction(dot *Dot) {
 		apl.interruptChannelIf = action.interruptIf
 		apl.allowChannelRecastOnInterrupt = action.allowRecast
 	}
+}
+
+func APLRotationFromJsonString(jsonString string) *proto.APLRotation {
+	apl := &proto.APLRotation{}
+	data := []byte(jsonString)
+	if err := protojson.Unmarshal(data, apl); err != nil {
+		panic(err)
+	}
+	return apl
 }
 
 // Add newAPLActionWithGroupVars to propagate groupVars to action condition and impl

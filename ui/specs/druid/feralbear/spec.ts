@@ -1,7 +1,8 @@
 import * as BuffDebuffInputs from '@features/settings/model/buffs_debuffs';
 import * as OtherInputs from '@features/settings/model/other_inputs';
-import { APLRotation } from '@generated/proto/apl';
-import { ItemSlot, PseudoStat, Spec, Stat } from '@generated/proto/common';
+import { APLRotation, APLRotation_Type as APLRotationType } from '@generated/proto/apl';
+import { Debuffs, IndividualBuffs, PartyBuffs, RaidBuffs } from '@generated/proto/buffs';
+import { ItemSlot, PseudoStat, Spec, Stat, TristateEffect } from '@generated/proto/common';
 import { PlayerClasses } from '@sim/player/classes';
 import { Player } from '@sim/player/player';
 import { Stats, UnitStat } from '@sim/proto/stats';
@@ -71,7 +72,8 @@ export default defineSpec<Spec.SpecFeralBearDruid>({
 	),
 
 	defaults: {
-		...Presets.Defaults,
+		gear: Presets.Level60Gear.gear,
+		encounter: Presets.Level60Encounter,
 		epWeights: Presets.Level60SurvivalEp,
 		statCaps: (() => {
 			const hitCap = new Stats().withPseudoStat(PseudoStat.PseudoStatMeleeHitPercent, 8);
@@ -79,6 +81,38 @@ export default defineSpec<Spec.SpecFeralBearDruid>({
 			const critImmunityCap = new Stats().withPseudoStat(PseudoStat.PseudoStatReducedCritTakenPercent, 5.6);
 			return hitCap.add(expCap).add(critImmunityCap);
 		})(),
+		other: Presets.OtherDefaults,
+		consumables: Presets.DefaultConsumables,
+		rotationType: APLRotationType.TypeAuto,
+		talents: Presets.BearTalents.data,
+		specOptions: Presets.DefaultOptions,
+		raidBuffs: RaidBuffs.create({
+			arcaneBrilliance: true,
+			giftOfTheWild: true,
+			prayerOfFortitude: true,
+			prayerOfShadowProtection: true,
+			prayerOfSpirit: true,
+			windfuryTotem: true,
+			strengthOfEarthTotem: true,
+			battleShout: TristateEffect.TristateEffectRegular,
+		}),
+		partyBuffs: PartyBuffs.create({
+			manaSpringTotem: TristateEffect.TristateEffectRegular,
+		}),
+		individualBuffs: IndividualBuffs.create({
+			greaterBlessingOfKings: true,
+			greaterBlessingOfMight: true,
+			thorns: true,
+		}),
+		debuffs: Debuffs.create({
+			exposeArmor: true,
+			faerieFire: true,
+			giftOfArthas: false,
+			curseOfRecklessness: true,
+			insectSwarm: true,
+			judgementOfWisdom: true,
+			sunderArmor: true,
+		}),
 	},
 
 	playerIconInputs: [],

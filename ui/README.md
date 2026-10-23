@@ -189,9 +189,9 @@ convenience. The preset shapes
 (`PresetGear`, `PresetEpWeights`, …) live in `ui/sim/presets/types.ts`; `app/preset_utils.ts`
 holds the `make*` builders and re-exports the types.
 
-Gear (`gear_sets/*.gear.siml`), APLs (`apls/*.apl.siml`), builds (`builds/*.siml`) and the spec's defaults
-(`defaults.siml`) live in SIML files (`sim/siml/SPEC.md`) under `ui/specs/<class>/<spec>/`, never as TS literals;
-`tools/vite/siml.mts` imports each as its message's JSON. EP weights and talents are TS presets in `presets.ts`:
+Gear, APLs and builds live in files under `ui/specs/<class>/<spec>/`, never as TS literals. The hunter writes them,
+and its defaults (`defaults.siml`), in SIML (`sim/siml/SPEC.md`), which `tools/vite/siml.mts` imports as each message's
+JSON; the other specs keep JSON files (`*.gear.json`, `*.apl.json`, `*.build.json`) until they move. EP weights and talents are TS presets in `presets.ts`:
 `PresetUtils.makePresetEpWeights` over a `Stats` map, and a talent preset is a `SavedTalents`, whose one field is the
 `talentsString`. An `onLoad` handler goes in a preset's options.
 

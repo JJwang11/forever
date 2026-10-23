@@ -1,21 +1,40 @@
 import * as PresetUtils from '@app/preset_utils';
-import { PseudoStat, Spec, Stat } from '@generated/proto/common';
+import * as Consumables from '@features/settings/model/consumables_auto_gen';
+import { ConsumesSpec, Profession, PseudoStat, Race, Stat } from '@generated/proto/common';
+import { FeralCatDruid_Options as FeralDruidOptions } from '@generated/proto/druid';
 import { SavedTalents } from '@generated/proto/ui';
 import { Stats } from '@sim/proto/stats';
 
-import BearweaveApl from './apls/bearweave.apl.siml';
-import DefaultApl from './apls/default.apl.siml';
-import EnergizedApl from './apls/energized.apl.siml';
-import JvmesApl from './apls/jvmes.apl.siml';
-import PounceApl from './apls/pounce.apl.siml';
-import RavageApl from './apls/ravage.apl.siml';
-import ShadowmeldApl from './apls/shadowmeld.apl.siml';
-import DefaultsJson from './defaults.siml';
-import Level60GearJson from './gear_sets/default.gear.siml';
-import PreRaidGearJson from './gear_sets/pre_raid.gear.siml';
+import BearweaveApl from './apls/bearweave.apl.json';
+import DefaultApl from './apls/default.apl.json';
+import EnergizedApl from './apls/energized.apl.json';
+import JvmesApl from './apls/jvmes.apl.json';
+import PounceApl from './apls/pounce.apl.json';
+import RavageApl from './apls/ravage.apl.json';
+import ShadowmeldApl from './apls/shadowmeld.apl.json';
+import Level60GearJson from './gear_sets/default.gear.json';
+import PreRaidGearJson from './gear_sets/pre_raid.gear.json';
 
-// The spec's defaults, from defaults.siml.
-export const Defaults = PresetUtils.specDefaultsFromSettings(Spec.SpecFeralCatDruid, DefaultsJson);
+// Another raid member's bleed keeps Rend and Tear up.
+export const DefaultOptions = FeralDruidOptions.create({ assumeBleedActive: true });
+
+export const DefaultConsumables = ConsumesSpec.create({
+	resourcePotId: Consumables.MightyRagePotion.id,
+	flaskId: Consumables.FlaskOfNaturalPrecision.id,
+	elixirIds: [Consumables.ElixirOfTheMongoose.id],
+	foodId: Consumables.SwiftstrikeSteak.id,
+	mhImbueId: Consumables.ElementalSharpeningStone.id,
+	conjuredId: Consumables.ThistleTea.id,
+	extraIds: [Consumables.JujuPower.id, Consumables.JujuMight.id, Consumables.GroundScorpokAssay.id],
+});
+
+export const OtherDefaults = {
+	distanceFromTarget: 0,
+	profession1: Profession.Engineering,
+	profession2: Profession.Enchanting,
+	race: Race.RaceNightElf,
+	reactionTime: 250,
+};
 
 // Leather at 60 with no set bonus and no proc. The stand-in the rotation was tuned on.
 export const Level60Gear = PresetUtils.makePresetGear('Level 60', Level60GearJson, {
@@ -74,7 +93,8 @@ export const POUNCE_APL = PresetUtils.makePresetAPLRotation('Pounce opener', Pou
 // of the fight do not need. Needs the Primal Bite talent.
 export const BEARWEAVE_APL = PresetUtils.makePresetAPLRotation('Bearweave', BearweaveApl);
 
-export const CatTalents = PresetUtils.makePresetTalents('Cat', Defaults.talents);
+// Naturalist in place of Natural Shapeshifter.
+export const CatTalents = PresetUtils.makePresetTalents('Cat', SavedTalents.create({ talentsString: '050022-35200032121131212051-052' }));
 export const HybridTalents = PresetUtils.makePresetTalents('Hybrid', SavedTalents.create({ talentsString: '050022-35230332121132212051-' }));
 
 export const BearweaveBuild = PresetUtils.makePresetBuild('Bearweave (45s fights)', {

@@ -1,4 +1,3 @@
-import * as PresetUtils from '@app/preset_utils';
 import * as BuffDebuffInputs from '@features/settings/model/buffs_debuffs';
 import * as OtherInputs from '@features/settings/model/other_inputs';
 import { APLRotation } from '@generated/proto/apl';
@@ -10,7 +9,6 @@ import { Stats, UnitStat } from '@sim/proto/stats';
 import { defineSpec } from '@sim/spec_config';
 
 import * as PriestSharedInputs from '../shared/inputs';
-import Defaults from './defaults.siml';
 import * as PriestInputs from './inputs';
 import * as Presets from './presets';
 
@@ -68,12 +66,29 @@ export default defineSpec<Spec.SpecDpsPriest>({
 	displayWeaponSkillGroups: [WeaponSkillGroup.Wands],
 
 	defaults: {
-		...PresetUtils.specDefaultsFromSettings(Spec.SpecDpsPriest, Defaults),
+		// Default equipped gear.
+		gear: Presets.ShadowTestingGear.gear,
 		// Default EP weights for sorting gear in the gear picker.
 		epWeights: new Stats(),
 		statCaps: (() => {
 			return new Stats().withPseudoStat(PseudoStat.PseudoStatSchoolHitPercentShadow, 17).withPseudoStat(PseudoStat.PseudoStatSchoolHitPercentHoly, 17);
 		})(),
+		// Default consumes settings.
+		consumables: Presets.DefaultConsumables,
+		// Default talents.
+		talents: Presets.StandardTalents.data,
+		// Default spec-specific settings.
+		specOptions: Presets.DefaultOptions,
+		// Default raid/party buffs settings.
+		raidBuffs: Presets.DefaultRaidBuffs,
+
+		partyBuffs: Presets.DefaultPartyBuffs,
+
+		individualBuffs: Presets.DefaultIndividualBuffs,
+
+		debuffs: Presets.DefaultDebuffs,
+
+		other: Presets.OtherDefaults,
 	},
 
 	// IconInputs to include in the 'Player' section on the settings tab.

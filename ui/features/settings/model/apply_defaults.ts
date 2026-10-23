@@ -96,13 +96,15 @@ export function applyIndividualDefaults<SpecType extends Spec>(host: DefaultsHos
 		player.setDistanceFromTarget(config.defaults.other?.distanceFromTarget || 0);
 		player.setChannelClipDelay(config.defaults.other?.channelClipDelay || 0);
 		player.setReactionTime(config.defaults.other?.reactionTime || 100);
-		player.setInFrontOfTarget(!!config.defaults.other?.inFrontOfTarget);
+		// A spec whose defaults come from defaults.siml states where it stands, its dummies and its tanks there.
+		const fromFile = !!config.defaults.settings;
+		if (fromFile) player.setInFrontOfTarget(!!config.defaults.other?.inFrontOfTarget);
 
 		host.reforger?.applyDefaults();
 
 		// A fight from defaults.siml brings its own count, where 0 is left out of the file.
 		const encounter = config.defaults.encounter;
-		sim.raid.setTargetDummies(encounter ? (encounter.targetDummies ?? 0) : healingSpec ? 9 : 0);
+		sim.raid.setTargetDummies(fromFile && encounter ? (encounter.targetDummies ?? 0) : healingSpec ? 9 : 0);
 		if (config.defaults.encounter?.encounter) {
 			sim.encounter.fromProto(config.defaults.encounter.encounter);
 		} else {
@@ -118,7 +120,13 @@ export function applyIndividualDefaults<SpecType extends Spec>(host: DefaultsHos
 			sim.setIterations(config.defaults.other!.iterationCount!);
 		}
 
-		sim.raid.setTanks(config.defaults.other?.tanks ?? []);
+		if (fromFile) {
+			sim.raid.setTanks(config.defaults.other?.tanks ?? []);
+		} else if (tankSpec) {
+			sim.raid.setTanks([player.makeUnitReference()]);
+		} else {
+			sim.raid.setTanks([]);
+		}
 
 		host.statWeightActionSettings.applyDefaults();
 		host.statSweepSettings.applyDefaults();

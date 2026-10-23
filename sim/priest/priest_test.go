@@ -17,7 +17,7 @@ func init() {
 
 // The Shadow Testing build's gear, talents and rotation, which the UI's Shadow Testing gear set,
 // Standard talents and Default rotation read too.
-var shadowTestingBuild = core.GetTestBuild(proto.Class_ClassPriest, "../../ui/specs/priest/dps/builds", "testing",
+var shadowTestingBuild = core.GetTestBuildFromJSON(proto.Class_ClassPriest, "../../ui/specs/priest/dps/builds", "testing",
 	core.ItemFilter{}, nil, nil)
 
 // The UI's defaults: Flask of Supreme Power, Major Spellblasting Potion, Nightfin Soup, Demonic Rune,

@@ -1707,8 +1707,9 @@ or when the errors cases leave out a diagnostic code of §13 that the package em
 
 ## 16. Examples
 
-These are the repository's files for the hunter and the arms warrior. The comment lines were added by hand to
-show `//`; `print` writes none. Each file reads back to the proto it prints (§12.4).
+These are the repository's files for the hunter, and the arms warrior's rotation as SIML writes it; the warrior's
+presets are still JSON. The comment lines were added by hand to show `//`; `print` writes none. Each file reads back
+to the proto it prints (§12.4).
 
 ### 16.1 `ui/specs/hunter/dps/apls/default.apl.siml` (hunter, default rotation)
 
@@ -1795,7 +1796,7 @@ use "default.apl.siml" with $use_summon_hawk = true
 This is `apls/default_hawks.apl.siml`. `apls/turret_multi.apl.siml` is
 `use "turret.apl.siml" with $use_aimed_shot = false, $use_multi_shot = true`.
 
-### 16.2 `ui/specs/warrior/dps/apls/arms.apl.siml` (warrior, arms)
+### 16.2 `arms.apl.siml` (warrior, arms; the warrior's presets are JSON, and this is how its rotation reads in SIML)
 
 ```
 siml 1

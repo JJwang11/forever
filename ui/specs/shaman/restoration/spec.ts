@@ -1,13 +1,15 @@
-import * as PresetUtils from '@app/preset_utils';
 import * as BuffDebuffInputs from '@features/settings/model/buffs_debuffs';
 import { APLRotation } from '@generated/proto/apl';
-import { PseudoStat, Spec, Stat } from '@generated/proto/common';
+import { Debuffs } from '@generated/proto/buffs';
+import { EquipmentSpec, PseudoStat, Spec, Stat } from '@generated/proto/common';
+import { SavedTalents } from '@generated/proto/ui';
 import { PlayerClasses } from '@sim/player/classes';
 import { Player } from '@sim/player/player';
 import { Stats, UnitStat } from '@sim/proto/stats';
+import { defaultHealerIndividualBuffs, defaultHealerPartyBuffs, defaultHealerRaidBuffs } from '@sim/proto/utils';
 import { defineSpec } from '@sim/spec_config';
 
-import Defaults from './defaults.siml';
+import * as Presets from './presets';
 
 // Gear planner only: no healing spells are implemented, so there is no simulation for this spec.
 export default defineSpec<Spec.SpecRestorationShaman>({
@@ -31,9 +33,22 @@ export default defineSpec<Spec.SpecRestorationShaman>({
 	),
 
 	defaults: {
-		...PresetUtils.specDefaultsFromSettings(Spec.SpecRestorationShaman, Defaults),
+		// Default equipped gear.
+		gear: EquipmentSpec.create(),
 		// Default EP weights for sorting gear in the gear picker.
 		epWeights: new Stats(),
+		// Default consumes settings.
+		consumables: Presets.DefaultConsumables,
+		// Default talents.
+		talents: SavedTalents.create(),
+		// Default spec-specific settings.
+		specOptions: Presets.DefaultOptions,
+		other: Presets.OtherDefaults,
+		// Default raid/party buffs settings.
+		raidBuffs: defaultHealerRaidBuffs(),
+		partyBuffs: defaultHealerPartyBuffs(),
+		individualBuffs: defaultHealerIndividualBuffs(),
+		debuffs: Debuffs.create({}),
 	},
 
 	// IconInputs to include in the 'Player' section on the settings tab.

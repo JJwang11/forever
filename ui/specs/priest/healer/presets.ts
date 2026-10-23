@@ -1,15 +1,46 @@
 import * as PresetUtils from '@app/preset_utils';
-import { Spec, Stat } from '@generated/proto/common';
+import * as Consumables from '@features/settings/model/consumables_auto_gen';
+import { ConsumesSpec, Profession, Stat } from '@generated/proto/common';
+import { HealerPriest_Options as HealerPriestOptions, PriestOptions_Armor } from '@generated/proto/priest';
 import { SavedTalents } from '@generated/proto/ui';
 import { Stats } from '@sim/proto/stats';
 
-import DefaultsJson from './defaults.siml';
+import PreraidGearJson from './gear_sets/preraid.gear.json';
 
-// The spec's defaults, from defaults.siml.
-export const Defaults = PresetUtils.specDefaultsFromSettings(Spec.SpecHealerPriest, DefaultsJson);
+export const DefaultOptions = HealerPriestOptions.create({
+	prayerOfMendingJumps: 5,
+	prayerOfMendingDelay: 2.5,
+	holyNovaHealTargets: 5,
+	classOptions: {
+		armor: PriestOptions_Armor.InnerFire,
+	},
+});
+
+export const DefaultConsumables = ConsumesSpec.create({
+	foodId: Consumables.SunnyTea.id,
+	mhImbueId: Consumables.BrilliantManaOil.id,
+	resourcePotId: Consumables.MajorManaPotion.id,
+	conjuredId: Consumables.DemonicRune.id,
+	elixirIds: [
+		Consumables.ElixirOfTheGrizzly.id,
+		Consumables.ElixirOfCunning.id,
+		Consumables.ElixirOfTheOwl.id,
+		Consumables.ElixirOfSages.id,
+		Consumables.GreaterMagebloodElixir.id,
+		Consumables.GreaterClericsElixir.id,
+	],
+});
+
+export const OtherDefaults = {
+	distanceFromTarget: 20,
+	profession1: Profession.Tailoring,
+	profession2: Profession.Enchanting,
+};
 
 export const DiscTalents = PresetUtils.makePresetTalents('Disc', SavedTalents.create({ talentsString: '005025021330011531-335001030301' }));
-export const HolyTalents = PresetUtils.makePresetTalents('Holy', Defaults.talents);
+export const HolyTalents = PresetUtils.makePresetTalents('Holy', SavedTalents.create({ talentsString: '00520101133-33505003030121531' }));
+
+export const PreRaidGear = PresetUtils.makePresetGear('Pre-raid', PreraidGearJson, { devOnly: true });
 
 export const DiscSingleTargetEpWeights = PresetUtils.makePresetEpWeights(
 	'Disc Single-Target',

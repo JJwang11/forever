@@ -14,7 +14,6 @@ import (
 	"github.com/wowsims/forever/sim/core"
 	"github.com/wowsims/forever/sim/core/proto"
 	"github.com/wowsims/forever/sim/core/simsignals"
-	"github.com/wowsims/forever/sim/siml"
 	"google.golang.org/protobuf/encoding/protojson"
 	gproto "google.golang.org/protobuf/proto"
 )
@@ -452,15 +451,9 @@ func TestWriteCatAPL(t *testing.T) {
 
 // The presets on disk are the lists the builders make, so a sweep of a builder measures what ships.
 func TestCatAPLPresetMatchesItsBuilder(t *testing.T) {
-	// A name reads back with the rank of its entry, which the builders leave unset.
-	names, err := siml.DefaultNames()
-	if err != nil {
-		t.Fatal(err)
-	}
 	for name, built := range catAPLPresets() {
-		preset := core.GetAplRotation("../../../ui/specs/druid/feralcat/apls", name).Rotation
-		if !gproto.Equal(siml.Normalize(preset, names, proto.Class_ClassDruid), siml.Normalize(built, names, proto.Class_ClassDruid)) {
-			t.Errorf("%s.apl.siml differs from its builder; rerun with APL_WRITE=1 and print the JSON as SIML", name)
+		if preset := core.GetAplRotation("../../../ui/specs/druid/feralcat/apls", name).Rotation; !gproto.Equal(preset, built) {
+			t.Errorf("%s.apl.json differs from its builder; rerun with APL_WRITE=1", name)
 		}
 	}
 }

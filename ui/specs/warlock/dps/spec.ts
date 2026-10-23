@@ -1,7 +1,6 @@
-import * as PresetUtils from '@app/preset_utils';
 import * as OtherInputs from '@features/settings/model/other_inputs';
 import { APLRotation } from '@generated/proto/apl';
-import { ItemSlot, PseudoStat, Spec, Stat } from '@generated/proto/common';
+import { EquipmentSpec, ItemSlot, PseudoStat, Spec, Stat } from '@generated/proto/common';
 import { PlayerClasses } from '@sim/player/classes';
 import { Player } from '@sim/player/player';
 import { WeaponSkillGroup } from '@sim/player/weapon_skill_groups';
@@ -9,7 +8,6 @@ import { Stats, UnitStat } from '@sim/proto/stats';
 import { defineSpec } from '@sim/spec_config';
 import { subscribeAll, subscribePlayerField } from '@sim/state/subscriptions';
 
-import Defaults from './defaults.siml';
 import * as WarlockInputs from './inputs';
 import * as Presets from './presets';
 
@@ -55,12 +53,30 @@ export default defineSpec<Spec.SpecWarlock>({
 	displayWeaponSkillGroups: [WeaponSkillGroup.Wands],
 
 	defaults: {
-		...PresetUtils.specDefaultsFromSettings(Spec.SpecWarlock, Defaults),
+		// Default equipped gear.
+		gear: EquipmentSpec.create(),
+
 		// Default EP weights for sorting gear in the gear picker.
 		epWeights: new Stats(),
 		statCaps: (() => {
 			return new Stats().withPseudoStat(PseudoStat.PseudoStatSpellHitPercent, 17);
 		})(),
+
+		// Default consumes settings.
+		consumables: Presets.DefaultConsumables,
+
+		// Default talents.
+		talents: Presets.DemoFireBrandTalents.data,
+		// Default spec-specific settings.
+		specOptions: Presets.DefaultOptions,
+
+		// Default buffs and debuffs settings.
+		raidBuffs: Presets.DefaultRaidBuffs,
+		partyBuffs: Presets.DefaultPartyBuffs,
+		individualBuffs: Presets.DefaultIndividualBuffs,
+		debuffs: Presets.DefaultDebuffs,
+
+		other: Presets.OtherDefaults,
 	},
 
 	consumableStats: [

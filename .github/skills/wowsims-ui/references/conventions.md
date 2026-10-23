@@ -56,8 +56,10 @@ Adding a spec is three edits:
 `tools/vite/spec_pages.mts` globs `ui/specs/*/*/spec.ts(x)`, so the page appears at `/forever/<class>/<spec>/` with no
 build-config edit and no HTML file.
 
-Preset data: gear sets, APLs, builds and the spec's defaults are SIML files under the spec folder
-(`gear_sets/*.gear.siml`, `apls/*.apl.siml`, `builds/*.siml`, `defaults.siml`), never TS literals. `spec.ts` takes the
+Preset data: gear sets, APLs, builds and the spec's defaults are files under the spec folder, never TS literals. The
+hunter writes them in SIML (`gear_sets/*.gear.siml`, `apls/*.apl.siml`, `builds/*.siml`, `defaults.siml`); every other
+spec keeps JSON (`*.gear.json`, `*.apl.json`, `*.build.json`) with its defaults in `spec.ts`, until it moves. On SIML,
+`spec.ts` takes the
 proto-backed `defaults` from `defaults.siml` through `PresetUtils.specDefaultsFromSettings` and keeps only the UI-only
 ones (EP weights, stat caps, soft caps) in TypeScript. `presets.ts` imports a SIML file as its message's JSON
 (`import DefaultApl from './apls/default.apl.siml'`), which `tools/vite/siml.mts` reads at build time and fails the build

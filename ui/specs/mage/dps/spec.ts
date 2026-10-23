@@ -1,5 +1,5 @@
 import * as OtherInputs from '@features/settings/model/other_inputs';
-import { APLRotation } from '@generated/proto/apl';
+import { APLRotation, APLRotation_Type } from '@generated/proto/apl';
 import { ItemSlot, PseudoStat, Spec, Stat } from '@generated/proto/common';
 import { PlayerClasses } from '@sim/player/classes';
 import { Player } from '@sim/player/player';
@@ -9,6 +9,7 @@ import { defineSpec } from '@sim/spec_config';
 
 import * as MageInputs from './inputs';
 import * as Presets from './presets';
+import { DefaultConsumables, DefaultDebuffs, DefaultIndividualBuffs, DefaultPartyBuffs, DefaultRaidBuffs } from './presets';
 
 export default defineSpec<Spec.SpecMage>({
 	spec: Spec.SpecMage,
@@ -77,12 +78,30 @@ export default defineSpec<Spec.SpecMage>({
 	],
 
 	defaults: {
-		...Presets.Defaults,
+		// Default equipped gear.
+		gear: Presets.P1ArcaneGear.gear,
 		// Default EP weights for sorting gear in the gear picker.
 		epWeights: new Stats(),
 		statCaps: (() => {
 			return new Stats().withPseudoStat(PseudoStat.PseudoStatSchoolHitPercentArcane, 17);
 		})(),
+		// Default consumes settings.
+		consumables: DefaultConsumables,
+		// Default talents.
+		talents: Presets.ArcaneFrostTalents.data,
+		// Default spec-specific settings.
+		specOptions: Presets.DefaultOptions,
+		other: Presets.OtherDefaults,
+		// Default raid/party buffs settings.
+		raidBuffs: DefaultRaidBuffs,
+
+		partyBuffs: DefaultPartyBuffs,
+		individualBuffs: DefaultIndividualBuffs,
+
+		rotationType: APLRotation_Type.TypeAPL,
+		aplRotation: Presets.ArcaneFrostAplPreset.rotation.rotation,
+
+		debuffs: DefaultDebuffs,
 	},
 
 	// IconInputs to include in the 'Player' section on the settings tab.
@@ -121,7 +140,8 @@ export default defineSpec<Spec.SpecMage>({
 		// }
 	},
 
-	// TODO: The simple settings are not applied yet: no preset APL has value variables for them to set.
+	// TODO: The simple settings are not applied yet. The default APL (apls/default.apl.json) has no
+	// value variables for them to set, so the simple rotation is that APL as it stands.
 	//simpleRotation: (_player: Player<Spec.SpecMage>, _simple: SpecRotation<Spec.SpecMage>, _cooldowns: Cooldowns): APLRotation => {
 	// const actions = AplUtils.simpleCooldownActions(cooldowns);
 	// const rotation = APLRotation.clone(Presets.ROTATION_PRESET_ARCANE.rotation.rotation!);

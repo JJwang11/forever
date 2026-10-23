@@ -1,21 +1,19 @@
 import * as PresetUtils from '@app/preset_utils';
-import { PseudoStat, Spec, Stat } from '@generated/proto/common';
-import { Rogue_Rotation as RogueRotation } from '@generated/proto/rogue';
+import * as Consumables from '@features/settings/model/consumables_auto_gen';
+import { ConsumesSpec, PseudoStat, Spec, Stat } from '@generated/proto/common';
+import { Rogue_Options as RogueOptions, Rogue_Rotation as RogueRotation } from '@generated/proto/rogue';
 import { SavedTalents } from '@generated/proto/ui';
 import { Stats } from '@sim/proto/stats';
 
-import DefaultAPL from './apls/default.apl.siml';
-import DefaultsJson from './defaults.siml';
-import P1BsCombatGear from './gear_sets/p1_bscombat.gear.siml';
-import P1BsSubGear from './gear_sets/p1_bssub.gear.siml';
-import P1MutiGear from './gear_sets/p1_muti.gear.siml';
-import P1SlowMhGear from './gear_sets/p1_slowmh.gear.siml';
+import DefaultAPL from './apls/default.apl.json';
+import P1BsCombatGear from './gear_sets/p1_bscombat.gear.json';
+import P1BsSubGear from './gear_sets/p1_bssub.gear.json';
+import P1MutiGear from './gear_sets/p1_muti.gear.json';
+import P1SlowMhGear from './gear_sets/p1_slowmh.gear.json';
 
 // Preset options for this spec.
 // Eventually we will import these values for the raid sim too, so its good to
 // keep them in a separate file.
-
-export const Defaults = PresetUtils.specDefaultsFromSettings(Spec.SpecRogue, DefaultsJson);
 
 export const TALENTS_MUTILATE_ASN = {
 	name: 'Asn Muti',
@@ -31,7 +29,9 @@ export const TALENTS_MUTILATE_COM = {
 };
 export const TALENTS_COMBAT_SS = {
 	name: 'Combat SS',
-	data: Defaults.talents,
+	data: SavedTalents.create({
+		talentsString: '005323101012-32030320201515231',
+	}),
 };
 export const TALENTS_COMBAT_BS = {
 	name: 'Combat BS',
@@ -54,8 +54,7 @@ export const TALENTS_SUB_BS = {
 
 export const DEFAULT_APL = PresetUtils.makePresetAPLRotation('Direct APL', DefaultAPL);
 
-// The simple rotation of the spec's defaults: no Backstab and no Expose Armor.
-export const DEFAULT_SIMPLE_ROTATION = Defaults.simpleRotation!;
+export const DEFAULT_SIMPLE_ROTATION = RogueRotation.create({ useBackstab: false, useExposeArmor: false });
 export const SIMPLE_ROTATION = PresetUtils.makePresetSimpleRotation('Configurable', Spec.SpecRogue, DEFAULT_SIMPLE_ROTATION);
 const SIMPLE_BACKSTAB_BUILD_ROTATION = PresetUtils.makePresetSimpleRotation(
 	'Configurable',
@@ -161,14 +160,26 @@ export const EP_PRESET_ASSASSINATION = PresetUtils.makePresetEpWeights(
 	),
 );
 
-// The consumables of defaults.siml: Instant Poison on the main hand, Deadly Poison on the off hand.
-export const DefaultConsumables = Defaults.consumables!;
+export const DefaultOptions = RogueOptions.create({
+	classOptions: {},
+});
 
-const FlippedPoisons = {
+export const DefaultConsumables = ConsumesSpec.create({
+	elixirIds: [Consumables.ElixirOfTheMongoose.id, Consumables.ElixirOfGreaterFortitude.id, Consumables.ElixirOfFerocity.id, Consumables.JujuMight.id],
+	foodId: Consumables.SwiftstrikeSteak.id,
+	offensivePotId: Consumables.MajorFrenzyPotion.id,
+	conjuredId: Consumables.ThistleTea.id,
+	mhImbueId: Consumables.DenseWeightstone.id,
+	ohImbueId: Consumables.DenseSharpeningStone.id,
+	mhWeaponImbueId: Consumables.InstantPoisonVI.id,
+	ohWeaponImbueId: Consumables.DeadlyPoisonIV.id,
+});
+
+const FlippedPoisons = ConsumesSpec.create({
 	...DefaultConsumables,
-	mhWeaponImbueId: DefaultConsumables.ohWeaponImbueId,
-	ohWeaponImbueId: DefaultConsumables.mhWeaponImbueId,
-};
+	mhWeaponImbueId: Consumables.DeadlyPoisonIV.id,
+	ohWeaponImbueId: Consumables.InstantPoisonVI.id,
+});
 
 const IP_MH_Settings = {
 	name: 'Default',
@@ -226,3 +237,7 @@ export const PRESET_BUILD_SUB_BS = PresetUtils.makePresetBuild('Subtlety BS', {
 	settings: IP_MH_Settings,
 	epWeights: EP_PRESET_SUBTLETY,
 });
+
+export const OtherDefaults = {
+	distanceFromTarget: 5,
+};

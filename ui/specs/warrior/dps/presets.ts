@@ -1,19 +1,18 @@
 import * as PresetUtils from '@app/preset_utils';
+import * as Consumables from '@features/settings/model/consumables_auto_gen';
 import { makeSpecChangeWarningToast } from '@features/settings/utils/spec_change_warning_toast';
-import { HandType, ItemSlot, PseudoStat, Spec, Stat } from '@generated/proto/common';
+import { ConsumesSpec, HandType, ItemSlot, Profession, PseudoStat, Race, Spec, Stat } from '@generated/proto/common';
+import { SavedTalents } from '@generated/proto/ui';
+import { DpsWarrior_Options as WarriorOptions, DpsWarrior_Rotation, DpsWarriorSpec, WarriorStance, WarriorSunder } from '@generated/proto/warrior';
 import { Player } from '@sim/player/player';
+import type { PresetSettings } from '@sim/presets/types';
 import { Stats } from '@sim/proto/stats';
 
-import DefaultArmsApl from './apls/arms.apl.siml';
-import DefaultFuryApl from './apls/fury.apl.siml';
-import PreBiSArmsBuildJson from './builds/prebis_arms.siml';
-import PreBiSFuryBuildJson from './builds/prebis_fury.siml';
-import DefaultsJson from './defaults.siml';
-import PreBiSArmsGearJson from './gear_sets/prebis_arms.gear.siml';
-import PreBiSFuryGearJson from './gear_sets/prebis_fury.gear.siml';
-
-// The spec's defaults, from defaults.siml.
-export const Defaults = PresetUtils.specDefaultsFromSettings(Spec.SpecDpsWarrior, DefaultsJson);
+import * as WarriorPresets from '../shared/presets';
+import DefaultArmsApl from './apls/arms.apl.json';
+import DefaultFuryApl from './apls/fury.apl.json';
+import PreBiSArmsGearJson from './gear_sets/prebis_arms.gear.json';
+import PreBiSFuryGearJson from './gear_sets/prebis_fury.gear.json';
 
 // Preset options for this spec.
 // Eventually we will import these values for the raid sim too, so its good to
@@ -70,6 +69,9 @@ const ARMS_PRESET_OPTIONS = {
 // the second ring have no known source.
 export const PreBiSFuryGear = PresetUtils.makePresetGear('Pre-BiS', PreBiSFuryGearJson, { ...FURY_PRESET_OPTIONS, devOnly: true });
 
+// The best build found on the Pre-BiS Fury gear over a three minute fight.
+export const FuryTalents = PresetUtils.makePresetTalents('Fury', SavedTalents.create({ talentsString: '30305013002-25053005052010501' }));
+
 // Measured on the Pre-BiS Fury gear with the Fury talents.
 export const PreBiSFuryEpWeights = PresetUtils.makePresetEpWeights(
 	'Pre-BiS - Fury',
@@ -95,6 +97,10 @@ export const PreBiSFuryEpWeights = PresetUtils.makePresetEpWeights(
 // Tiger" suffix too.
 export const PreBiSArmsGear = PresetUtils.makePresetGear('Pre-BiS', PreBiSArmsGearJson, { ...ARMS_PRESET_OPTIONS, devOnly: true });
 
+// The Battle Stance build: Rend keeps Bloodthrill's Overpower procs coming, and Spearing Strike fills the
+// global cooldowns Mortal Strike and Slam leave.
+export const ArmsTalents = PresetUtils.makePresetTalents('Arms', SavedTalents.create({ talentsString: '30325213132515201-0505-2' }));
+
 // Measured on the Pre-BiS Arms gear with the Arms talents. Hit is its value below the 8% cap.
 export const PreBiSArmsEpWeights = PresetUtils.makePresetEpWeights(
 	'Pre-BiS - Arms',
@@ -119,26 +125,86 @@ export const PreBiSArmsEpWeights = PresetUtils.makePresetEpWeights(
 export const FURY_DEFAULT_ROTATION = PresetUtils.makePresetAPLRotation('Fury', DefaultFuryApl);
 export const ARMS_DEFAULT_ROTATION = PresetUtils.makePresetAPLRotation('Arms', DefaultArmsApl);
 
-// The simple rotation of the spec's defaults.
-export const SIMPLE_DEFAULT_ROTATION = PresetUtils.makePresetSimpleRotation('Simple', Spec.SpecDpsWarrior, Defaults.simpleRotation!);
+export const SIMPLE_ROTATION = DpsWarrior_Rotation.create({
+	spec: DpsWarriorSpec.DpsWarriorSpecFury,
+	sunderArmor: WarriorSunder.WarriorSunderHelp,
+	useOverpower: true,
+	useRend: true,
+	useRecklessness: false,
+	useStanceDance: false,
+	useHamstring: true,
+});
+export const SIMPLE_DEFAULT_ROTATION = PresetUtils.makePresetSimpleRotation('Simple', Spec.SpecDpsWarrior, SIMPLE_ROTATION);
+export const SIMPLE_ARMS_DEFAULT_ROTATION = PresetUtils.makePresetSimpleRotation('Simple', Spec.SpecDpsWarrior, {
+	...SIMPLE_ROTATION,
+	spec: DpsWarriorSpec.DpsWarriorSpecArms,
+});
 
-export const DefaultSettings = PresetUtils.makePresetSettingsFromJSON('Defaults', Spec.SpecDpsWarrior, DefaultsJson);
+export const DefaultOptions = WarriorOptions.create({
+	classOptions: {
+		queueDelay: 250,
+		startingRage: 50,
+		useBattleShout: true,
+		defaultStance: WarriorStance.WarriorStanceBerserker,
+		hasBsT2: true,
+		stanceSnapshot: true,
+	},
+});
 
-export const PreBiSFuryBuild = PresetUtils.makePresetBuildFromJSON('Pre-BiS', Spec.SpecDpsWarrior, PreBiSFuryBuildJson, {
+export const DefaultConsumables = ConsumesSpec.create({
+	...WarriorPresets.DefaultConsumables,
+	resourcePotId: Consumables.MightyRagePotion.id,
+	mhImbueId: Consumables.DenseWeightstone.id,
+	ohImbueId: Consumables.DenseSharpeningStone.id,
+	elixirIds: [Consumables.ElixirOfFerocity.id, Consumables.ElixirOfTheMongoose.id, Consumables.WinterfallFirewater.id],
+});
+
+// The Pre-BiS Arms two-hander is an axe, so the main hand takes the sharpening stone and there is no off hand.
+export const ArmsConsumables = ConsumesSpec.create({
+	...DefaultConsumables,
+	mhImbueId: Consumables.DenseSharpeningStone.id,
+	ohImbueId: 0,
+});
+
+export const OtherDefaults = {
+	race: Race.RaceOrc,
+	profession1: Profession.Engineering,
+	profession2: Profession.Blacksmithing,
+	distanceFromTarget: 25,
+	reactionTime: 100,
+};
+
+export const DefaultSettings: PresetSettings = {
+	name: 'Defaults',
+	race: OtherDefaults.race,
+	specOptions: DefaultOptions,
+	consumables: DefaultConsumables,
+	buffs: WarriorPresets.DefaultIndividualBuffs,
+	partyBuffs: WarriorPresets.DefaultPartyBuffs,
+	raidBuffs: WarriorPresets.DefaultRaidBuffs,
+	debuffs: WarriorPresets.DefaultDebuffs,
+	playerOptions: {
+		profession1: OtherDefaults.profession1,
+		profession2: OtherDefaults.profession2,
+		distanceFromTarget: OtherDefaults.distanceFromTarget,
+		reactionTimeMs: OtherDefaults.reactionTime,
+	},
+};
+
+export const PreBiSFuryBuild = PresetUtils.makePresetBuild('Pre-BiS', {
 	group: 'Fury',
 	gear: PreBiSFuryGear,
+	talents: FuryTalents,
+	rotation: SIMPLE_DEFAULT_ROTATION,
 	epWeights: PreBiSFuryEpWeights,
+	settings: { name: 'Pre-BiS - Fury', consumables: DefaultConsumables },
 });
 
-export const PreBiSArmsBuild = PresetUtils.makePresetBuildFromJSON('Pre-BiS', Spec.SpecDpsWarrior, PreBiSArmsBuildJson, {
+export const PreBiSArmsBuild = PresetUtils.makePresetBuild('Pre-BiS', {
 	group: 'Arms',
 	gear: PreBiSArmsGear,
+	talents: ArmsTalents,
+	rotation: SIMPLE_ARMS_DEFAULT_ROTATION,
 	epWeights: PreBiSArmsEpWeights,
+	settings: { name: 'Pre-BiS - Arms', consumables: ArmsConsumables },
 });
-
-// The Pre-BiS Fury build's talents, the best found on its gear over a three minute fight.
-export const FuryTalents = PresetUtils.makePresetTalents('Fury', PreBiSFuryBuild.talents!.data);
-
-// The Pre-BiS Arms build's talents, a Battle Stance build: Rend keeps Bloodthrill's Overpower procs coming, and
-// Spearing Strike fills the global cooldowns Mortal Strike and Slam leave.
-export const ArmsTalents = PresetUtils.makePresetTalents('Arms', PreBiSArmsBuild.talents!.data);

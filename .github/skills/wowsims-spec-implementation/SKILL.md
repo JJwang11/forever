@@ -60,12 +60,16 @@ Where the sim and the game files disagree, decide rather than assume ("When a si
 
 ## Rotations, gear sets and builds
 
-A spec's presets are SIML files under `ui/specs/<class>/<spec>/`. `sim/siml/SPEC.md` is the language.
+A spec's presets are files under `ui/specs/<class>/<spec>/`. The hunter writes them in SIML, which
+`sim/siml/SPEC.md` describes, and the other specs keep JSON until their developers move them; `core.GetAplRotation`
+and `core.GetGearSet` read an `.apl.siml` or `.gear.siml` when one is there and the JSON otherwise. To move a spec,
+print each JSON file with `go run --tags=with_db ./cmd/wowsimcli siml print -kind apl|gear|siml -spec <field>`,
+check it with `siml verify`, and write the spec's `defaults.siml` as the hunter's is written.
 
 - `apls/<name>.apl.siml` holds a rotation. It opens with `siml 1` and `spec <field>`, the spec's field in the `spec`
   oneof of `Player` in `proto/api.proto`: `hunter`, `dps_warrior`, `enhancement_shaman`.
 - `gear_sets/<name>.gear.siml` holds one slot row per item: `main_hand arcanite_reaper + weapon_crusader`.
-- `builds/<name>.siml` holds a Go suite's test build (`core.GetTestBuild`), a whole setup, or a preset build the
+- `builds/<name>.siml` holds a whole setup, or a preset build the
   site offers, which states only what it changes over `defaults.siml`. A `use` line takes a gear set or a rotation
   from its own file, by a path from the build's folder: `use "../gear_sets/p1.gear.siml"`.
 - Rotations that share variables and defs `use` one file that holds only those, as the hunter's weave rotations use

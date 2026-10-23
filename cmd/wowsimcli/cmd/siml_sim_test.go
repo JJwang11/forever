@@ -267,7 +267,8 @@ func TestSettingsFileSuppliesTheCharacter(t *testing.T) {
 		t.Errorf("from a preset build: %s, character %+v", fromBuild.Error, fromBuild.Character)
 	}
 	_, warrior := printedAPL(t, "warrior/dps", "arms", proto.Spec_SpecDpsWarrior)
-	if res := runSimlSim(context.Background(), root, simlSimRequest{SIML: warrior, Path: tempPath(t, "arms.apl.siml"), SettingsFile: path}); !strings.Contains(res.Error, "not a warrior/dps character") {
+	// The warrior's presets are JSON, so the spec has no defaults.siml and its field names it.
+	if res := runSimlSim(context.Background(), root, simlSimRequest{SIML: warrior, Path: tempPath(t, "arms.apl.siml"), SettingsFile: path}); !strings.Contains(res.Error, "not a dps_warrior character") {
 		t.Errorf("a hunter file for a warrior rotation: %q", res.Error)
 	}
 }

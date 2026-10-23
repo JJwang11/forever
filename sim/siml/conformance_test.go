@@ -383,7 +383,7 @@ func TestSpecExamples(t *testing.T) {
 	want := []string{
 		"ui/specs/hunter/dps/apls/default.apl.siml",
 		"ui/specs/hunter/dps/apls/default_2.apl.siml",
-		"ui/specs/warrior/dps/apls/arms.apl.siml",
+		"arms.apl.siml",
 		"ui/specs/hunter/dps/gear_sets/p1.gear.siml",
 		"example.siml",
 	}

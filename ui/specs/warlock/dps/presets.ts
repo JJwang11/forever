@@ -1,12 +1,15 @@
 import * as PresetUtils from '@app/preset_utils';
-import { Spec } from '@generated/proto/common';
+import * as Consumables from '@features/settings/model/consumables_auto_gen';
+import { Debuffs, IndividualBuffs, PartyBuffs, RaidBuffs } from '@generated/proto/buffs';
+import { ConsumesSpec, Profession, Spec, TristateEffect } from '@generated/proto/common';
 import { SavedTalents } from '@generated/proto/ui';
+import { Warlock_Options as WarlockOptions, WarlockOptions_Armor, WarlockOptions_CurseOptions, WarlockOptions_Summon } from '@generated/proto/warlock';
 
-import AffWrackBuildJson from './builds/aff_wrack.siml';
-import DemoFireBrandBuildJson from './builds/demo_fire_brand.siml';
-import DemoShadowBrandBuildJson from './builds/demo_shadow_brand.siml';
-import DestroBuildJson from './builds/destro.siml';
-import SmRuinBuildJson from './builds/sm_ruin.siml';
+import AffWrackBuildJson from './builds/aff_wrack.build.json';
+import DemoFireBrandBuildJson from './builds/demo_fire_brand.build.json';
+import DemoShadowBrandBuildJson from './builds/demo_shadow_brand.build.json';
+import DestroBuildJson from './builds/destro.build.json';
+import SmRuinBuildJson from './builds/sm_ruin.build.json';
 
 // Preset options for this spec.
 // Eventually we will import these values for the raid sim too, so its good to
@@ -26,6 +29,54 @@ export const DemoShadowBrandTalents = talentsOf('Demo (Shadow Brand)', DemoShado
 export const DestroTalents = talentsOf('Destro', DestroBuildJson);
 export const SmRuinTalents = talentsOf('SM/Ruin', SmRuinBuildJson);
 export const AffWrackTalents = talentsOf('Aff (Wrack)', AffWrackBuildJson);
+
+// Defaults
+export const DefaultOptions = WarlockOptions.create({
+	classOptions: {
+		armor: WarlockOptions_Armor.DemonArmor,
+		curseOptions: WarlockOptions_CurseOptions.Elements,
+		sacrificedDemon: WarlockOptions_Summon.Succubus,
+		summon: WarlockOptions_Summon.Imp,
+		// A full Felcloth Bag (21341), the largest Soul Bag a warlock can carry.
+		soulShards: 32,
+	},
+});
+
+export const DefaultConsumables = ConsumesSpec.create({
+	flaskId: Consumables.FlaskOfSupremePower.id,
+	foodId: Consumables.NightfinSoup.id,
+	conjuredId: Consumables.DemonicRune.id,
+	mhImbueId: Consumables.BrilliantWizardOil.id,
+	offensivePotId: Consumables.MajorSpellblastingPotion.id,
+	explosiveId: Consumables.EzThroDynamiteII.id,
+});
+
+export const OtherDefaults = {
+	distanceFromTarget: 20,
+	profession1: Profession.Engineering,
+	profession2: Profession.Tailoring,
+};
+
+export const DefaultRaidBuffs = RaidBuffs.create({
+	arcaneBrilliance: true,
+	giftOfTheWild: true,
+	prayerOfFortitude: true,
+	prayerOfSpirit: true,
+	moonkinAura: true,
+});
+
+export const DefaultPartyBuffs = PartyBuffs.create({
+	manaSpringTotem: TristateEffect.TristateEffectRegular,
+});
+
+export const DefaultIndividualBuffs = IndividualBuffs.create({
+	greaterBlessingOfKings: true,
+	greaterBlessingOfWisdom: true,
+});
+
+export const DefaultDebuffs = Debuffs.create({
+	judgementOfWisdom: true,
+});
 
 // Each build file holds the talents, demons, consumables, buffs and rotation of one tree and playstyle.
 const build = (name: string, json: unknown) => PresetUtils.makePresetBuildFromJSON(name, Spec.SpecWarlock, json);

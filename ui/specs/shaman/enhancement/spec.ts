@@ -68,7 +68,8 @@ export default defineSpec<Spec.SpecEnhancementShaman>({
 	displayWeaponSkillGroups: [WeaponSkillGroup.Melee],
 
 	defaults: {
-		...Presets.Defaults,
+		// Default equipped gear.
+		gear: Presets.DefaultGear.gear,
 		// Default EP weights for sorting gear in the gear picker.
 		epWeights: Presets.PreBiSEpWeights.epWeights,
 		statCaps: (() => {
@@ -84,6 +85,18 @@ export default defineSpec<Spec.SpecEnhancementShaman>({
 
 			return [meleeHitSoftCapConfig];
 		})(),
+		other: Presets.OtherDefaults,
+		// Default consumes settings.
+		consumables: Presets.DefaultConsumables,
+		// Default talents.
+		talents: Presets.StandardTalents.data,
+		// Default spec-specific settings.
+		specOptions: Presets.DefaultOptions,
+		// Default raid/party buffs settings.
+		raidBuffs: Presets.DefaultRaidBuffs,
+		partyBuffs: Presets.DefaultPartyBuffs,
+		individualBuffs: Presets.DefaultIndividualBuffs,
+		debuffs: Presets.DefaultDebuffs,
 	},
 
 	// IconInputs to include in the 'Player' section on the settings tab.

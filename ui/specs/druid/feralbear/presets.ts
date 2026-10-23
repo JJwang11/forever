@@ -1,18 +1,17 @@
 import * as PresetUtils from '@app/preset_utils';
-import { PseudoStat, Spec, Stat } from '@generated/proto/common';
+import * as Consumables from '@features/settings/model/consumables_auto_gen';
+import { ConsumesSpec, HealingModel, Profession, PseudoStat, Race, Stat } from '@generated/proto/common';
+import { FeralBearDruid_Options as DruidOptions } from '@generated/proto/druid';
 import { SavedTalents } from '@generated/proto/ui';
 import { Stats } from '@sim/proto/stats';
+import { Encounter } from '@sim/raid/encounter';
+import { OtherDefaults as SimUIOtherDefaults } from '@sim/spec_config';
 
-import DefaultApl from './apls/default.apl.siml';
-import DefaultsJson from './defaults.siml';
-import Level60GearJson from './gear_sets/default.gear.siml';
-
-// The spec's defaults, from defaults.siml.
-export const Defaults = PresetUtils.specDefaultsFromSettings(Spec.SpecFeralBearDruid, DefaultsJson);
-
+import DefaultApl from './apls/default.apl.json';
+import Level60GearJson from './gear_sets/default.gear.json';
 export const ROTATION_DEFAULT = PresetUtils.makePresetAPLRotation('APL', DefaultApl);
 
-export const BearTalents = PresetUtils.makePresetTalents('Bear', Defaults.talents);
+export const BearTalents = PresetUtils.makePresetTalents('Bear', SavedTalents.create({ talentsString: '050022-15230332121132012051-04' }));
 export const HybridTalents = PresetUtils.makePresetTalents('Hybrid', SavedTalents.create({ talentsString: '050022-35230332121132212051-' }));
 
 // Leather at 60 with no set bonus and no proc, about the item level of the cat preset.
@@ -21,9 +20,11 @@ export const Level60Gear = PresetUtils.makePresetGear('Level 60', Level60GearJso
 	tooltip: 'Leather at level 60 with no set bonus and no proc. The idol slot is empty: every idol has an effect.',
 });
 
-// The fight defaults.siml writes: the raid target, swinging for 6000 before armor.
+// The raid target swings for 6000 before armor.
+const level60Encounter = Encounter.defaultEncounterProto();
+level60Encounter.targets[0].minBaseDamage = 6000;
 export const Level60Encounter = {
-	...PresetUtils.makePresetEncounter('Level 60 boss', Defaults.encounter!.encounter),
+	...PresetUtils.makePresetEncounter('Level 60 boss', level60Encounter),
 	tooltip: 'The raid target, hitting for 6000 before armor.',
 };
 
@@ -100,3 +101,34 @@ export const Level60SurvivalEp = Stats.fromMap({
 export const Level60DpsEpWeights = PresetUtils.makePresetEpWeights('Level 60 DPS', Level60DpsEp);
 export const Level60ThreatEpWeights = PresetUtils.makePresetEpWeights('Level 60 Threat', Level60ThreatEp);
 export const Level60SurvivalEpWeights = PresetUtils.makePresetEpWeights('Level 60 Survival', Level60SurvivalEp);
+
+// Another raid member's bleed keeps Rend and Tear up.
+export const DefaultOptions = DruidOptions.create({
+	startingRage: 0,
+	assumeBleedActive: true,
+});
+
+export const DefaultConsumables = ConsumesSpec.create({
+	elixirIds: [Consumables.ElixirOfTheMongoose.id, Consumables.GiftOfArthas.id],
+	foodId: Consumables.DirgesKickinChimaerokChops.id,
+	defensivePotId: Consumables.GreaterStoneshieldPotion.id,
+	conjuredId: Consumables.MajorHealthstone9421.id,
+	mhImbueId: Consumables.DenseWeightstone.id,
+	extraIds: [Consumables.GoblinSapperCharge.id, Consumables.ScrollOfStrengthIV.id, Consumables.ScrollOfProtectionIV.id],
+});
+
+export const OtherDefaults: Partial<SimUIOtherDefaults> = {
+	profession1: Profession.Engineering,
+	profession2: Profession.Enchanting,
+	race: Race.RaceNightElf,
+	distanceFromTarget: 0,
+	reactionTime: 250,
+	healingModel: HealingModel.create({
+		hps: 2200,
+		cadenceSeconds: 0.4,
+		cadenceVariation: 1.2,
+		absorbFrac: 0.02,
+		burstWindow: 6,
+		inspirationUptime: 0.25,
+	}),
+};

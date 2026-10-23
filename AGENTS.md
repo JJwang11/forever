@@ -3,7 +3,8 @@
 WoWSims Forever: a Go simulator (`sim/`) with a React frontend (`ui/`), built on data extracted from the game
 files (`tools/database`, `sim/core/spelldata`).
 
-Rotations, gear sets and sim setups are SIML files (`*.siml`); `sim/siml/SPEC.md` is the language, and
+The hunter's rotations, gear sets and sim setups are SIML files (`*.siml`); the other specs keep theirs as JSON
+until each moves, and the Go suites and the site read either. `sim/siml/SPEC.md` is the language, and
 `siml.llm.txt` a short guide to it with every action and value, where its tools are and how to start its language
 server. A change to a proto, `proto/apl.proto` most of all, reaches SIML on its own; run `make siml` after one, and
 fix the `.siml` files the check names when a kind or field is taken out or renamed.

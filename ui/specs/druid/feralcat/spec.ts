@@ -1,7 +1,8 @@
 import * as BuffDebuffInputs from '@features/settings/model/buffs_debuffs';
 import * as OtherInputs from '@features/settings/model/other_inputs';
-import { APLRotation } from '@generated/proto/apl';
-import { ItemSlot, PseudoStat, Spec, Stat } from '@generated/proto/common';
+import { APLRotation, APLRotation_Type as APLRotationType } from '@generated/proto/apl';
+import { Debuffs, IndividualBuffs, PartyBuffs, RaidBuffs } from '@generated/proto/buffs';
+import { ItemSlot, PseudoStat, Spec, Stat, TristateEffect } from '@generated/proto/common';
 import { PlayerClasses } from '@sim/player/classes';
 import { Player } from '@sim/player/player';
 import { Stats, UnitStat } from '@sim/proto/stats';
@@ -60,12 +61,48 @@ export default defineSpec<Spec.SpecFeralCatDruid>({
 	),
 
 	defaults: {
-		...Presets.Defaults,
+		// Default equipped gear.
+		gear: Presets.PreRaidGear.gear,
 		// Default EP weights for sorting gear in the gear picker.
 		epWeights: Presets.DefaultEp,
 		statCaps: (() => {
 			return new Stats().withPseudoStat(PseudoStat.PseudoStatMeleeHitPercent, 8).withPseudoStat(PseudoStat.PseudoStatExpertisePercent, 6.5);
 		})(),
+		other: Presets.OtherDefaults,
+		// Default consumes settings.
+		consumables: Presets.DefaultConsumables,
+		// Default rotation settings.
+		rotationType: APLRotationType.TypeAuto,
+		// Genesis, nature's majesty, nature's reach, ferocity, heart of the wild, shredding attacks,
+		// savage fury, sharpened claws, shifting power, predatory strikes, improved shifting power,
+		// leader of the pack, natural instinct, rend and tear, berserk, furor, naturalist.
+		// Shifting Power is absent until that talent is taken.
+		talents: Presets.CatTalents.data,
+		// Default spec-specific settings.
+		specOptions: Presets.DefaultOptions,
+		// Default raid/party buffs settings.
+		raidBuffs: RaidBuffs.create({
+			arcaneBrilliance: true,
+			prayerOfSpirit: true,
+			giftOfTheWild: true,
+			prayerOfFortitude: true,
+			windfuryTotem: true,
+			strengthOfEarthTotem: true,
+			battleShout: TristateEffect.TristateEffectRegular,
+		}),
+		partyBuffs: PartyBuffs.create({
+			manaSpringTotem: TristateEffect.TristateEffectRegular,
+		}),
+		individualBuffs: IndividualBuffs.create({
+			greaterBlessingOfKings: true,
+			greaterBlessingOfMight: true,
+		}),
+		debuffs: Debuffs.create({
+			judgementOfWisdom: true,
+			faerieFire: true,
+			sunderArmor: true,
+			giftOfArthas: true,
+		}),
 	},
 
 	// IconInputs to include in the 'Player' section on the settings tab.

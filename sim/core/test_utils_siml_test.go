@@ -45,11 +45,12 @@ func TestPresetsReadAsSIML(t *testing.T) {
 	}
 	huntersMark, _ := names.Spell(proto.Class_ClassHunter, siml.NamespaceSpell, "hunters_mark")
 	bow, _ := names.Item("fahrads_reloading_repeater")
-	gear := "siml 1\n\nranged  fahrads_reloading_repeater\n"
+	// A JSON file beside each .siml, which the .siml goes ahead of.
 	dir := presetDir(t, map[string]string{
 		"x.apl.siml":  "siml 1\nspec hunter\n\npriority:\n  cast hunters_mark\n",
-		"x.gear.siml": gear,
-		"x.siml":      "siml 1\nspec hunter\ntalents \"-00530501114-550200030050220151\"\n\nsettings: race orc\n\ngear:\n  " + strings.TrimPrefix(gear, "siml 1\n\n"),
+		"x.gear.siml": "siml 1\n\nranged  fahrads_reloading_repeater\n",
+		"x.apl.json":  "{}",
+		"x.gear.json": "{}",
 	})
 
 	rotation := GetAplRotation(dir, "x")
@@ -62,33 +63,22 @@ func TestPresetsReadAsSIML(t *testing.T) {
 	if items := GetItemSwapGearSet(dir, "x").ItemSwap.GetItems(); len(items) != 17 || items[proto.ItemSlot_ItemSlotRanged].GetId() != bow {
 		t.Errorf("GetItemSwapGearSet gave the items %v, want 17 with Fahrad's Reloading Repeater in the ranged slot", items)
 	}
-	build := GetTestBuild(proto.Class_ClassHunter, dir, "x", ItemFilter{}, nil, nil)
-	if build.Race != proto.Race_RaceOrc || build.Talents != "-00530501114-550200030050220151" || build.GearSet.GearSet.GetItems()[proto.ItemSlot_ItemSlotRanged].GetId() != bow {
-		t.Errorf("GetTestBuild gave the race %v, the talents %q and the gear %v", build.Race, build.Talents, build.GearSet.GearSet)
-	}
-	if _, ok := build.SpecOptions.SpecOptions.(*proto.Player_Hunter); !ok {
-		t.Errorf("GetTestBuild gave the spec options %T, want the hunter's", build.SpecOptions.SpecOptions)
-	}
 }
 
-// A JSON preset with no .siml of the same name panics, naming it and the command that prints it as SIML, whatever
-// else is missing.
-func TestAJSONPresetPanics(t *testing.T) {
-	dir := presetDir(t, map[string]string{"x.apl.json": "{}", "x.gear.json": "{}", "x.build.json": "{}"})
-	for name, c := range map[string]struct {
-		read          func()
-		command, json string
-	}{
-		"GetAplRotation":     {func() { GetAplRotation(dir, "x") }, "siml print -kind apl -spec <the spec's field, such as hunter or dps_warrior> %[1]s/x.apl.json > %[1]s/x.apl.siml", "x.apl.json"},
-		"GetGearSet":         {func() { GetGearSet(dir, "x") }, "siml print -kind gear %[1]s/x.gear.json > %[1]s/x.gear.siml", "x.gear.json"},
-		"GetItemSwapGearSet": {func() { GetItemSwapGearSet(dir, "x") }, "siml print -kind gear %[1]s/x.gear.json > %[1]s/x.gear.siml", "x.gear.json"},
-		"GetTestBuild": {func() { GetTestBuild(proto.Class_ClassHunter, dir, "x", ItemFilter{}, nil, nil) },
-			"siml print -kind siml %[1]s/x.build.json > %[1]s/x.siml", "x.build.json"},
-	} {
-		message, panicked := panicOf(c.read)
-		if !panicked || !strings.HasPrefix(message, dir+"/"+c.json+" is JSON") || !strings.HasSuffix(message, fmt.Sprintf(c.command, dir)) {
-			t.Errorf("%s gave the panic %q (panicked: %v), want one naming the JSON file and ending in the command", name, message, panicked)
-		}
+// A spec that has no .siml preset of a name reads its JSON one.
+func TestPresetsReadAsJSONWithNoSIML(t *testing.T) {
+	dir := presetDir(t, map[string]string{
+		"x.apl.json":  `{"priorityList":[{"action":{"castSpell":{"spellId":{"spellId":14325}}}}]}`,
+		"x.gear.json": `{"items":[{"id":18323}]}`,
+	})
+	if id := GetAplRotation(dir, "x").Rotation.GetPriorityList()[0].GetAction().GetCastSpell().GetSpellId().GetSpellId(); id != 14325 {
+		t.Errorf("GetAplRotation cast %d, want the JSON file's spell", id)
+	}
+	if items := GetGearSet(dir, "x").GearSet.GetItems(); len(items) != 1 || items[0].GetId() != 18323 {
+		t.Errorf("GetGearSet gave %v, want the JSON file's item", items)
+	}
+	if items := GetItemSwapGearSet(dir, "x").ItemSwap.GetItems(); len(items) != 1 || items[0].GetId() != 18323 {
+		t.Errorf("GetItemSwapGearSet gave %v, want the JSON file's item", items)
 	}
 }
 
@@ -114,8 +104,8 @@ func TestAMissingPresetIsSkipped(t *testing.T) {
 		t.Errorf("GetGearSet gave %v, want the label x and no items", gear)
 	}
 	for _, want := range []string{
-		"no apl siml file, skipping rotation: " + dir + "/x.apl.siml",
-		"no gear siml file, skipping gear set: " + dir + "/x.gear.siml",
+		"no apl json file, skipping rotation: " + dir + "/x.apl.json",
+		"no gear json file, skipping gear set: " + dir + "/x.gear.json",
 	} {
 		if !strings.Contains(logged.String(), want) {
 			t.Errorf("the log %q does not say %q", logged.String(), want)
