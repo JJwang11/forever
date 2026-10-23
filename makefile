@@ -107,11 +107,11 @@ node_modules: package-lock.json
 bin/wowsimcli$(BIN_EXT): sim/core/proto/api.pb.go sim/siml/forms.json sim/siml/llm_head.txt $(filter-out %_test.go,$(call rwildcard,sim,*.go) $(call rwildcard,cmd/wowsimcli,*.go) $(call rwildcard,tools/spelldata,*.go))
 	go build -o $@ ./cmd/wowsimcli
 
-# Run before committing, and after a change to proto/apl.proto: refresh the SIML name table and siml.llm.txt, then
-# check the files under ui/specs read and are canonical.
+# Run before committing, and after a change to proto/apl.proto: refresh the SIML name table and the wowsims-siml
+# skill, then check the files under ui/specs read and are canonical.
 .PHONY: siml
 siml: siml-names
-	go run ./cmd/wowsimcli siml llm -o siml.llm.txt
+	go run ./cmd/wowsimcli siml llm -o .github/skills/wowsims-siml/SKILL.md
 	go run --tags=with_db ./cmd/wowsimcli siml fmt -check ui/specs
 
 # Generic rule for hosting any class directory

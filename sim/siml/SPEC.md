@@ -565,8 +565,8 @@ An accessor is a value kind named `<head>_<prop>` (§8.3). It is written:
 Arguments written inside the head's parentheses are `args-on-head`.
 
 The heads the v1 protos derive, each with a few of its properties. The list is not normative: §8.3 is, so a new
-`aura_foo` kind is `aura(x).foo` with no edit. `siml.llm.txt` at the repository root lists every property with its
-arguments, written from the schema (`wowsimcli siml llm`, which `make siml` runs).
+`aura_foo` kind is `aura(x).foo` with no edit. The `wowsims-siml` skill (`.github/skills/wowsims-siml/SKILL.md`)
+lists every property with its arguments, written from the schema (`wowsimcli siml llm`, which `make siml` runs).
 
 | Head         | Subject                    | Unit prefix fills                     | Properties, such as (the kind is `<head>_<prop>`)                                   |
 | ------------ | -------------------------- | ------------------------------------- | ----------------------------------------------------------------------------------- |

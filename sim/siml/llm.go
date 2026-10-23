@@ -7,14 +7,14 @@ import (
 	"strings"
 )
 
-// siml.llm.txt at the repository root: a short guide to SIML for a language model or a newcomer, llm_head.txt, then
-// every action, value and accessor the protos give, written from the schema, so a change to apl.proto shows up in it
-// when it is written again (wowsimcli siml llm, which make siml runs).
+// The wowsims-siml skill (.github/skills/wowsims-siml/SKILL.md): a short guide to SIML for a language model or a
+// newcomer, llm_head.txt, then every action, value and accessor the protos give, written from the schema, so a change
+// to apl.proto shows up in it when it is written again (wowsimcli siml llm, which make siml runs).
 
 //go:embed llm_head.txt
 var llmHead string
 
-// The text of siml.llm.txt.
+// The text of the wowsims-siml skill.
 func LLMText() (string, error) {
 	ix, err := loadIndex()
 	if err != nil {
@@ -22,46 +22,76 @@ func LLMText() (string, error) {
 	}
 	var b strings.Builder
 	b.WriteString(llmHead)
-	b.WriteString("\n## Actions (generated from proto/apl.proto; every kind also takes the generic kind(field=value, …))\n\n")
+	b.WriteString("\n## Actions\n\nWritten from `proto/apl.proto`. Every kind also takes the generic `kind(field=value, …)`.\n\n")
 	for _, k := range ix.actionKindList() {
 		b.WriteString(ix.llmLine(k) + "\n")
 	}
-	b.WriteString("\n## Values (generated)\n\n")
+	b.WriteString("\n## Values\n\nWritten from `proto/apl.proto`, but for the accessors below.\n\n")
 	for _, k := range ix.valueKindList {
 		if k.Form != "accessor" {
 			b.WriteString(ix.llmLine(k) + "\n")
 		}
 	}
-	b.WriteString("\n## Accessors (generated): [unit.]head(subject).property(arguments)\n\n")
+	b.WriteString("\n## Accessors\n\nWritten `[unit.]head(subject).property(arguments)`; each head with its properties.\n\n")
 	for _, head := range ix.heads {
 		var props []string
 		unit := ""
 		for _, k := range ix.headKinds(head) {
-			props = append(props, k.Accessor.Prop+ix.llmArgs(k, k.Accessor.Subject, k.Accessor.Unit))
+			props = append(props, "`"+k.Accessor.Prop+ix.llmArgs(k, k.Accessor.Subject, k.Accessor.Unit)+"`")
 			if k.Accessor.Unit != "" {
 				unit = "[unit.]"
 			}
 		}
-		fmt.Fprintf(&b, "%s%s(x): %s\n", unit, head, strings.Join(props, ", "))
+		b.WriteString(llmWrap(fmt.Sprintf("- `%s%s(x)`: %s", unit, head, strings.Join(props, ", "))))
 	}
 	return b.String(), nil
 }
 
-// One kind as a file writes it, with its fields.
+// One kind as a list item, with its fields.
 func (ix *schemaIndex) llmLine(k *aplKind) string {
+	line := k.Kind + ix.llmArgs(k)
 	switch k.Form {
 	case "bare":
-		return k.Kind
+		line = k.Kind
 	case "unit_prefix":
-		return "[unit.]" + k.Kind + ix.llmArgs(k, k.UnitField)
+		line = "[unit.]" + k.Kind + ix.llmArgs(k, k.UnitField)
 	case "list_args":
-		return k.Kind + "(a, b, …)"
+		line = k.Kind + "(a, b, …)"
 	}
-	line := k.Kind + ix.llmArgs(k)
+	line = "- `" + line + "`"
 	if k.Form == "short" {
-		line += "  (short form above)"
+		line += ", short form above"
 	}
 	return line
+}
+
+// A list item broken at spaces outside code into lines of at most 116 runes, as the hand-written skills wrap,
+// continued under the item's text.
+func llmWrap(item string) string {
+	var b strings.Builder
+	line, inCode, start := "", false, 0
+	for i, r := range item {
+		if r == '`' {
+			inCode = !inCode
+		}
+		if r != ' ' || inCode || i+1 >= len(item) {
+			continue
+		}
+		word := item[start:i]
+		if line != "" && len([]rune(line+word)) > 116 {
+			b.WriteString(strings.TrimRight(line, " ") + "\n")
+			line = "  "
+		}
+		line += word + " "
+		start = i + 1
+	}
+	word := item[start:]
+	if line != "" && len([]rune(line+word)) > 116 {
+		b.WriteString(strings.TrimRight(line, " ") + "\n")
+		line = "  "
+	}
+	b.WriteString(line + word + "\n")
+	return b.String()
 }
 
 // A kind's fields, but those in leave, as (name: type, …); "" for none. The positional field comes first, unnamed.

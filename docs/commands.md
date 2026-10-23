@@ -139,13 +139,14 @@ echo '{"siml": "...", "path": "ui/specs/hunter/dps/apls/default.apl.siml"}' | go
 go run --tags=with_db ./cmd/wowsimcli siml lsp
 # Write the extension's TextMate grammar, which make vscode-apl does
 go run ./cmd/wowsimcli siml grammar -o .vscode/extensions/wowsims-apl/syntaxes/siml.tmLanguage.json
-# Write siml.llm.txt, the short guide with every action, value and accessor from proto/apl.proto, which make siml does
-go run ./cmd/wowsimcli siml llm -o siml.llm.txt
+# Write the wowsims-siml skill, the short guide with every action, value and accessor from proto/apl.proto, which make
+# siml does
+go run ./cmd/wowsimcli siml llm -o .github/skills/wowsims-siml/SKILL.md
 
 # Add names for newly registered spells and new database rows to the SIML name table; commit it with the change
 make siml-names
-# Before committing, and after a change to proto/apl.proto: the name table as above, siml.llm.txt, then siml fmt -check
-# over ui/specs
+# Before committing, and after a change to proto/apl.proto: the name table as above, the wowsims-siml skill, then siml
+# fmt -check over ui/specs
 make siml
 # The wowsimcli vite reads .siml imports with (tools/vite/siml.mts); make builds it, and rebuilds it after a Go change
 make bin/wowsimcli

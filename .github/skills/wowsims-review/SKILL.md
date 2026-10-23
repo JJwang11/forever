@@ -143,9 +143,9 @@ register, and on an enchant that does not fit its slot.
 
 **A change to the protos.** SIML writes every APL kind and setup field from the protos (`SPEC.md` §8), so a new
 action, value or field needs no SIML edit, and a change that edits `sim/siml` only to add one is a finding. What a
-proto change does need: `siml.llm.txt` written again (`make siml`; `TestLLMTextIsCurrent` fails without it), and the
-`.siml` files under `ui/specs` that use a kind or field the change takes out or renames, which the repository check
-names, moved to the new form. A new value kind that reads a spell or an aura is named `<head>_<prop>`, with one
+proto change does need: the `wowsims-siml` skill written again (`make siml`; `TestLLMTextIsCurrent` fails without it),
+and the `.siml` files under `ui/specs` that use a kind or field the change takes out or renames, which the
+repository check names, moved to the new form. A new value kind that reads a spell or an aura is named `<head>_<prop>`, with one
 `ActionID` field and at most one `UnitReference`, so it takes the accessor form (`proto/apl.proto` says so at the top);
 a finding otherwise.
 

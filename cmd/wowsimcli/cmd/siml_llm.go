@@ -6,9 +6,9 @@ import (
 	"github.com/wowsims/forever/sim/siml"
 )
 
-// siml.llm.txt, a short guide to SIML with every action, value and accessor the protos give:
+// The wowsims-siml skill, a short guide to SIML with every action, value and accessor the protos give:
 //
-//	go run ./cmd/wowsimcli siml llm -o siml.llm.txt
+//	go run ./cmd/wowsimcli siml llm -o .github/skills/wowsims-siml/SKILL.md
 //
 // With no -o it writes to stdout. make siml writes it.
 func simlLLM(out, errOut io.Writer, args []string) error {

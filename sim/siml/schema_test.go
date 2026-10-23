@@ -425,7 +425,7 @@ func TestSchemaDerivations(t *testing.T) {
 	for _, k := range slices.Concat(s.Kinds.Action, s.Kinds.Value) {
 		kinds[k.Kind] = k
 	}
-	// A few long-standing properties of each head (SPEC.md §6.7); siml.llm.txt lists them all.
+	// A few long-standing properties of each head (SPEC.md §6.7); the wowsims-siml skill lists them all.
 	accessors := map[string][]string{
 		"aura":       {"is_known", "is_active", "remaining_time", "num_stacks", "duration"},
 		"dot":        {"is_active", "remaining_time", "tick_frequency", "percent_increase"},
@@ -451,7 +451,7 @@ func TestSchemaDerivations(t *testing.T) {
 	forms := map[string][]string{ // SPEC.md §6.4, §6.8
 		"short": {"cast_spell", "channel_spell", "wait", "wait_until", "move", "move_duration", "group_reference", "schedule", "sequence",
 			"const", "and", "or", "not", "cmp", "math", "variable_ref", "variable_placeholder"},
-		// A sample of core kinds; siml.llm.txt lists every kind with its form.
+		// A sample of core kinds; the wowsims-siml skill lists every kind with its form.
 		"bare":        {"autocast_other_cooldowns", "current_time", "remaining_time", "current_energy", "gcd_is_ready", "input_delay"},
 		"unit_prefix": {"current_health", "current_health_percent", "current_mana", "current_mana_percent", "unit_is_moving", "unit_distance"},
 		"list_args":   {"max", "min", "strict_sequence"},
