@@ -112,6 +112,11 @@ export const TestingBuild = PresetUtils.makePresetBuildFromJSON('Testing', Spec.
 The Go suite reads the same files, for example `core.GetAplRotation("../../../ui/specs/warrior/dps/apls", "arms")`
 and `core.GetGearSet("../../../ui/specs/warrior/dps/gear_sets", "p1_arms")`.
 
+A preset rotation is written against `docs/rotation.md`: the pick after a hardcast does not see that
+cast's outcome, so a line that reads a proc, a stack or a buff of another id the landing changes carries
+`not(Spell Is Casting(X))`, while a line refreshing the cast's own dot does not. Check the preset's cast
+counts in a debug log before taking its DPS.
+
 ## Keeping the branch merged
 
 A port lives on one branch for a while, and master moves under it.

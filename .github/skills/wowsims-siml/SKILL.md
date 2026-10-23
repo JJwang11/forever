@@ -239,7 +239,7 @@ Written `[unit.]head(subject).property(arguments)`; each head with its propertie
   `tick_frequency`, `time_to_next_tick`, `base_duration`, `percent_increase(use_base_value: bool)`,
   `tick_rate_percent_increase(use_base_value: bool)`
 - `[unit.]spell(x)`: `is_known`, `can_cast`, `is_ready`, `time_to_ready`, `cast_time`, `travel_time`, `cpm`,
-  `is_channeling`, `channeled_ticks`, `current_cost`, `num_charges`, `time_to_charge`, `gcd_hasted_duration`,
-  `full_cooldown`, `in_flight`, `expected_dpet`, `is_hit_capped`, `is_expertise_capped`
+  `is_casting`, `is_channeling`, `channeled_ticks`, `current_cost`, `num_charges`, `time_to_charge`,
+  `gcd_hasted_duration`, `full_cooldown`, `in_flight`, `expected_dpet`, `is_hit_capped`, `is_expertise_capped`
 - `[unit.]boss_spell(x)`: `time_to_ready`, `is_casting`
 - `sequence(x)`: `is_complete`, `is_ready`, `time_to_ready`

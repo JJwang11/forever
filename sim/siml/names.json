@@ -1866,6 +1866,7 @@
         "heroic_strike_tag0": {"spellId": 25286, "rank": 9, "registeredBy": ["dps_warrior", "protection_warrior"]},
         "innervate": {"spellId": 29166, "tag": -1, "registeredBy": ["dps_warrior", "protection_warrior"]},
         "intercept": {"spellId": 20617, "rank": 3, "registeredBy": ["dps_warrior", "protection_warrior"]},
+        "intercept_stun": {"spellId": 20615, "rank": 3, "registeredBy": ["dps_warrior", "protection_warrior"]},
         "intimidating_shout": {"spellId": 5246, "registeredBy": ["dps_warrior", "protection_warrior"]},
         "judgement_of_light": {"spellId": 20343, "rank": 4, "registeredBy": ["dps_warrior", "protection_warrior"]},
         "last_stand": {"spellId": 12975, "registeredBy": ["dps_warrior", "protection_warrior"]},
