@@ -57,11 +57,11 @@ export const RotationTabBody = ({ rotationType }: RotationTabBodyProps) => {
 		<>
 			{rotationType === APLRotationType.TypeAuto && (
 				<TabPanelColumns.Root fullWidth>
-					<TabPanelColumns.Left variant="stacked">
-						<RotationTypePicker />
+					<TabPanelColumns.Left variant="stacked" testId="rotation-auto">
+						<RotationTypePicker testId="rotation-type-container" />
 						<p>{i18n.t('rotation_tab.auto.description')}</p>
 					</TabPanelColumns.Left>
-					<TabPanelColumns.Right>
+					<TabPanelColumns.Right testId="rotation-presets">
 						<RotationSidebar />
 					</TabPanelColumns.Right>
 				</TabPanelColumns.Root>
@@ -70,7 +70,7 @@ export const RotationTabBody = ({ rotationType }: RotationTabBodyProps) => {
 			{rotationType === APLRotationType.TypeSimple && hasSimple && (
 				<TabPanelColumns.Root fullWidth>
 					<TabPanelColumns.Left variant="stacked">
-						<RotationTypePicker />
+						<RotationTypePicker testId="rotation-type-container" />
 						<div className="grid grid-cols-2 gap-page max-xl:grid-cols-1">
 							<ContentBlock config={{ header: { title: i18n.t('rotation_tab.simple.title') } }}>
 								<SimpleRotationInputs />
@@ -86,7 +86,7 @@ export const RotationTabBody = ({ rotationType }: RotationTabBodyProps) => {
 							)}
 						</div>
 					</TabPanelColumns.Left>
-					<TabPanelColumns.Right>
+					<TabPanelColumns.Right testId="rotation-presets">
 						<RotationSidebar />
 					</TabPanelColumns.Right>
 				</TabPanelColumns.Root>
@@ -113,7 +113,7 @@ export const RotationTabBody = ({ rotationType }: RotationTabBodyProps) => {
 							})}
 						</TabPanels>
 					</TabPanelColumns.Left>
-					<TabPanelColumns.Right>
+					<TabPanelColumns.Right testId="rotation-presets">
 						<RotationSidebar />
 					</TabPanelColumns.Right>
 				</TabPanelColumns.Root>

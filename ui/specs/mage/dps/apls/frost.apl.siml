@@ -1,0 +1,26 @@
+siml 1
+spec mage
+
+def fingers_stacks = aura(fingers_of_frost).num_stacks(include_reaction_time=true)
+
+prepull:
+  -4s cast ice_barrier
+  -2.5s cast frostbolt
+
+priority:
+  group "Evocation" if current_mana_percent <= 5%
+  autocast_other_cooldowns
+  cast ice_lance if fingers_stacks == 2
+  strict_sequence(cast frostbolt, cast ice_lance) if fingers_stacks == 1
+  cast cold_snap if spell(cone_of_cold).time_to_ready >= 5
+  cast cone_of_cold
+  cast arcane_missiles if aura(missile_barrage).is_active(include_reaction_time=true)
+  cast arcane_blast
+      if aura(arcane_blast).remaining_time < spell(arcane_blast).cast_time
+      or aura(arcane_blast).num_stacks < 2
+  cast ice_barrier if aura(ice_barrier).is_inactive(include_reaction_time=true)
+  cast frostbolt
+
+group "Evocation":
+  cast read_leyline if not aura(energized).is_active and spell(read_leyline).is_known
+  channel evocation until current_mana_percent >= 99%
