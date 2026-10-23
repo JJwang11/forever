@@ -38,10 +38,10 @@ export const DefaultSettings: PresetSettings = {
 	raidBuffs: Defaults.raidBuffs,
 	debuffs: Defaults.debuffs,
 	playerOptions: {
-		distanceFromTarget: Defaults.other.distanceFromTarget,
-		profession1: Defaults.other.profession1,
-		profession2: Defaults.other.profession2,
-		reactionTimeMs: Defaults.other.reactionTime,
+		distanceFromTarget: Defaults.other?.distanceFromTarget,
+		profession1: Defaults.other?.profession1,
+		profession2: Defaults.other?.profession2,
+		reactionTimeMs: Defaults.other?.reactionTime,
 	},
 };
 
