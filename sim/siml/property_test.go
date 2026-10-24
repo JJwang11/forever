@@ -58,7 +58,7 @@ var (
 		"channel_spell":        {"spell_id", "target", "interrupt_if", "allow_recast"},
 		"wait":                 {"duration"},
 		"wait_until":           {"condition"},
-		"move":                 {"range_from_target"},
+		"move":                 {"range_from_target", "recheck_while_moving"},
 		"move_duration":        {"duration"},
 		"group_reference":      {"group_name", "variables"},
 		"schedule":             {"schedule", "inner_action"},

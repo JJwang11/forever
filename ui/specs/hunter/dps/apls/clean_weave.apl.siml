@@ -5,7 +5,7 @@ use "weave_common.apl.siml"
 prepull:
   -22s cast hunters_mark
   -20s cast aspect_of_the_hawk
-  -19s move $shoot_spot
+  -19s move $pull_range
 
 priority:
   autocast_other_cooldowns if current_time >= 5s and at_range
@@ -18,6 +18,8 @@ priority:
   cast serpent_sting if not dot(serpent_sting).is_active
   cast arcane_shot
   cast multi_shot
+  /// Start of the fight, before the first weave: get to my spot without losing an Auto Shot.
+  group "Walk in" if self.unit_distance != $shoot_spot and $not_weaving_yet
   group "Weave"
 
 group "Weave":
@@ -39,3 +41,9 @@ group "Weave":
   wait min($time_to_walk_in, max(gcd_time_to_ready, input_delay))
       if $time_to_walk_in > 0s
       and $weave_fits
+
+group "Walk in":
+  /// Walk to my spot, looking again every reaction time. Stop while my Auto Shot is due here, and react to each shot before walking on.
+  move $shoot_spot recheck if not shot_due_here
+  /// Standing for my Auto Shot.
+  wait input_delay

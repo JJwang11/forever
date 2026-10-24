@@ -199,6 +199,8 @@ func newAPLActionEntry(condition APLValue, impl APLActionImpl) *APLAction {
 		action.spell = impl.spell
 	case *APLActionGroupReference:
 		impl.entry = action
+	case *APLActionMove:
+		impl.entry = action
 	}
 	return action
 }

@@ -157,6 +157,7 @@ type moveStep struct {
 	span
 	duration bool
 	value    node
+	recheck  bool
 }
 
 type placeholderBind struct {
@@ -344,7 +345,7 @@ const (
 
 // Words that end an expression or start an action, and so never read as a name or value.
 var stopWords = map[string]bool{
-	"if": true, "on": true, "until": true, "recast": true, "for": true, "with": true, "and": true, "or": true,
+	"if": true, "on": true, "until": true, "recast": true, "recheck": true, "for": true, "with": true, "and": true, "or": true,
 	"not": true, "cast": true, "channel": true, "wait": true, "move": true, "group": true, "when": true,
 }
 
@@ -1427,6 +1428,7 @@ func (p *parser) step() node {
 		p.take()
 		s := &moveStep{duration: p.acceptWord("for")}
 		s.value = p.expr()
+		s.recheck = !s.duration && p.acceptWord("recheck")
 		s.span = p.from(start)
 		return s
 	case "group":

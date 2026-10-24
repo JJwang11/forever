@@ -967,10 +967,14 @@ func (p *printer) shortAction(k *aplKind, body protoreflect.Message, sc scope) t
 	case "wait", "wait_until", "move", "move_duration":
 		form := valueSteps[k.Kind]
 		v, ok := p.get(body, form.field)
-		if !ok || !p.only(body, form.field) {
+		if !ok || !p.only(body, form.field, "recheck_while_moving") {
 			return nil
 		}
-		return cat(word(form.keyword), p.value(v.Message(), precTop, sc))
+		out := cat(word(form.keyword), p.value(v.Message(), precTop, sc))
+		if _, ok := p.get(body, "recheck_while_moving"); ok {
+			out = cat(out, word(" recheck"))
+		}
+		return out
 	case "group_reference":
 		if !p.only(body, "group_name", "variables") {
 			return nil

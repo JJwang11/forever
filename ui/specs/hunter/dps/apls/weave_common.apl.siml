@@ -22,6 +22,7 @@ var ${Weave done} =
 var ${Allowed delay} =
     max($max_auto_shot_delay, min($max_long_weave_delay, $weave_done - auto_swing_time(ranged) + 1s))
 var ${Weave fits} = auto_time_to_next(ranged_auto) + $allowed_delay >= $weave_done
+var ${Not weaving yet} = auto_time_since_last(main_hand_auto) > current_time
 
 def walk_in_now =
     $time_to_walk_in <= 0s

@@ -176,7 +176,8 @@ step          = "none"
               | "cast" , ref , [ "on" , unit ]
               | "channel" , ref , [ "on" , unit ] , [ "until" , expr ] , [ "recast" ]
               | "wait" , [ "until" ] , expr
-              | "move" , [ "for" ] , expr
+              | "move" , expr , [ "recheck" ]
+              | "move" , "for" , expr
               | "group" , string , [ "with" , ph_bind , { "," , ph_bind } ]    (* see note 1 *)
               | "schedule" , string , step
               | "sequence" , string , "[" , [ action , { "," , action } ] , "]"
@@ -235,7 +236,7 @@ value         = literal | int | [ "-" ] , int | string | "true" | "false" | iden
    `use`, `var` and `def` followed by `=` begin such a line, not a top-level line, a `var` line or a `def` line, so
    a field of one of those names is written `spec=arms` (`DpsWarrior.Rotation.spec`).
 6. **Reserved words.** The name table never holds these as names (§7.4):
-    - `siml spec talents use var with if on until recast for and or not true false none other item when def`;
+    - `siml spec talents use var with if on until recast recheck for and or not true false none other item when def`;
     - `cast channel wait move group sequence schedule`;
     - the heads (§8.3) and the unit words (§6.6).
 
@@ -245,7 +246,7 @@ value         = literal | int | [ "-" ] , int | string | "true" | "false" | iden
    `sequence` and a string, is an action. A value followed by `if` is an action whose step is that value, which
    must be a call, raw JSON or `none`. In step position, `schedule` and `sequence` not followed by a string
    begin a call.
-8. **Names.** In a ref, unit or operand position, `if`, `on`, `until`, `recast`, `for`, `with`, `and`, `or`,
+8. **Names.** In a ref, unit or operand position, `if`, `on`, `until`, `recast`, `recheck`, `for`, `with`, `and`, `or`,
    `not`, `cast`, `channel`, `wait`, `move`, `group` and `when` never read as a name. `and(`, `or(` and `not(` are calls
    only with no space before the `(`.
 9. **Times.** In `prepull:`, a row that starts with an action keyword of note 7, or whose time would be followed
@@ -484,6 +485,7 @@ one whose notes cannot be `///` lines (§12.3) or a prepull row with no time.
 | `wait v`                              | `{"wait": {"duration": V}}`                                                                                                                                                                                                                                          |
 | `wait until v`                        | `{"waitUntil": {"condition": V}}`                                                                                                                                                                                                                                    |
 | `move v`                              | `{"move": {"rangeFromTarget": V}}`                                                                                                                                                                                                                                   |
+| `move v recheck`                      | `{"move": {"rangeFromTarget": V, "recheckWhileMoving": true}}`                                                                                                                                                                                                       |
 | `move for v`                          | `{"moveDuration": {"duration": V}}`                                                                                                                                                                                                                                  |
 | `group "N"`                           | `{"groupReference": {"groupName": "N"}}`                                                                                                                                                                                                                             |
 | `group "N" with %p = v, %q = w`       | `{"groupReference": {"groupName": "N", "variables": [{"name": "p", "value": V}, {"name": "q", "value": W}]}}`                                                                                                                                                        |

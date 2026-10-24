@@ -1204,7 +1204,7 @@ func (t *typer) step(n node) *proto.APLAction {
 		case s.duration:
 			return &proto.APLAction{Action: &proto.APLAction_MoveDuration{MoveDuration: &proto.APLActionMoveDuration{Duration: v}}}
 		}
-		return &proto.APLAction{Action: &proto.APLAction_Move{Move: &proto.APLActionMove{RangeFromTarget: v}}}
+		return &proto.APLAction{Action: &proto.APLAction_Move{Move: &proto.APLActionMove{RangeFromTarget: v, RecheckWhileMoving: s.recheck}}}
 	case *groupStep:
 		return t.groupStep(s)
 	case *scheduleStep:

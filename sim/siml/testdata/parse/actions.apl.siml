@@ -15,6 +15,7 @@ priority:
   wait (1s + 2s) * 2
   wait until aura(rapid_fire).is_inactive
   move 11
+  move 12 recheck
   move for 400ms
   group "Weave"
   group "Weave" with %range = 5.00, %{Long name} = $x + 1

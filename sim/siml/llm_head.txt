@@ -95,7 +95,7 @@ group "Weave":
   wait 400ms
 ```
 
-- **Steps:** `cast x [on unit]`, `channel x [on unit] [until value] [recast]`, `wait v`, `wait until v`, `move v`,
+- **Steps:** `cast x [on unit]`, `channel x [on unit] [until value] [recast]`, `wait v`, `wait until v`, `move v [recheck]`,
   `move for v`, `group "N" [with %p = v]`, `schedule "0s, 60s" <step>`, `sequence "N" [a, b]`, `none`, and any
   action kind below, bare (`autocast_other_cooldowns`) or with arguments (`multidot(rend, max_dots=3)`). `if <value>`
   conditions a row.

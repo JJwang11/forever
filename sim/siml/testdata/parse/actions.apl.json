@@ -140,6 +140,18 @@
 		},
 		{
 			"action": {
+				"move": {
+					"rangeFromTarget": {
+						"const": {
+							"val": "12"
+						}
+					},
+					"recheckWhileMoving": true
+				}
+			}
+		},
+		{
+			"action": {
 				"moveDuration": {
 					"duration": {
 						"const": {

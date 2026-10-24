@@ -19,7 +19,7 @@ var actionWords = [][3]string{ // label, insert, detail
 	{"channel", "channel ", "channel <spell> [on <unit>] [until <value>] [recast]"},
 	{"wait", "wait ", "wait <time>"},
 	{"wait until", "wait until ", "wait until <condition>"},
-	{"move", "move ", "move <range from the target>"},
+	{"move", "move ", "move <range from the target> [recheck]"},
 	{"move for", "move for ", "move for <time>"},
 	{"group", `group "`, `group "Name" [with %placeholder = <value>, …]`},
 	{"schedule", `schedule "`, `schedule "0s, 60s" <action>`},

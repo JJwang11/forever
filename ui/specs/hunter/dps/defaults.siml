@@ -38,6 +38,7 @@ sim: iterations 25000
 
 simple:
   time_to_weave 200
+  pull_range 25
   use_multi, use_arcane
   playstyle weave
 

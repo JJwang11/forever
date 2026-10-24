@@ -95,7 +95,7 @@ group "Weave":
   wait 400ms
 ```
 
-- **Steps:** `cast x [on unit]`, `channel x [on unit] [until value] [recast]`, `wait v`, `wait until v`, `move v`,
+- **Steps:** `cast x [on unit]`, `channel x [on unit] [until value] [recast]`, `wait v`, `wait until v`, `move v [recheck]`,
   `move for v`, `group "N" [with %p = v]`, `schedule "0s, 60s" <step>`, `sequence "N" [a, b]`, `none`, and any
   action kind below, bare (`autocast_other_cooldowns`) or with arguments (`multidot(rend, max_dots=3)`). `if <value>`
   conditions a row.
@@ -147,7 +147,7 @@ Written from `proto/apl.proto`. Every kind also takes the generic `kind(field=va
 - `cancel_aura(name)`
 - `trigger_icd(name)`
 - `item_swap(main|swap1)`
-- `move(value)`, short form above
+- `move(value, recheck_while_moving: bool)`, short form above
 - `move_duration(value)`, short form above
 - `pet_attack`
 - `start_attack`
@@ -242,8 +242,8 @@ Written `[unit.]head(subject).property(arguments)`; each head with its propertie
 - `[unit.]dot(x)`: `is_active`, `is_active_on_all_targets`, `remaining_time`, `lowest_remaining_time`,
   `tick_frequency`, `time_to_next_tick`, `base_duration`, `percent_increase(use_base_value: bool)`,
   `tick_rate_percent_increase(use_base_value: bool)`
-- `[unit.]spell(x)`: `is_known`, `can_cast`, `is_ready`, `time_to_ready`, `cast_time`, `travel_time`, `cpm`,
-  `is_casting`, `is_channeling`, `channeled_ticks`, `current_cost`, `num_charges`, `time_to_charge`,
+- `[unit.]spell(x)`: `is_known`, `can_cast`, `in_range`, `is_ready`, `time_to_ready`, `cast_time`, `travel_time`,
+  `cpm`, `is_casting`, `is_channeling`, `channeled_ticks`, `current_cost`, `num_charges`, `time_to_charge`,
   `gcd_hasted_duration`, `full_cooldown`, `in_flight`, `expected_dpet`, `is_hit_capped`, `is_expertise_capped`
 - `[unit.]boss_spell(x)`: `time_to_ready`, `is_casting`
 - `sequence(x)`: `is_complete`, `is_ready`, `time_to_ready`

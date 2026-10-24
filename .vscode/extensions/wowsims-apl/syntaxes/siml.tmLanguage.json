@@ -132,7 +132,7 @@
 				},
 				{
 					"name": "keyword.control.siml",
-					"match": "\\b(?:siml|spec|talents|use|var|with|if|on|until|recast|for|other|item|when|def)(?![A-Za-z0-9_])"
+					"match": "\\b(?:siml|spec|talents|use|var|with|if|on|until|recast|recheck|for|other|item|when|def)(?![A-Za-z0-9_])"
 				},
 				{
 					"name": "variable.language.unit.siml",

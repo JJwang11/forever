@@ -461,10 +461,17 @@ func (r *contextReader) step(prepull bool) []string {
 			word = "until"
 		}
 		r.need(want{t: "value"}, want{t: "words", words: []string{word}})
+		after := []string{"if"}
 		if r.is(word) {
 			r.i++
+		} else if t.text == "move" {
+			after = []string{"recheck", "if"}
 		}
-		r.expr([]string{"if"})
+		r.expr(after)
+		if len(after) > 1 && r.is("recheck") {
+			r.i++
+			r.need(want{t: "words", words: []string{"if"}})
+		}
 		return nil
 	case "group":
 		r.need(want{t: "strings", of: "group"})
