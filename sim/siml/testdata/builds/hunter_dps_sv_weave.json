@@ -148,15 +148,10 @@
 				},
 				{
 					"action": {
-						"condition": {
-							"variableRef": {
-								"name": "Melee weave"
-							}
-						},
 						"move": {
 							"rangeFromTarget": {
 								"variableRef": {
-									"name": "Shoot spot"
+									"name": "Pull range"
 								}
 							}
 						}
@@ -541,6 +536,42 @@
 								"spellId": 20904,
 								"rank": 6
 							}
+						}
+					}
+				},
+				{
+					"notes": "Start of the fight, before the first weave: get to my spot without losing an Auto Shot.",
+					"action": {
+						"condition": {
+							"and": {
+								"vals": [
+									{
+										"cmp": {
+											"op": "OpNe",
+											"lhs": {
+												"unitDistance": {
+													"sourceUnit": {
+														"type": "Self"
+													}
+												}
+											},
+											"rhs": {
+												"variableRef": {
+													"name": "Shoot spot"
+												}
+											}
+										}
+									},
+									{
+										"variableRef": {
+											"name": "Not weaving yet"
+										}
+									}
+								]
+							}
+						},
+						"groupReference": {
+							"groupName": "Walk in"
 						}
 					}
 				},
@@ -1350,6 +1381,68 @@
 							}
 						}
 					]
+				},
+				{
+					"name": "Walk in",
+					"actions": [
+						{
+							"notes": "Walk to my spot, looking again every reaction time. Stop while my Auto Shot is due here, and react to each shot before walking on.",
+							"action": {
+								"condition": {
+									"not": {
+										"val": {
+											"and": {
+												"vals": [
+													{
+														"spellInRange": {
+															"spellId": {
+																"spellId": 14287,
+																"rank": 8
+															}
+														}
+													},
+													{
+														"or": {
+															"vals": [
+																{
+																	"variableRef": {
+																		"name": "Auto Shot due"
+																	}
+																},
+																{
+																	"variableRef": {
+																		"name": "Just shot"
+																	}
+																}
+															]
+														}
+													}
+												]
+											}
+										}
+									}
+								},
+								"move": {
+									"rangeFromTarget": {
+										"variableRef": {
+											"name": "Shoot spot"
+										}
+									},
+									"recheckWhileMoving": true
+								}
+							}
+						},
+						{
+							"notes": "Standing for my Auto Shot.",
+							"action": {
+								"wait": {
+									"duration": {
+										"inputDelay": {}
+									}
+								}
+							}
+						}
+					]
 				}
 			],
 			"valueVariables": [
@@ -1723,6 +1816,82 @@
 								"variableRef": {
 									"name": "Weave done"
 								}
+							}
+						}
+					}
+				},
+				{
+					"name": "Not weaving yet",
+					"value": {
+						"cmp": {
+							"op": "OpGt",
+							"lhs": {
+								"autoTimeSinceLast": {
+									"autoType": "MainHandAuto"
+								}
+							},
+							"rhs": {
+								"currentTime": {}
+							}
+						}
+					}
+				},
+				{
+					"name": "Pull range",
+					"value": {
+						"const": {
+							"val": "25"
+						}
+					}
+				},
+				{
+					"name": "Auto Shot due",
+					"value": {
+						"cmp": {
+							"op": "OpGe",
+							"lhs": {
+								"autoTimeSinceLast": {
+									"autoType": "RangedAuto"
+								}
+							},
+							"rhs": {
+								"math": {
+									"op": "OpSub",
+									"lhs": {
+										"math": {
+											"op": "OpSub",
+											"lhs": {
+												"autoSwingTime": {
+													"autoType": "Ranged"
+												}
+											},
+											"rhs": {
+												"const": {
+													"val": "500ms"
+												}
+											}
+										}
+									},
+									"rhs": {
+										"inputDelay": {}
+									}
+								}
+							}
+						}
+					}
+				},
+				{
+					"name": "Just shot",
+					"value": {
+						"cmp": {
+							"op": "OpLt",
+							"lhs": {
+								"autoTimeSinceLast": {
+									"autoType": "RangedAuto"
+								}
+							},
+							"rhs": {
+								"inputDelay": {}
 							}
 						}
 					}
