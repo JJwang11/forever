@@ -201,6 +201,8 @@ Written from `proto/apl.proto`, but for the accessors below.
 - `auto_swing_time(main_hand|off_hand|ranged|wand)`
 - `auto_time_to_next(any_auto|melee_auto|main_hand_auto|off_hand_auto|ranged_auto|wand_auto)`
 - `auto_time_since_last(any_auto|melee_auto|main_hand_auto|off_hand_auto|ranged_auto|wand_auto)`
+- `talent_is_known(name)`
+- `talent_rank(name)`
 - `all_item_stat_procs_active(stat, stat_type2: stat, stat_type3: stat, min_icd_seconds: number)`
 - `any_item_stat_procs_active(stat, stat_type2: stat, stat_type3: stat, min_icd_seconds: number)`
 - `any_item_stat_procs_available(stat, stat_type2: stat, stat_type3: stat, min_icd_seconds: number)`
@@ -217,6 +219,8 @@ Written from `proto/apl.proto`, but for the accessors below.
 - `[unit.]warlock_assigned_curse_is_active`
 - `warlock_is_assigned_curse(elements|recklessness|no_curse|weakness)`
 - `warlock_active_pet(no_summon|imp|voidwalker|succubus|felhunter)`
+- `warlock_bane_is_active_on_all_targets`
+- `warlock_assigned_curse_is_active_on_all_targets`
 - `protection_paladin_damage_taken_last_global`
 - `[unit.]druid_bleed_is_active`
 - `druid_excess_energy`

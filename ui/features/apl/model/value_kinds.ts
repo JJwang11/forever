@@ -97,6 +97,8 @@ import {
 	APLValueSpellTimeToCharge,
 	APLValueSpellTimeToReady,
 	APLValueSpellTravelTime,
+	APLValueTalentIsKnown,
+	APLValueTalentRank,
 	APLValueTargetIsMobType,
 	APLValueTimeToNextEnergyTick,
 	APLValueTotemRemainingTime,
@@ -105,6 +107,8 @@ import {
 	APLValueUnitMovementSpeed,
 	APLValueWarlockActivePet,
 	APLValueWarlockAssignedCurseIsActive,
+	APLValueWarlockAssignedCurseIsActiveOnAllTargets,
+	APLValueWarlockBaneIsActiveOnAllTargets,
 	APLValueWarlockIsAssignedCurse,
 } from '@generated/proto/apl';
 import { Class, Spec } from '@generated/proto/common';
@@ -748,6 +752,22 @@ export const valueKinds: { [f in ValidAPLValueKind]: ValueKindModel<APLValueImpl
 		fields: [unitFieldConfig('targetUnit', 'targets'), actionIdFieldConfig('spellId', 'expected_damage_spells', '')],
 	}),
 
+	// Talents
+	talentIsKnown: inputBuilder({
+		label: i18n.t('rotation_tab.apl.values.talent_known.label'),
+		submenu: ['talents'],
+		shortDescription: i18n.t('rotation_tab.apl.values.talent_known.tooltip'),
+		newValue: APLValueTalentIsKnown.create,
+		fields: [actionIdFieldConfig('talentId', 'talents', '')],
+	}),
+	talentRank: inputBuilder({
+		label: i18n.t('rotation_tab.apl.values.talent_rank.label'),
+		submenu: ['talents'],
+		shortDescription: i18n.t('rotation_tab.apl.values.talent_rank.tooltip'),
+		newValue: APLValueTalentRank.create,
+		fields: [actionIdFieldConfig('talentId', 'talent_ranks', '')],
+	}),
+
 	// Auras
 	auraIsKnown: inputBuilder({
 		label: i18n.t('rotation_tab.apl.values.aura_known.label'),
@@ -1079,6 +1099,22 @@ export const valueKinds: { [f in ValidAPLValueKind]: ValueKindModel<APLValueImpl
 		newValue: APLValueWarlockAssignedCurseIsActive.create,
 		includeIf: (player: Player<any>, isPrepull: boolean) => !isPrepull && player.getSpec() == Spec.SpecWarlock,
 		fields: [unitFieldConfig('targetUnit', 'targets')],
+	}),
+	warlockAssignedCurseIsActiveOnAllTargets: inputBuilder({
+		label: i18n.t('rotation_tab.apl.values.warlock_assigned_curse_is_active_on_all_targets.label'),
+		submenu: ['warlock'],
+		shortDescription: i18n.t('rotation_tab.apl.values.warlock_assigned_curse_is_active_on_all_targets.tooltip'),
+		newValue: APLValueWarlockAssignedCurseIsActiveOnAllTargets.create,
+		includeIf: (player: Player<any>, isPrepull: boolean) => !isPrepull && player.getSpec() == Spec.SpecWarlock,
+		fields: [],
+	}),
+	warlockBaneIsActiveOnAllTargets: inputBuilder({
+		label: i18n.t('rotation_tab.apl.values.warlock_bane_is_active_on_all_targets.label'),
+		submenu: ['warlock'],
+		shortDescription: i18n.t('rotation_tab.apl.values.warlock_bane_is_active_on_all_targets.tooltip'),
+		newValue: APLValueWarlockBaneIsActiveOnAllTargets.create,
+		includeIf: (player: Player<any>, isPrepull: boolean) => !isPrepull && player.getSpec() == Spec.SpecWarlock,
+		fields: [],
 	}),
 	warlockIsAssignedCurse: inputBuilder({
 		label: i18n.t('rotation_tab.apl.values.warlock_is_assigned_curse.label'),
