@@ -110,13 +110,25 @@ func (s span) pos() span { return s }
 type lineMap struct {
 	src    string
 	starts []int
+	ends   []int // The end of each character that takes more bytes than UTF-16 code units, in order.
+	saved  []int // How many more bytes than code units the characters up to ends[i] take.
 }
 
 func newLineMap(src string) *lineMap {
 	m := &lineMap{src: src, starts: []int{0}}
+	saved := 0
 	for i := 0; i < len(src); i++ {
-		if src[i] == '\n' {
+		switch {
+		case src[i] == '\n':
 			m.starts = append(m.starts, i+1)
+		case src[i] >= utf8.RuneSelf:
+			r, size := utf8.DecodeRuneInString(src[i:])
+			if n := size - utf16.RuneLen(r); n > 0 {
+				saved += n
+				m.ends = append(m.ends, i+size)
+				m.saved = append(m.saved, saved)
+			}
+			i += size - 1
 		}
 	}
 	return m
@@ -142,7 +154,17 @@ func (m *lineMap) text(i int) string {
 // The 1-based line and UTF-16 column of offset.
 func (m *lineMap) position(offset int) Position {
 	line := m.line(offset)
-	return Position{Line: line + 1, Col: textWidth(m.src[m.starts[line]:offset]) + 1}
+	start := m.starts[line]
+	return Position{Line: line + 1, Col: offset - start - m.savedBy(offset) + m.savedBy(start) + 1}
+}
+
+// How many more bytes than UTF-16 code units the characters that end by offset take.
+func (m *lineMap) savedBy(offset int) int {
+	i := sort.SearchInts(m.ends, offset+1)
+	if i == 0 {
+		return 0
+	}
+	return m.saved[i-1]
 }
 
 var (

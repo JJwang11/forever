@@ -884,13 +884,15 @@ func (f *fileParser) attachNotes(statement stmt, row bool) {
 		k--
 	}
 	var adjacent []trivia
+	adjacentAt := map[span]bool{}
 	for _, t := range b.leading[k:] {
 		if t.kind == triviaNote {
 			adjacent = append(adjacent, t)
+			adjacentAt[t.span] = true
 		}
 	}
 	attachable := row && (f.def == nil || f.def.Name != sectionPrepull)
-	isAdjacent := func(t trivia) bool { return slices.Contains(adjacent, t) }
+	isAdjacent := func(t trivia) bool { return t.kind == triviaNote && adjacentAt[t.span] }
 	if r, ok := statement.(*rowStmt); ok && attachable {
 		r.notes = adjacent
 		b.leading = slices.DeleteFunc(slices.Clone(b.leading), isAdjacent)

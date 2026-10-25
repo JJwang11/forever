@@ -147,12 +147,15 @@ func (d *Doc) Refs() []NameRef {
 	if d.typed == nil {
 		return nil
 	}
-	refs := slices.Clone(d.typed.typer.refs)
-	slices.SortStableFunc(refs, func(a, b nameRef) int { return a.start - b.start })
+	sorted := slices.Clone(d.typed.typer.refs)
+	slices.SortStableFunc(sorted, func(a, b nameRef) int { return a.start - b.start })
 	// A name read more than once, in a when line or a def's value, is listed once, as it was read last.
-	for i := len(refs) - 1; i > 0; i-- {
-		if refs[i-1].span == refs[i].span {
-			refs = slices.Delete(refs, i-1, i)
+	refs := sorted[:0]
+	for _, r := range sorted {
+		if n := len(refs); n > 0 && refs[n-1].span == r.span {
+			refs[n-1] = r
+		} else {
+			refs = append(refs, r)
 		}
 	}
 	out := make([]NameRef, len(refs))
