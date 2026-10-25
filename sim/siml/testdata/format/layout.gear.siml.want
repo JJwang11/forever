@@ -4,5 +4,4 @@ siml 1
 head       helm // the helm
 // above a slot row
 neck       `{"id":1}`
-gear:
 back       cloak + agility

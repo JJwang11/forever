@@ -60,6 +60,9 @@ func (f *typedFile) format(u *uses) string {
 	if f.kind.Section != "" {
 		implied = tree.sections[0]
 	}
+	// The implied section's header is left out, as print leaves it out, unless another header comes before it; the
+	// lines below one that stays are indented as in any section.
+	headed, keepImplied := false, false
 	var items []*item
 
 	// The comment and blank lines above a statement, a run of blank lines as one: none before the file's first line
@@ -102,8 +105,14 @@ func (f *typedFile) format(u *uses) string {
 			group = block{top: true}
 		}
 		_, isHeader := s.(*headerStmt)
+		if isHeader {
+			if section == implied {
+				keepImplied = headed
+			}
+			headed = true
+		}
 		indent := 0
-		if section != nil && !isHeader && section != implied {
+		if section != nil && !isHeader && (section != implied || keepImplied) {
 			indent = indentWidth
 		}
 		// A when block's body goes 2 deeper than its when line.
@@ -163,6 +172,14 @@ func (f *typedFile) format(u *uses) string {
 			}
 			add(p.use(s.path.value, binds, indent))
 		case *headerStmt:
+			if section == implied && !keepImplied {
+				// The comment of a header left out with no body line on it goes on a line of its own.
+				header = nil
+				if trailing != "" {
+					items = append(items, &item{line: trailing})
+				}
+				break
+			}
 			text := s.name.text + ":"
 			if s.group != nil {
 				text = groupKey(s.group.value) + ":"

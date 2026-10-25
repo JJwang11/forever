@@ -1394,6 +1394,10 @@ their order; only `print` orders a file as above.
   end of the header line goes with it, except for a section of entries whose only statement is that body line: it
   stays on the header line when it is one line and the two fit in 100 columns. `format` never takes a body up onto
   its header line.
+- **A section file's header.** The header of the implied section (§1) is left out, as `print` leaves it out, and
+  the comment at the end of its line goes with its body line, or on a line of its own when it has none. A header
+  that comes after another section's header, such as `apl:` after `priority:` in an `x.apl.siml`, stays, since
+  without it the lines below would belong to that section.
 - **Entries** are re-printed as `print` writes the fields each one sets (§12.2): a run of flags of one line as
   flag lists, the values one line gives a list together, and every other field on a line of its own.
 - **Slot rows** are re-printed as §12.2 writes them, with the names they are written with.
@@ -1403,7 +1407,8 @@ their order; only `print` orders a file as above.
 **Indentation.**
 
 - Section bodies and rows are indented 2 spaces, except in section files, where the implied section's body is
-  at column 1. An `x.group.siml` writes each group under its header (§1), indented as in any other file.
+  at column 1 but for the lines under a header of it that stays. An `x.group.siml` writes each group under its
+  header (§1), indented as in any other file.
 - In an `x.apl.siml` the rotation's `var` lines are at column 1. In `x.siml` they sit under `apl:`.
 - Continuation lines are indented 4 more than their statement.
 - A `when` body is indented 2 more than its `when` line, and a `def` line as a `var` line in its place.
