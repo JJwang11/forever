@@ -921,9 +921,10 @@ meaning among the shared entries.
   check reads it.
 - `uncastable`, only on a `spell` entry and left out when false, is true when no build registers the spell castable
   (`SpellStats.is_castable`, the sim's APL flag, by which the site's rotation editor lists the spells a cast can
-  pick): an inner spell, such as a trap's effect or the strike a queue casts. Such a name is `not-castable` (§13)
-  where an action casts it, the subject of `cast` and `channel` and the `spell_id` of each other action kind that has
-  one (`multidot`, `cast_friendly_spell`, …), and reads in every other position. The message is
+  pick): an inner spell, such as a trap's effect or the strike a queue casts. Such a name is a `not-castable`
+  warning (§13) where an action casts it, the subject of `cast` and `channel` and the `spell_id` of each other action
+  kind that has one (`multidot`, `cast_friendly_spell`, …), and the sim casts it all the same; it reads in every
+  other position. The message is
   `<name> is a spell no build lets a rotation cast`, then `; did you mean <names>?` with the castable names of the
   file's spec that `<name>` extends, or that extend it, by `_` and more (`raptor_strike` for `raptor_strike_tag0`),
   at most three. Where an action casts, editors offer and suggest only castable names.
@@ -1590,9 +1591,8 @@ JSON does:
   above it.
 - The JSON lists the variables that used files bring after the file's own (§9). An edit of one of them is refused, as
   the used file writes it, and a variable put among them goes after the file's own.
-- An edit is refused when it changes what another line reads: it removes a def, or removes or renames a variable
-  outside the groups or a group, that a file using this one names (§9), or it removes or renames a variable that a
-  `with` list of this file reads.
+- An edit is refused when it removes or renames a variable that a `with` list of this file reads, and a def rename
+  when a file that uses this one calls the def, which F2 in the text renames there too (§9).
 - The new text is read back, and a statement that does not read as its JSON is printed again, or as raw JSON,
   until each one does.
 
@@ -1630,7 +1630,7 @@ are errors.
 | `unknown-name`                                                                                                | error    | §7.2; the message names where the name is, or a did-you-mean                               |
 | `spell-variable`                                                                                              | error    | §7.2; a variable where an `ActionID` goes                                                  |
 | `icd-trigger`                                                                                                 | error    | §7.4; an `icdOnlyBy` aura or an `icdOnlyItems` item outside ICD kinds                      |
-| `not-castable`                                                                                                | error    | §7.4; an `uncastable` spell where an action casts it                                       |
+| `not-castable`                                                                                                | warning  | §7.4; an `uncastable` spell where an action casts it                                       |
 | `ambiguous-variable`                                                                                          | error    | §7.5                                                                                       |
 | `duplicate-group`, `duplicate-variable`, `reference-cycle`                                                    | error    | §6.1, §7.5, §6.10; a variable two files declare, or a `with` list that sets one twice (§9) |
 | `undefined-variable`, `undefined-group`, `undefined-placeholder`, `undefined-sequence`                        | warning  | §7.5                                                                                       |

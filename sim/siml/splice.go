@@ -95,9 +95,6 @@ func (d *Doc) Splice(edits []AplEdit) ([]TextEdit, error) {
 	if problem := m.read(); problem != "" {
 		return nil, errors.New(problem)
 	}
-	if problem := d.breaksUsers(m); problem != "" {
-		return nil, errors.New(problem)
-	}
 
 	w := func() *spliceWriter { return newSpliceWriter(d, m) }
 	if before := declaredBy(m.rotation).variables; !slices.Equal(before, declaredBy(m.json()).variables) {
@@ -152,43 +149,6 @@ func (d *Doc) Splice(edits []AplEdit) ([]TextEdit, error) {
 		}
 	}
 	return nil, errors.New("the edited rotation does not read back as its JSON")
-}
-
-// Why the edits break a file that uses this one: they remove a def it calls, or remove or rename a variable outside
-// the groups or a group it names. "" when they break none.
-func (d *Doc) breaksUsers(m *rotationModel) string {
-	for def := range m.gone {
-		if file := d.namedIn("def", def.name.text); file != "" {
-			return fmt.Sprintf("the def %s is called in %s; remove those calls first", def.name.text, file)
-		}
-	}
-	before, after := declaredBy(m.rotation), declaredBy(m.json())
-	for _, v := range before.variables {
-		if v.scope.inGroup || slices.Contains(after.variables, v) {
-			continue
-		}
-		if file := d.namedIn("variable", v.name); file != "" {
-			return fmt.Sprintf("the variable %s is read in %s; rename it in the text with F2, which renames it there too", v.name, file)
-		}
-	}
-	for name := range before.groups {
-		if _, kept := after.groups[name]; !kept {
-			if file := d.namedIn("group", name); file != "" {
-				return fmt.Sprintf("the group %s is named in %s; rename it in the text with F2, which renames it there too", name, file)
-			}
-		}
-	}
-	return ""
-}
-
-// The first file other than this one that names what this file declares through a use line, as F2 finds it, or "".
-func (d *Doc) namedIn(kind, name string) string {
-	for _, f := range everywhere(d, occurrence{kind: kind, name: name}, d) {
-		if !SamePath(f.doc.path, d.path) {
-			return filepath.Base(f.doc.path)
-		}
-	}
-	return ""
 }
 
 // The messages of the list field of m whose JSON name is key.
