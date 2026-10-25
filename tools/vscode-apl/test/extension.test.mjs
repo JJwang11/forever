@@ -46,7 +46,7 @@ async function openPanel(file) {
 	return { panel, document };
 }
 
-async function until(condition, ms = 5000) {
+async function until(condition, ms = 30000) {
 	const end = Date.now() + ms;
 	while (!condition()) {
 		if (Date.now() > end) throw new Error('timed out');

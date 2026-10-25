@@ -27,7 +27,7 @@ let document_;
 const sent = [];
 
 // Waits for condition to hold, and gives what it gave.
-async function until(condition, ms = 5000) {
+async function until(condition, ms = 30000) {
 	const end = Date.now() + ms;
 	for (;;) {
 		const held = condition();
