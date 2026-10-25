@@ -2,3 +2,4 @@ siml 1
 spec hunter
 
 def at_range = self.unit_distance > 5
+def shoot_from = 11.67

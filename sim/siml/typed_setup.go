@@ -119,6 +119,10 @@ func typeFile(ix *schemaIndex, names *Names, tree *syntaxTree, kind Kind, u *use
 
 	used := f.readUses(u)
 	f.importDefs()
+	t.checkDefCycles()
+	for _, typeWith := range used.withs {
+		typeWith()
+	}
 	// A section file's own section is present when it writes it, and otherwise when no used file brings it.
 	if own := ix.sections[kind.Section]; own != nil && !used.present.has(own.Name) {
 		f.present.add(own.Name)
@@ -516,6 +520,7 @@ type usedFiles struct {
 	present      *keySet
 	declared     usedDeclarations
 	explicitType bool
+	withs        []func() // Types each with list, once the used files' defs are in, which its values may call.
 }
 
 // The variables and groups used rotations declare, which a file's references may name.
@@ -526,7 +531,8 @@ type usedDeclarations struct {
 }
 
 // Reads each use line's file and checks it against this one: a section in both is section-conflict, and the with
-// list sets the used rotation's variables. Its values are typed in this file, whose class their names are read with.
+// list sets the used rotation's variables. Its values are typed in this file, whose class their names are read with,
+// by the withs it gives.
 func (f *typedFile) readUses(u *uses) usedFiles {
 	t := f.typer
 	ix := t.ix
@@ -540,11 +546,13 @@ func (f *typedFile) readUses(u *uses) usedFiles {
 			continue
 		}
 		if u == nil {
-			values := make([]*proto.APLValue, len(use.with))
-			for i, b := range use.with {
-				values[i] = t.value(b.value)
-			}
-			f.withs[use] = values
+			used.withs = append(used.withs, func() {
+				values := make([]*proto.APLValue, len(use.with))
+				for i, b := range use.with {
+					values[i] = t.value(b.value)
+				}
+				f.withs[use] = values
+			})
 			continue
 		}
 		at := use.path.span
@@ -624,7 +632,7 @@ func (f *typedFile) readUses(u *uses) usedFiles {
 		if len(use.with) > 0 && rotation == nil {
 			t.report("with-not-rotation", path+" holds no rotation whose variables with could set", use.with[0].variable.span)
 		} else {
-			f.withs[use] = f.setVariables(rotation, use.with, path)
+			used.withs = append(used.withs, func() { f.withs[use] = f.setVariables(rotation, use.with, path) })
 		}
 		if file.writesAPLEntries() && aplEntriesFrom == "" {
 			aplEntriesFrom = path

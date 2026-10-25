@@ -741,7 +741,8 @@ rotations read.
   the def's name is. A diagnostic of a call in a def's value moves again at each call around it.
 - Typing reads a def's value at each call, and only there, so a def that no call reads has only its name and
   parameters checked.
-- A file's calls expand at most 65536 times, and each call past that is `parse` ("the defs expand past 65536 calls").
+- A file's calls, in a value and where a name goes, expand at most 65536 times, and each call past that is `parse`
+  ("the defs expand past 65536 calls").
 
 **Names and errors.**
 
@@ -750,7 +751,10 @@ rotations read.
 - A second def of a name is `duplicate-def`, at its name, and is not read. A parameter written twice is
   `duplicate-parameter`, at the second.
 - A def that calls itself, directly or through other defs, is `reference-cycle` at its name. Its calls read as nothing
-  and report nothing more.
+  and report nothing more. The calls in a used file's def read as this file reads them, so a cycle may pass through
+  this file's defs and those of several used files. A used file's def on a cycle that holds none of this file's defs
+  is `reference-cycle` at the `use` line that brings it, unless its own file has the cycle, whose error that line
+  reports already.
 - A def that no row, `var`, `when`, `with` or other def calls is the warning `unused-def`, at its name, in a file
   that writes a row; a file with no row holds its defs for the files that use it. A parameter its
   value never mentions is the warning `unused-parameter`, at the parameter.
@@ -1292,7 +1296,8 @@ use "default.apl.siml" with $use_summon_hawk = true
   unknown variable is `with-unknown-variable` and one that matches several is `ambiguous-variable`, each at the
   variable, and `with` on a file with no rotation is `with-not-rotation`, at the first variable of the list. A
   list that sets one variable twice is `duplicate-variable`, at the second.
-  Names in `with` values are read in the using file, and variables in them are this file's and the used rotation's.
+  Names in `with` values are read in the using file, variables in them are this file's and the used rotation's, and
+  a call in them may name a def of this file or of any used file (§6.10).
 - **References.** This file's rows may refer to the variables and groups that a used rotation declares.
 - **Errors in the used file.** The used file's first error, in the order of §13, is reported at the `use` line
   with its own code, and its message names the used file's line and column; the other checks of that `use`

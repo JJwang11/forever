@@ -34,6 +34,7 @@ type importedDef struct {
 	path  string   // The file that declares it.
 	lines *lineMap // That file's text.
 	base  int
+	use   span // The path of the use line that brings it.
 }
 
 // The def a call of name reads: the file's own, else one a used file declares.
@@ -88,7 +89,8 @@ func (d *defStmt) isParam(word string) bool {
 }
 
 // Reads the file's defs, wherever they are, reporting what SPEC.md §6.10 refuses: a name that means something else, a
-// def or parameter written twice, a parameter its value never mentions, and a def that calls itself.
+// def or parameter written twice, and a parameter its value never mentions. checkDefCycles finds a def that calls
+// itself, once the used files' defs are in.
 func (t *typer) readDefs(tree *syntaxTree) {
 	t.defs = defTyping{byName: map[string]*defStmt{}, imported: map[string]*importedDef{}, from: map[*defStmt]*importedDef{}, cyclic: map[*defStmt]bool{}, used: map[*defStmt]bool{}, values: map[*proto.APLValue]*callNode{}}
 	var defs []*defStmt
@@ -114,7 +116,6 @@ func (t *typer) readDefs(tree *syntaxTree) {
 			}
 		}
 	}
-	calls := map[*defStmt][]*defStmt{}
 	for _, d := range defs {
 		mentioned := map[string]bool{}
 		walkTree(d.value, nil, func(n, _ any) {
@@ -123,7 +124,6 @@ func (t *typer) readDefs(tree *syntaxTree) {
 				if x.args == nil && d.isParam(x.name.text) {
 					mentioned[x.name.text] = true
 				} else if callee := t.defs.byName[x.name.text]; callee != nil {
-					calls[d] = append(calls[d], callee)
 					t.defs.used[callee] = t.defs.used[callee] || callee != d
 				}
 			case *memberNode:
@@ -140,11 +140,49 @@ func (t *typer) readDefs(tree *syntaxTree) {
 			}
 		}
 	}
-	for _, d := range defs {
-		if reaches(d, d, func(x *defStmt) []*defStmt { return slices.Clone(calls[x]) }) {
+}
+
+// reference-cycle for each def that calls itself through other defs, every call, in a used file's def too, naming the
+// def this file reads it as (SPEC.md §6.10): at the name of one of this file's, and at the use line that brings a used
+// file's def whose cycle holds none of this file's. A cycle within one used file is that file's error, which the use
+// line reports already.
+func (t *typer) checkDefCycles() {
+	calls := map[*defStmt][]*defStmt{}
+	next := func(d *defStmt) []*defStmt {
+		if _, ok := calls[d]; !ok {
+			calls[d] = []*defStmt{}
+			walkTree(d.value, nil, func(n, _ any) {
+				if c, ok := n.(*callNode); ok && !(c.args == nil && d.isParam(c.name.text)) {
+					if callee := t.defs.lookup(c.name.text); callee != nil {
+						calls[d] = append(calls[d], callee)
+					}
+				}
+			})
+		}
+		return slices.Clone(calls[d])
+	}
+	var own []*defStmt
+	for _, d := range t.defs.byName {
+		own = append(own, d)
+		if reaches(d, d, next) {
 			t.defs.cyclic[d] = true
 			t.report("reference-cycle", d.name.text+" calls itself through other defs", d.name.span)
 		}
+	}
+	cycles := map[span][]string{}
+	for _, in := range t.defs.imported {
+		d := in.defStmt
+		if t.defs.cyclic[d] || !reaches(d, d, next) {
+			continue
+		}
+		t.defs.cyclic[d] = true
+		if !slices.ContainsFunc(own, func(o *defStmt) bool { return reaches(d, o, next) && reaches(o, d, next) }) {
+			cycles[in.use] = append(cycles[in.use], d.name.text+" of "+in.path)
+		}
+	}
+	for at, names := range cycles {
+		slices.Sort(names)
+		t.report("reference-cycle", "the def "+strings.Join(names, ", the def ")+" calls itself through other defs", at)
 	}
 }
 
@@ -207,11 +245,7 @@ func (t *typer) expand(c *callNode, d *defStmt) *proto.APLValue {
 		return nil
 	}
 	t.defs.used[d] = true
-	if t.defs.cyclic[d] {
-		return nil
-	}
-	if t.defs.count++; t.defs.count > maxExpansions {
-		t.report("parse", fmt.Sprintf("the defs expand past %d calls", maxExpansions), c.span)
+	if t.defs.cyclic[d] || !t.expands(c) {
 		return nil
 	}
 	bound := map[string]node{}
@@ -234,7 +268,8 @@ func (t *typer) expand(c *callNode, d *defStmt) *proto.APLValue {
 
 // What a bare call of a def with no parameters stands for where a name goes, a spell's or an aura's (SPEC.md §6.10):
 // the def's value, read as if written at the call, and what ends the call. ok is false when n is no such call; value is
-// nil when the def takes parameters, def-arity, or calls itself, which readDefs reports.
+// nil when the def takes parameters, def-arity, calls itself, which checkDefCycles reports, or expands one call too
+// many.
 func (t *typer) named(n node) (value node, done func(), ok bool) {
 	c, isCall := n.(*callNode)
 	if !isCall || c.args != nil {
@@ -249,10 +284,19 @@ func (t *typer) named(n node) (value node, done func(), ok bool) {
 		t.report("def-arity", d.name.text+" takes arguments, so it stands for no name", c.span)
 		return nil, func() {}, true
 	}
-	if t.defs.cyclic[d] {
+	if t.defs.cyclic[d] || !t.expands(c) {
 		return nil, func() {}, true
 	}
 	return d.value, t.callSite(d, c), true
+}
+
+// Counts the call c as expanded; false, and parse at c, past maxExpansions.
+func (t *typer) expands(c *callNode) bool {
+	if t.defs.count++; t.defs.count > maxExpansions {
+		t.report("parse", fmt.Sprintf("the defs expand past %d calls", maxExpansions), c.span)
+		return false
+	}
+	return true
 }
 
 // n with each parameter replaced by its argument, in a ref, unit, operand or argument position. A unit written before
@@ -356,7 +400,7 @@ func (f *typedFile) importDefs() {
 					clashes = append(clashes, fmt.Sprintf("%s is in both %s and %s", name, other.path, path))
 					continue
 				}
-				in := &importedDef{defStmt: shiftedDef(d, base), path: path, lines: u.typer.lines, base: base}
+				in := &importedDef{defStmt: shiftedDef(d, base), path: path, lines: u.typer.lines, base: base, use: use.path.span}
 				t.defs.imported[name] = in
 				t.defs.from[in.defStmt] = in
 				t.defs.cyclic[in.defStmt] = u.typer.defs.cyclic[d]
