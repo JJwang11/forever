@@ -287,6 +287,18 @@ test('Insert Pattern puts no condition on a prepull row, whose condition the sim
 	panel.dispose();
 });
 
+test('WoWSims: Restart SIML Server stops the server and starts a new one, which answers the panel', async () => {
+	const before = stand.state.clients.length;
+	const old = stand.state.clients.at(-1);
+	await stand.state.commands.get('wowsims-apl.restartServer')();
+	assert.equal(old.running, false);
+	assert.equal(stand.state.clients.length, before + 1);
+	assert.equal(stand.state.clients.at(-1).running, true);
+	const { panel } = await openPanel('default.apl.siml');
+	assert.ok(lastRotation(panel).rotation, 'the new server reads the rotation');
+	panel.dispose();
+});
+
 test("the panel's page loads its bundle, or builds it with make vscode-apl, and after a failed build tries again when the panel opens again", async () => {
 	const installed = mkdtempSync(join(tmpdir(), 'wowsims-apl-'));
 	const other = fakeVscode();

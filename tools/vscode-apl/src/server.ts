@@ -128,6 +128,7 @@ async function start(root: string): Promise<LanguageClient> {
 		},
 	);
 	await client.start();
+	output.info(`The SIML server for ${root} is running: ${command} siml lsp`);
 	started.fire();
 	return client;
 }
@@ -201,6 +202,7 @@ export function registerServer(extensionContext: vscode.ExtensionContext): void 
 		vscode.workspace.onDidOpenTextDocument(served),
 		vscode.commands.registerCommand('wowsims-apl.restartServer', async () => {
 			const running = [...clients.keys()];
+			output.info('Restarting the SIML server: it stops, builds again when its code changed, and starts');
 			await stopServers();
 			roots.clear();
 			for (const document of vscode.workspace.textDocuments) served(document);
