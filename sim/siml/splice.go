@@ -1383,6 +1383,7 @@ type spliceWriter struct {
 	model   *rotationModel
 	out     *lineEdits
 	printer *printer
+	carried map[*spliceSlot][]trivia // The comment lines above the when lines of blocks a row left empty, which go above it.
 }
 
 func newSpliceWriter(d *Doc, m *rotationModel) *spliceWriter {
@@ -1393,6 +1394,7 @@ func newSpliceWriter(d *Doc, m *rotationModel) *spliceWriter {
 		model:   m,
 		out:     newLineEdits(d.src, f.tree),
 		printer: &printer{ix: d.ix, names: d.names, class: f.typer.class, declarations: append(declaredBy(m.json()).variables, f.usedDeclared...)},
+		carried: map[*spliceSlot][]trivia{},
 	}
 }
 
@@ -1486,6 +1488,17 @@ func (w *spliceWriter) list(list *spliceList) {
 			}
 			if w.model.blocks[b].changed {
 				o.dirty = true
+			}
+		}
+		// A block that a move or a condition edit leaves with no row gives the comments above its line to the first row
+		// that was in it, as one taken apart does.
+		for _, o := range list.lines {
+			if o.when == nil || slices.Contains(slots, o) || w.model.dropped[o.when] {
+				continue
+			}
+			was := func(s *spliceSlot) bool { return s.unit != nil && slices.Contains(blocksOf(s.unit.statement), o.when) }
+			if k := slices.IndexFunc(list.slots, was); k >= 0 {
+				w.carried[list.slots[k]] = append(w.carried[list.slots[k]], o.unit.comments...)
 			}
 		}
 		anchors = stable(keptLines(slots), old)
@@ -1738,7 +1751,7 @@ func (w *spliceWriter) render(s *spliceSlot, list *spliceList, p *printer, sc sc
 		ps = ps.expect.fallback()
 	}
 	var above []string
-	for _, c := range s.lead {
+	for _, c := range slices.Concat(s.lead, w.carried[s]) {
 		above = append(above, commentLine(c, indent).line)
 	}
 	if u != nil {

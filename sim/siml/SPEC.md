@@ -1555,6 +1555,8 @@ JSON does:
   (§10). A statement that moves takes those lines along. Every other line stays as written.
 - A row printed again stays in its `when` blocks while its condition still starts with theirs, and splits them
   otherwise (§6.9).
+- A `when` block the edits leave with no row goes. When its rows moved out of it, or it was taken apart, the `//`
+  lines directly above its line go above the first row that was in it; when they were removed, the lines go too.
 - A def call in a row printed again stays while the edits leave its value as it was (§6.10).
 - A def whose parameters or value an edit sets is written again as `format` writes it, and a comment inside it goes
   above it.
