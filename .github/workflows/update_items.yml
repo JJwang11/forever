@@ -125,8 +125,11 @@ jobs:
                   npm run type-check
 
             # The SIML name table names every item, enchant and suffix of the database and every spell the sim
-            # registers, so the pull request carries the names a new row adds (sim/siml/SPEC.md §7.4).
+            # registers, so the pull request carries the names a new row adds (sim/siml/SPEC.md §7.4). Like the
+            # tests below, a failure still opens the pull request, with the committed table, and fails the job after.
             - name: Regenerate the SIML name table
+              id: names
+              continue-on-error: true
               run: go run --tags=with_db ./sim/siml/cmd/simlnames -w
 
             # New item rows can move .results numbers, and the pull request is where they are reviewed,
@@ -177,6 +180,12 @@ jobs:
                       ${{ steps.tests.outputs.summary }}
 
                       ${{ steps.db.outputs.report }}
+
+            - name: Fail on the SIML name table
+              if: steps.names.outcome == 'failure'
+              run: |
+                  echo "::error::simlnames fails; the pull request carries the committed name table"
+                  exit 1
 
             - name: Fail on the Go tests
               if: steps.tests.outcome == 'failure'
