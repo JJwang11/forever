@@ -58,7 +58,7 @@ clean:
 	  wowsimforever-arm64-darwin \
 	  wowsimforever-amd64-linux \
 	  dist \
-	  bin \
+	  bin/wowsimcli$(BIN_EXT) \
 	  binary_dist \
 	  ui/generated/proto/*.ts \
 	  node_modules

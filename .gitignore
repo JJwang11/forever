@@ -18,7 +18,7 @@ sim/siml/gen/repinned-*.txt
 
 # binaries
 dist
-/bin
+/bin/wowsimcli*
 binary_dist
 storybook-static
 *storybook.log
