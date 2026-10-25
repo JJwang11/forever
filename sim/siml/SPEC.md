@@ -1558,7 +1558,9 @@ JSON does:
 - A def call in a row printed again stays while the edits leave its value as it was (§6.10).
 - The JSON lists the variables that used files bring after the file's own (§9). An edit of one of them is refused, as
   the used file writes it, and a variable put among them goes after the file's own.
-- An edit is refused when it removes or renames a variable that a `with` list of this file reads.
+- An edit is refused when it changes what another line reads: it removes a def, or removes or renames a variable
+  outside the groups or a group, that a file using this one names (§9), or it removes or renames a variable that a
+  `with` list of this file reads.
 - The new text is read back, and a statement that does not read as its JSON is printed again, or as raw JSON,
   until each one does.
 

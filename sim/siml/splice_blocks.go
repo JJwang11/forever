@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"path/filepath"
 	"slices"
 	"strings"
 
@@ -817,12 +818,18 @@ func (d *Doc) editDef(e AplEdit) ([]TextEdit, error) {
 		if err != nil {
 			return nil, err
 		}
+		// The panel edits this file alone, so the calls in a file that uses it are renamed with F2.
+		var own []TextEdit
 		for _, file := range files {
-			if SamePath(file.Path, d.path) {
-				return file.Edits, nil
+			if !SamePath(file.Path, d.path) {
+				return nil, fmt.Errorf("the def %s is called in %s; rename it in the text with F2, which renames those calls too", e.Name, filepath.Base(file.Path))
 			}
+			own = file.Edits
 		}
-		return nil, errors.New("the def does not rename")
+		if own == nil {
+			return nil, errors.New("the def does not rename")
+		}
+		return own, nil
 	}
 	if strings.TrimSpace(e.Text) == "" {
 		return nil, errors.New("a def needs a value")

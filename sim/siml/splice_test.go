@@ -240,6 +240,25 @@ func TestSplice(t *testing.T) {
 		}
 	})
 
+	t.Run("refuses to remove or rename what a file that uses this one names", func(t *testing.T) {
+		common := filepath.Join("testdata", "splice", "use", "common.apl.siml")
+		text, err := os.ReadFile(common)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for edits, want := range map[string]string{
+			`[{"op":"defDelete","name":"at_range"}]`:                                  "the def at_range is called in main.apl.siml; remove those calls first",
+			`[{"op":"defRename","name":"at_range","text":"far_off"}]`:                 "the def at_range is called in main.apl.siml; rename it in the text with F2, which renames those calls too",
+			`[{"op":"set","path":["valueVariables",0]}]`:                              "the variable Pull range is read in main.apl.siml; rename it in the text with F2, which renames it there too",
+			`[{"op":"set","path":["valueVariables",1,"name"],"value":"Wait longer"}]`: "the variable wait is read in main.apl.siml; rename it in the text with F2, which renames it there too",
+			`[{"op":"defRename","name":"spare","text":"kept"}]`:                       "",
+		} {
+			if got := spliceRefused(t, common, string(text), edits, os.ReadFile); got != want {
+				t.Errorf("%s: got %q, want %q", edits, got, want)
+			}
+		}
+	})
+
 	t.Run("refuses an edit that changes what a use line's with list reads", func(t *testing.T) {
 		main := filepath.Join("testdata", "splice", "use", "main.apl.siml")
 		text, err := os.ReadFile(main)
