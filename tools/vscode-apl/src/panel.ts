@@ -1,3 +1,4 @@
+import { execFile } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { basename } from 'node:path';
@@ -7,7 +8,7 @@ import * as vscode from 'vscode';
 import { applyEdits, documentFor, isAplSiml, readRotation, samePath, spanFor, spansOf, vscodeRange } from './host';
 import { insertPattern } from './insert_pattern';
 import type { AplDatabase, FromPanel, JsonPath, PanelState, Range, Registered, TextEdit, ToPanel } from './protocol';
-import { databaseFor, onServerStarted, request } from './server';
+import { databaseFor, logFailedBuild, onServerStarted, request } from './server';
 import { onSimRecord, type SimRecord, simRecord, simulate } from './simulate';
 
 const VIEW_TYPE = 'wowsims-apl.editor';
@@ -18,17 +19,58 @@ const SETTLE_MS = 60;
 // One panel per rotation file; opening the editor for a file that has one reveals it.
 const panels = new Map<string, vscode.WebviewPanel>();
 
-// The page shown while the panel's bundle is missing; opening the panel again looks for the bundle again.
-const PLACEHOLDER = `<!doctype html>
+// The pages shown while the panel's bundle is missing: while it builds, and when the build failed. Opening the panel
+// again after a failed build builds it again.
+const message = (text: string) => `<!doctype html>
 <html lang="en">
 <body>
-<p>The panel is not built yet: run <code>make vscode-apl</code> in the repository, then open the panel again.</p>
+<p>${text}</p>
 </body>
 </html>`;
+const BUILDING = message('Building the panel with <code>make vscode-apl</code>; it opens when the build ends.');
+const FAILED = message(
+	'The panel did not build: the WoWSims SIML output has the errors of <code>make vscode-apl</code>. Open the panel again to build it again.',
+);
 
-// The panel's page. Its bundle is built by `make vscode-apl` and not committed, so a checkout may not have it yet.
+// The build of the panel's bundle running, which every panel opened meanwhile waits on.
+let building: Promise<void> | undefined;
+
+// Builds the panel's bundle with `make vscode-apl` in the repository the extension sits in
+// (.vscode/extensions/wowsims-apl), which also builds what it needs: the packages and the generated code.
+function buildPage(extensionUri: vscode.Uri): Promise<void> {
+	const root = vscode.Uri.joinPath(extensionUri, '..', '..', '..').fsPath;
+	building ??= Promise.resolve(
+		vscode.window.withProgress(
+			{ location: vscode.ProgressLocation.Notification, title: 'Building the APL editor panel (make vscode-apl)' },
+			() =>
+				new Promise<void>((resolve, reject) =>
+					execFile('make', ['vscode-apl'], { cwd: root, maxBuffer: 64 << 20 }, (error, stdout, stderr) => {
+						if (!error) return resolve();
+						logFailedBuild(`make vscode-apl in ${root}\n${stdout}${stderr || error.message}`);
+						reject(error);
+					}),
+				),
+		),
+	).finally(() => (building = undefined));
+	return building;
+}
+
+// Shows the panel's page, building its bundle first when the checkout has none: `make vscode-apl` writes it and it is
+// not committed.
+function showPage(panel: vscode.WebviewPanel, extensionUri: vscode.Uri): void {
+	if (existsSync(vscode.Uri.joinPath(extensionUri, 'out', 'webview.js').fsPath)) {
+		panel.webview.html = html(panel.webview, extensionUri);
+		return;
+	}
+	panel.webview.html = BUILDING;
+	buildPage(extensionUri).then(
+		() => (panel.webview.html = html(panel.webview, extensionUri)),
+		() => (panel.webview.html = FAILED),
+	);
+}
+
+// The panel's page, from the bundle `make vscode-apl` builds.
 function html(webview: vscode.Webview, extensionUri: vscode.Uri): string {
-	if (!existsSync(vscode.Uri.joinPath(extensionUri, 'out', 'webview.js').fsPath)) return PLACEHOLDER;
 	const nonce = randomBytes(16).toString('base64');
 	const asset = (file: string) => webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'out', file));
 	const csp = [
@@ -58,7 +100,7 @@ function bind(panel: vscode.WebviewPanel, uri: vscode.Uri, extensionUri: vscode.
 	panels.set(key, panel);
 	panel.webview.options = { enableScripts: true, localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'out')] };
 	panel.title = `APL: ${basename(uri.fsPath)}`;
-	panel.webview.html = html(panel.webview, extensionUri);
+	showPage(panel, extensionUri);
 
 	const post = (message: ToPanel) => void panel.webview.postMessage(message);
 	// The last of the panel's edits made or refused, and the document versions its own edits made.
@@ -249,7 +291,7 @@ async function openToSide(extensionUri: vscode.Uri, uri: vscode.Uri | undefined)
 	}
 	const open = panels.get(chosen.toString());
 	if (open) {
-		if (open.webview.html === PLACEHOLDER) open.webview.html = html(open.webview, extensionUri);
+		if (open.webview.html === FAILED) showPage(open, extensionUri);
 		open.reveal(vscode.ViewColumn.Beside, true);
 		return;
 	}

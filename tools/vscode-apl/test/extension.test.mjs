@@ -287,7 +287,7 @@ test('Insert Pattern puts no condition on a prepull row, whose condition the sim
 	panel.dispose();
 });
 
-test("the panel's page loads its bundle, or names the command that builds it until the panel opens again", async () => {
+test("the panel's page loads its bundle, or builds it with make vscode-apl, and after a failed build tries again when the panel opens again", async () => {
 	const installed = mkdtempSync(join(tmpdir(), 'wowsims-apl-'));
 	const other = fakeVscode();
 	const otherExtension = await activateBuilt(other, installed);
@@ -297,7 +297,9 @@ test("the panel's page loads its bundle, or names the command that builds it unt
 			await other.state.commands.get('wowsims-apl.openToSide')(document.uri);
 			return other.state.panels.at(-1).webview.html;
 		};
-		assert.match(await page('default.apl.siml'), /run <code>make vscode-apl<\/code>/);
+		// The extension sits outside a repository here, so the build fails.
+		assert.match(await page('default.apl.siml'), /Building the panel with <code>make vscode-apl<\/code>/);
+		await until(() => /did not build/.test(other.state.panels.at(-1).webview.html));
 		mkdirSync(join(installed, 'out'));
 		writeFileSync(join(installed, 'out', 'webview.js'), '');
 		assert.match(await page('default.apl.siml'), /<script nonce="[^"]+" src="[^"]+webview\.js"><\/script>/, 'the same panel, its page built again');

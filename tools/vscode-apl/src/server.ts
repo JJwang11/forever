@@ -89,8 +89,7 @@ async function serverBinary(root: string): Promise<string> {
 									`The SIML server did not build in ${root} within ${BUILD_TIMEOUT_MS / 60000} minutes. Run WoWSims: Restart SIML Server to build it again.`,
 								),
 							);
-						output.error(`go build --tags=with_db -o ${binary} ./cmd/wowsimcli in ${root}\n${stdout}${stderr || error.message}`);
-						output.show(true);
+						logFailedBuild(`go build --tags=with_db -o ${binary} ./cmd/wowsimcli in ${root}\n${stdout}${stderr || error.message}`);
 						reject(
 							new Error(
 								`The SIML server did not build in ${root}: the WoWSims SIML output has the compiler's errors. Run WoWSims: Restart SIML Server once they are fixed.`,
@@ -185,6 +184,12 @@ export async function stopServers(last = false): Promise<void> {
 function served(document: vscode.TextDocument): void {
 	if (document.languageId === 'siml' && (document.uri.scheme === 'file' || document.uri.scheme === 'untitled'))
 		serverFor(document.uri).catch(() => undefined);
+}
+
+// Writes a failed build's output to the WoWSims SIML output and shows it.
+export function logFailedBuild(text: string): void {
+	output.error(text);
+	output.show(true);
 }
 
 export function registerServer(extensionContext: vscode.ExtensionContext): void {

@@ -151,14 +151,16 @@ make vscode-apl                                    # npm ci, typecheck, bundle, 
 cd tools/vscode-apl && npm run check && npm test   # the committed output matches a fresh build; the tests
 ```
 
-The build needs the root `node_modules` and the generated protos (`make` builds them). The grammar,
-`syntaxes/siml.tmLanguage.json`, is written by `go run ./cmd/wowsimcli siml grammar -o <file>`, whose test checks the
-committed one. VS Code (1.91 or later) treats `.vscode/extensions/wowsims-apl` as a
-workspace extension: opening the repository shows an _Install Workspace Extension_ prompt once.
+`make vscode-apl` builds what the build needs first: the root `node_modules`, the generated protos and the generated
+tables. The grammar, `syntaxes/siml.tmLanguage.json`, is written by `go run ./cmd/wowsimcli siml grammar -o <file>`,
+whose test checks the committed one. VS Code (1.91 or later) treats `.vscode/extensions/wowsims-apl` as a workspace
+extension: opening the repository shows an _Install Workspace Extension_ prompt once.
 
 The panel's page (`out/webview.js` and `out/webview.css`) bundles the generated protos, the site's APL model and its
-English strings, so it is not committed: run `make vscode-apl` once, and again after those change. Until then the
-panel says to. `npm run check` builds the page too, but compares only the committed output.
+English strings, so it is not committed. The first time the panel opens in a checkout without it, the extension runs
+`make vscode-apl` and opens the page when the build ends; a failed build's errors go to the WoWSims SIML output. Run
+`make vscode-apl` again after the protos, the site's APL model or its strings change. `npm run check` builds the page
+too, but compares only the committed output.
 
 The tests bundle the extension from its sources as the build does and run it against the stand-in for VS Code in
 `test/vscode.mjs`, whose language client starts the server the extension builds, so they need go:
