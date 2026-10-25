@@ -82,6 +82,7 @@ export interface RegisteredName {
 	name: string;
 	id: ActionIdJson;
 	icdOnly?: boolean; // Known only as an internal cooldown trigger, which only the ICD kinds find.
+	uncastable?: boolean; // A spell no build of the spec lets a rotation cast (the sim's APL flag).
 }
 
 // The names a spec's builds register, by the namespace each position reads (SPEC.md §7.1), and the items with a use.

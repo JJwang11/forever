@@ -81,7 +81,7 @@ function namePicks(registered: Registered, db: AplDatabase): Names {
 			id: entry.id,
 		}));
 	const { spells, auras, targetAuras } = registered.registered;
-	return { spell: picks(spells), aura: picks(auras), target_aura: picks(targetAuras) };
+	return { spell: picks(spells.filter(entry => !entry.uncastable)), aura: picks(auras), target_aura: picks(targetAuras) };
 }
 
 // Whether a path is in a priority or group row, which a condition pattern goes onto.

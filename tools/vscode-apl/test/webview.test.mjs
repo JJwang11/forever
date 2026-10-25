@@ -116,6 +116,9 @@ test('a spell picked for a tagged one is written as its own name, with no tag ca
 	input.dispatchEvent(new Event('input', { bubbles: true }));
 	const option = () => [...priority()[0].querySelectorAll('.picker-pop li')].find(li => li.textContent.startsWith('Raptor Strike'));
 	await until(option);
+	// raptor_strike_tag0, the strike the queue casts, is no spell a rotation casts, so a cast's picker leaves it out.
+	const strikes = [...priority()[0].querySelectorAll('.picker-pop li')].filter(li => li.textContent.startsWith('Raptor Strike'));
+	assert.equal(strikes.length, 1, `the cast offers ${strikes.map(li => li.textContent)}`);
 	option().dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
 	await settled();
 	const edit = sent.filter(m => m.type === 'edit').at(-1);

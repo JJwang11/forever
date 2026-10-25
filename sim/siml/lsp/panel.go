@@ -90,9 +90,10 @@ type actionID struct {
 }
 
 type registeredName struct {
-	Name    string   `json:"name"`
-	ID      actionID `json:"id"`
-	ICDOnly bool     `json:"icdOnly,omitempty"` // Known only as an internal cooldown trigger, which only the ICD kinds find.
+	Name       string   `json:"name"`
+	ID         actionID `json:"id"`
+	ICDOnly    bool     `json:"icdOnly,omitempty"`    // Known only as an internal cooldown trigger, which only the ICD kinds find.
+	Uncastable bool     `json:"uncastable,omitempty"` // A spell no build of the spec lets a rotation cast (the sim's APL flag).
 }
 
 // What the panel's pickers offer: the names a spec's builds register by the namespace each position reads (SPEC.md
@@ -262,7 +263,10 @@ func (s *server) registeredFor(a *analysis, info siml.SpecInfo, c *siml.Database
 	list := func(ns siml.Namespace) []registeredName {
 		out := []registeredName{}
 		for _, n := range a.names.Registered(info.Class, spec, ns) {
-			out = append(out, registeredName{Name: n.Name, ID: actionID{SpellID: n.Entry.SpellID, Tag: n.Entry.Tag, Rank: n.Entry.Rank}, ICDOnly: slices.Contains(n.Entry.ICDOnlyBy, spec)})
+			out = append(out, registeredName{
+				Name: n.Name, ID: actionID{SpellID: n.Entry.SpellID, Tag: n.Entry.Tag, Rank: n.Entry.Rank},
+				ICDOnly: slices.Contains(n.Entry.ICDOnlyBy, spec), Uncastable: slices.Contains(n.Entry.UncastableBy, spec),
+			})
 		}
 		return out
 	}

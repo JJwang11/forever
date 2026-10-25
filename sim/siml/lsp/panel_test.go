@@ -274,6 +274,29 @@ func TestRegisteredMarksICDOnlyAuras(t *testing.T) {
 	}
 }
 
+// A spell the spec registers only uncastable comes marked, so the pickers leave it out of the spell an action casts.
+func TestRegisteredMarksUncastableSpells(t *testing.T) {
+	c := started(t)
+	_, uri, text := fixture(t, "default.apl.siml")
+	c.open(uri, text)
+	var answer struct {
+		Registered struct {
+			Spells []struct {
+				Name       string `json:"name"`
+				Uncastable bool   `json:"uncastable"`
+			} `json:"spells"`
+		} `json:"registered"`
+	}
+	c.request("siml/registered", map[string]any{"uri": uri}, &answer)
+	uncastable := map[string]bool{}
+	for _, n := range answer.Registered.Spells {
+		uncastable[n.Name] = n.Uncastable
+	}
+	if !uncastable["raptor_strike_tag0"] || uncastable["raptor_strike"] {
+		t.Errorf("raptor_strike_tag0 marked %v, raptor_strike marked %v; want only the first", uncastable["raptor_strike_tag0"], uncastable["raptor_strike"])
+	}
+}
+
 func TestPickersWriteNamedActionIDs(t *testing.T) {
 	c := started(t)
 	_, uri, text := fixture(t, "default.apl.siml")

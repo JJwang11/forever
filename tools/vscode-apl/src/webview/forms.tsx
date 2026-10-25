@@ -88,6 +88,7 @@ function FieldEditor({
 					<ActionIdPicker
 						json={json}
 						onPick={set}
+						family={family}
 						kind={kind}
 						field={spec.field}
 						set={spec.actionIdSet}

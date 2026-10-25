@@ -2,7 +2,7 @@ import type { ACTION_ID_SET } from '@features/apl/model/action_id_sets';
 import { createContext, useContext } from 'react';
 
 import type { ActionIdJson, Registered, RegisteredName } from '../protocol';
-import { isObject, type Json } from './model';
+import { type Family, isObject, type Json } from './model';
 
 export const RegisteredContext = createContext<Registered>({ status: 'loading' });
 
@@ -35,10 +35,11 @@ function auraNamespaceOf(type: string | undefined): 'aura' | 'pet_aura' | 'targe
 // What an ActionID field offers, in the namespace the parser reads its name in (SPEC.md §7.2): an aura id among the
 // auras of the unit the field's JSON names (the player's with none), a boss spell's id among the target's spells, and
 // any other id among the spec's spells, with the items with a use where the site's set takes one. An aura known only as
-// an internal cooldown trigger is offered in the ICD kinds alone. Each prints as its name.
+// an internal cooldown trigger is offered in the ICD kinds alone, and the spell an action casts, its spellId, among the
+// spells the spec lets a rotation cast (SPEC.md §7.4). Each prints as its name.
 export function offeredFor(
 	registered: Extract<Registered, { status: 'ready' }>,
-	field: { kind: string; name: string; set: ACTION_ID_SET },
+	field: { family: Family; kind: string; name: string; set: ACTION_ID_SET },
 	unit: Json | undefined,
 ): RegisteredName[] {
 	const { spells, auras, targetAuras, petAuras, targetSpells, items } = registered.registered;
@@ -49,7 +50,8 @@ export function offeredFor(
 		return ICD_KINDS.has(field.kind) ? list : list.filter(entry => !entry.icdOnly);
 	}
 	if (field.kind.startsWith('bossSpell')) return targetSpells;
-	return ITEM_SETS.has(field.set) ? [...spells, ...items] : spells;
+	const offered = field.family === 'action' && field.name === 'spellId' ? spells.filter(entry => !entry.uncastable) : spells;
+	return ITEM_SETS.has(field.set) ? [...offered, ...items] : offered;
 }
 
 const keyCache = new WeakMap<Registered, Set<string>>();

@@ -149,6 +149,7 @@ function withRanks(options: PickerOption[], ranks: Map<string, number>): PickerO
 export function ActionIdPicker({
 	json,
 	onPick,
+	family,
 	kind,
 	field,
 	set,
@@ -156,6 +157,7 @@ export function ActionIdPicker({
 }: {
 	json: Json | undefined;
 	onPick: (value: Json) => void;
+	family: Family;
 	kind: string;
 	field: string;
 	set: ACTION_ID_SET;
@@ -169,7 +171,7 @@ export function ActionIdPicker({
 			if (registered.status !== 'ready') return [];
 			const used = new Set(usedIds);
 			const first = (list: PickerOption[]) => [...list.filter(o => used.has(o.key)), ...list.filter(o => !used.has(o.key))];
-			const offered = offeredFor(registered, { kind, name: field, set }, unit);
+			const offered = offeredFor(registered, { family, kind, name: field, set }, unit);
 			const ranks = new Map(offered.map(entry => [`${idKey(entry.id)}`, entry.id.rank ?? 0]));
 			const named = withRanks(
 				offered.map(entry => dbOption(db, entry.id as JsonObject, entry.id.itemId === undefined ? registered.spec : 'item', entry.name)),
@@ -203,7 +205,7 @@ export function ActionIdPicker({
 					: [];
 			return first([...named, ...placeholders]);
 		},
-		[db, usedIds, registered, kind, field, set, unit],
+		[db, usedIds, registered, family, kind, field, set, unit],
 	);
 	const note =
 		registered.status === 'ready' ? undefined : `Nothing to offer: ${registered.status === 'loading' ? 'the names are loading' : registered.reason}.`;
