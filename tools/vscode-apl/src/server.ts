@@ -61,7 +61,9 @@ function rootOf(uri: vscode.Uri): string | undefined {
 const settings = () => vscode.workspace.getConfiguration('wowsims-apl');
 
 // The server binary for a repository: the `wowsims-apl.server` setting's, or one built from the repository into the
-// extension's storage. `go build` relinks nothing when the binary is up to date.
+// extension's storage. The server imports the generated Go protos, which git does not hold, so make writes them first
+// when proto/ is newer, as after pulling a branch that changes a proto; it does nothing when they are current, and
+// `go build` relinks nothing when the binary is up to date.
 async function serverBinary(root: string): Promise<string> {
 	const prebuilt = settings().get<string>('server', '');
 	if (prebuilt) return prebuilt;
@@ -71,34 +73,34 @@ async function serverBinary(root: string): Promise<string> {
 	const binary = join(vscode.Uri.joinPath(context.globalStorageUri, hash).fsPath, process.platform === 'win32' ? 'wowsimcli.exe' : 'wowsimcli');
 	const build = new AbortController();
 	builds.add(build);
-	await vscode.window.withProgress(
-		{ location: vscode.ProgressLocation.Notification, title: 'Building the SIML server' },
-		() =>
-			new Promise<void>((resolve, reject) =>
-				execFile(
-					go,
-					['build', '--tags=with_db', '-o', binary, './cmd/wowsimcli'],
-					{ cwd: root, maxBuffer: 16 << 20, signal: build.signal, timeout: BUILD_TIMEOUT_MS },
-					(error, stdout, stderr) => {
-						builds.delete(build);
-						if (!error) return resolve();
-						if (build.signal.aborted) return reject(new Error('The SIML server build was stopped.'));
-						if (error.killed)
-							return reject(
-								new Error(
-									`The SIML server did not build in ${root} within ${BUILD_TIMEOUT_MS / 60000} minutes. Run WoWSims: Restart SIML Server to build it again.`,
-								),
-							);
-						logFailedBuild(`go build --tags=with_db -o ${binary} ./cmd/wowsimcli in ${root}\n${stdout}${stderr || error.message}`);
-						reject(
-							new Error(
-								`The SIML server did not build in ${root}: the WoWSims SIML output has the compiler's errors. Run WoWSims: Restart SIML Server once they are fixed.`,
-							),
-						);
-					},
-				),
-			),
-	);
+	// One step of the build; a failed one writes its output to the WoWSims SIML output.
+	const step = (file: string, args: string[]) =>
+		new Promise<void>((resolve, reject) =>
+			execFile(file, args, { cwd: root, maxBuffer: 16 << 20, signal: build.signal, timeout: BUILD_TIMEOUT_MS }, (error, stdout, stderr) => {
+				if (!error) return resolve();
+				if (build.signal.aborted) return reject(new Error('The SIML server build was stopped.'));
+				if (error.killed)
+					return reject(
+						new Error(
+							`The SIML server did not build in ${root} within ${BUILD_TIMEOUT_MS / 60000} minutes. Run WoWSims: Restart SIML Server to build it again.`,
+						),
+					);
+				logFailedBuild(`${file} ${args.join(' ')} in ${root}\n${stdout}${stderr || error.message}`);
+				reject(
+					new Error(
+						`The SIML server did not build in ${root}: the WoWSims SIML output has the errors. Run WoWSims: Restart SIML Server once they are fixed.`,
+					),
+				);
+			}),
+		);
+	try {
+		await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: 'Building the SIML server' }, async () => {
+			await step('make', ['sim/core/proto/api.pb.go']);
+			await step(go, ['build', '--tags=with_db', '-o', binary, './cmd/wowsimcli']);
+		});
+	} finally {
+		builds.delete(build);
+	}
 	return binary;
 }
 
