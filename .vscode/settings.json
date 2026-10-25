@@ -56,6 +56,10 @@
 	},
 	"json.schemas": [
 		{
+			"fileMatch": ["*.apl.json"],
+			"url": "./schemas/apl_rotation.schema.json"
+		},
+		{
 			"fileMatch": ["*.gear.json"],
 			"url": "./schemas/gear.schema.json"
 		},
