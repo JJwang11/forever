@@ -196,9 +196,10 @@ unary         = [ "-" ] , literal | operand ;                     (* "-" only di
 operand       = "(" , expr , ")"
               | literal | string | "true" | "false" | "none"
               | var | placeholder | raw
-              | [ unit , "." ] , head , "(" , ( ref | string ) , ")" , "." , ident , [ args ]   (* accessor *)
-              | unit , "." , ident                                (* unit-prefixed kind *)
+              | [ prefix , "." ] , head , "(" , ( ref | string ) , ")" , "." , ident , [ args ]   (* accessor *)
+              | prefix , "." , ident                              (* unit-prefixed kind *)
               | call ;
+prefix        = ident | "none" ;                                  (* a unit word of §6.6; raw JSON is no prefix *)
 head          = ident ;                                           (* one of the heads in §8.3 *)
 call          = ident , [ args ] ;                                (* also "and" | "or" | "not" directly followed by "(" *)
 args          = "(" , [ arg , { "," , arg } ] , ")" ;
