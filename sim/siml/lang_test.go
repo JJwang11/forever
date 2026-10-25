@@ -359,6 +359,20 @@ func TestDefCompletion(t *testing.T) {
 	}
 }
 
+// The line right under a when line is its first row; under an unfinished condition, the condition goes on (SPEC.md
+// §6.9).
+func TestCompleteWhenBody(t *testing.T) {
+	for _, c := range []struct{ source, want string }{
+		{"priority:\n  when current_time > 1s:\n    |\n", "cast"},
+		{"priority:\n  when current_time > 1s\n      and current_time < 2s:\n    |\n", "cast"},
+		{"priority:\n  when current_time > 1s and\n    |\n", "current_time"},
+	} {
+		if got := labelsOf(completionsIn(t, smallNames(), nil, hunterPath, plainPreface+c.source)); !slices.Contains(got, c.want) {
+			t.Errorf("%q offers %q, without %s", c.source, got, c.want)
+		}
+	}
+}
+
 func TestDefAndWhenHover(t *testing.T) {
 	d := defsDoc()
 	hover := func(at Position) string {

@@ -174,7 +174,8 @@ func insideTrivia(text string, offset int) bool {
 }
 
 // The statement the cursor is in: one it lies inside, or the last one before it that it continues, on its last line
-// or on a deeper-indented line below with no blank line between.
+// or on a deeper-indented line below with no blank line between. A header or when line, which ends with its colon, is
+// continued on its own line only.
 func (d *Doc) statementAt(offset int) stmt {
 	text := d.src
 	var last stmt
@@ -195,7 +196,8 @@ func (d *Doc) statementAt(offset int) stmt {
 	if !strings.Contains(between, "\n") {
 		return last
 	}
-	if _, header := last.(*headerStmt); header || blankLineBetween.MatchString(between) {
+	_, header := last.(*headerStmt)
+	if _, when := last.(*whenStmt); header || when || blankLineBetween.MatchString(between) {
 		return nil
 	}
 	indentOf := func(at int) int {
