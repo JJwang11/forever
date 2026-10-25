@@ -68,9 +68,9 @@ func missingLines(a, b []byte, prefix string) []string {
 }
 
 // The committed file is in the generator's form, and a regeneration gives every entry of it back as it is: the
-// name, its meaning and its registered-by list. What the sim and the database give beyond the table is only
-// reported, since a database update or a class change adds names without changing what is committed until make
-// siml-names regenerates the table.
+// name, its meaning and its spec lists, and the items listed as internal cooldown triggers. What the sim and the
+// database give beyond the table is only reported, since a database update or a class change adds names without
+// changing what is committed until make siml-names regenerates the table.
 func TestTableKeepsItsEntries(t *testing.T) {
 	old, data, c := committedTable(t)
 	if got := old.Encode(); !bytes.Equal(got, data) {
@@ -85,7 +85,8 @@ func TestTableKeepsItsEntries(t *testing.T) {
 	spellLike := func(scope string, old, now siml.SpellNames) {
 		for _, ns := range slices.Sorted(maps.Keys(old)) {
 			for _, name := range slices.Sorted(maps.Keys(old[ns])) {
-				if e, g := old[ns][name], now[ns][name]; e.SpellID != g.SpellID || e.Tag != g.Tag || e.Rank != g.Rank || !slices.Equal(e.RegisteredBy, g.RegisteredBy) {
+				if e, g := old[ns][name], now[ns][name]; e.SpellID != g.SpellID || e.Tag != g.Tag || e.Rank != g.Rank || !slices.Equal(e.RegisteredBy, g.RegisteredBy) ||
+					!slices.Equal(e.ICDOnlyBy, g.ICDOnlyBy) || !slices.Equal(e.UncastableBy, g.UncastableBy) {
 					changed = append(changed, fmt.Sprintf("%s.%s.%s is %+v, want %+v", scope, ns, name, g, e))
 				}
 			}
@@ -108,6 +109,16 @@ func TestTableKeepsItsEntries(t *testing.T) {
 	for _, name := range slices.Sorted(maps.Keys(old.Suffixes)) {
 		if e, g := old.Suffixes[name], names.Suffixes[name]; e != g {
 			changed = append(changed, fmt.Sprintf("suffix.%s is suffix %d, want suffix %d", name, g, e))
+		}
+	}
+	for _, name := range slices.Sorted(maps.Keys(old.ICDOnlyItems)) {
+		if e, g := old.ICDOnlyItems[name], names.ICDOnlyItems[name]; !slices.Equal(e, g) {
+			changed = append(changed, fmt.Sprintf("icdOnlyItems.%s is %v, want %v", name, g, e))
+		}
+	}
+	for _, name := range slices.Sorted(maps.Keys(names.ICDOnlyItems)) {
+		if _, listed := old.ICDOnlyItems[name]; !listed && old.Items[name] != 0 {
+			changed = append(changed, fmt.Sprintf("icdOnlyItems.%s is %v, want none", name, names.ICDOnlyItems[name]))
 		}
 	}
 	if len(changed) > 0 {

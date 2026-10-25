@@ -34,11 +34,12 @@ type Collection struct {
 type Identity struct{ SpellID, Tag int32 }
 
 type Registration struct {
-	Rank     int32    // The highest rank a build registers it with.
-	Castable bool     // Whether a build registers it castable from the APL (SpellFlagAPL), which SpellStats.is_castable reports.
-	Specs    []string // The specs whose builds register it, in byte order.
-	ICDOnly  bool     // In one build: an aura it lists only as an internal cooldown trigger.
-	ICDSpecs []string // The specs whose builds list the aura only as an internal cooldown trigger, in byte order.
+	Rank       int32    // The highest rank a build registers it with.
+	Castable   bool     // Whether a build registers it castable from the APL (SpellFlagAPL), which SpellStats.is_castable reports.
+	Specs      []string // The specs whose builds register it, in byte order.
+	CastableBy []string // The specs whose builds register it castable, in byte order.
+	ICDOnly    bool     // In one build: an aura it lists only as an internal cooldown trigger.
+	ICDSpecs   []string // The specs whose builds list the aura only as an internal cooldown trigger, in byte order.
 }
 
 type Item struct {

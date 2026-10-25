@@ -876,7 +876,7 @@ meaning among the shared entries.
   "classes": {
     "<class>": {
       "<namespace>": {
-        "<name>": {"spellId": <id>, "tag": <tag>, "rank": <rank>, "registeredBy": ["<spec>", …], "icdOnlyBy": ["<spec>", …]},
+        "<name>": {"spellId": <id>, "tag": <tag>, "rank": <rank>, "registeredBy": ["<spec>", …], "icdOnlyBy": ["<spec>", …], "uncastableBy": ["<spec>", …]},
         …
       },
       …
@@ -897,7 +897,7 @@ meaning among the shared entries.
   },
   "shared": {
     "<namespace>": {
-      "<name>": {"spellId": <id>, "tag": <tag>, "rank": <rank>, "registeredBy": ["<spec>", …], "icdOnlyBy": ["<spec>", …]},
+      "<name>": {"spellId": <id>, "tag": <tag>, "rank": <rank>, "registeredBy": ["<spec>", …], "icdOnlyBy": ["<spec>", …], "uncastableBy": ["<spec>", …]},
       …
     },
     …
@@ -917,6 +917,16 @@ meaning among the shared entries.
   for a class's entry, only that class's specs. It is empty when no build registers it, for a name kept for files
   written before. Parsing never reads it: editors offer the names the file's spec registers, and the registration
   check reads it.
+- `uncastableBy`, only on a `spell` entry and left out when empty, lists the specs of `registeredBy` none of whose
+  builds register the spell castable (`SpellStats.is_castable`, the sim's APL flag, by which the site's rotation
+  editor lists the spells a cast can pick), in byte order: an inner spell, such as a trap's effect or the strike a
+  queue casts. For a file of one of those specs the name is `not-castable` (§13) where an action casts it, the subject
+  of `cast` and `channel` and the `spell_id` of each other action kind that has one (`multidot`,
+  `cast_friendly_spell`, …), and reads in every other position. The message is `<name> is a spell no <spec> build
+  lets a rotation cast`, then `; did you mean <names>?` with the names of the `spell` entries the file reads that its
+  spec registers castable and that `<name>` extends, or that extend it, by `_` and more (`raptor_strike` for
+  `raptor_strike_tag0`), at most three, the class's before the shared ones, each in byte order. Where an action
+  casts, editors offer only the names the file's spec registers castable.
 - `icdOnlyBy`, only on an `aura` entry and left out when empty, lists the specs of `registeredBy` whose builds list
   the aura only as an internal cooldown trigger, in byte order. For a file of one of those specs the sim finds it in
   `icd_is_ready`, `internal_cooldown` and `trigger_icd` and in no other aura position, where a name of it is
@@ -936,8 +946,9 @@ meaning among the shared entries.
   It refuses a table that breaks any of these:
     - the table, each of its sections, each class and namespace, and each spell-like or enchant entry is an
       object; the table and the entries hold only the keys the form shows; `registeredBy` and `slots` are lists of
-      strings; `icdOnlyBy` is a list of strings on an `aura` entry, each a spec of its `registeredBy`; each
-      `icdOnlyItems` entry names an item of `items` and is a non-empty list of field names of `Player`'s `spec` oneof;
+      strings; `icdOnlyBy` is a list of strings on an `aura` entry, and `uncastableBy` on a `spell` entry, each a
+      spec of its `registeredBy`; each `icdOnlyItems` entry names an item of `items` and is a non-empty list of field
+      names of `Player`'s `spec` oneof;
     - every spell id, tag and rank, item id, effect id and random suffix id is a whole number in the range of
       `int32`;
     - every name matches `[a-z_][a-z0-9_]*` and is no reserved word (§4 note 6), which a file would never read as
@@ -989,7 +1000,7 @@ up-to-date check (below) is what catches a table not committed. The generator:
    adds no names of its own until the sim builds it, and the report (step 11) counts it.
 2. **Collects** a build's player spells into `spell`, its player auras into `aura`, its pets' auras into
    `pet_aura`, and its targets' auras and spells into `target_aura` and `target_spell`. Each is collected by spell
-   id and tag, with the highest rank any build registers it with, and whether any build registers it castable
+   id and tag, with the highest rank any build registers it with, and the specs whose builds register it castable
    (`SpellStats.is_castable`). Item and other ids are no spell-like names. What these builds register is the
    class's.
 3. **Adds the shared entries.** Each spec is built with its first race, every talent at its highest rank, its
@@ -1041,22 +1052,33 @@ up-to-date check (below) is what catches a table not committed. The generator:
       when another thing of the base has the same spell id.
     - While that name is taken, `_2`, `_3`, … follow it.
 
-    **Preference.** In `spell`, castable first. Then, in every spell-like namespace, tag 0 first, the highest rank,
-    the lowest spell id and the lowest tag. Items: the highest item level, then the lowest id. Enchants: the
-    lowest effect id, then the slots in `ItemSlot` order. Suffixes: the lowest id. The classes are named before
-    the shared entries, so what a class casts takes its game name before what gear adds.
+    **Preference.** In `spell`, castable first: registered castable by a build of the class's specs, or of any spec
+    for a shared entry. Then, in every spell-like namespace, tag 0 first, the highest rank, the lowest spell id and
+    the lowest tag. Items: the highest item level, then the lowest id. Enchants: the lowest effect id, then the slots
+    in `ItemSlot` order. Suffixes: the lowest id. The classes are named before the shared entries, so what a class
+    casts takes its game name before what gear adds.
 
 9. **Keeps every pinned entry.** An entry keeps its name, id, tag, rank and slots whatever the inputs; only
-   `registeredBy` is regenerated. An id that no build registers keeps its entry, with an empty `registeredBy`. A
-   spell, item, enchant row or suffix that the game files rename keeps its old name; the generator adds no alias.
-   The one exception is work in progress: in a git checkout, an entry whose name the table at `HEAD`
+   `registeredBy`, `icdOnlyBy` and `uncastableBy` are regenerated. An id that no build registers keeps its entry,
+   with an empty `registeredBy`. A spell, item, enchant row or suffix that the game files rename keeps its old name;
+   the generator adds no alias. One exception is work in progress: in a git checkout, an entry whose name the table at `HEAD`
    (`git show HEAD:sim/siml/names.json`) does not hold is dropped before step 7 when no build registers it, or, for
    an item, enchant or suffix, the database no longer holds it. So a name added for a spell registered only for a while, or
    for a wrong id, goes once that is undone, while a name not committed yet that still means something stays, and so
    does a repin's. Outside a git checkout, or when `HEAD` holds no table, nothing is dropped.
+
+    The other exception follows the APL flag. A plain name of `spell`, the base name its own spell's game name gives,
+    whose spell the builds of its scope (the class's specs, or any spec for a shared entry) register but never
+    castable, while they register a castable spell of the same base name, is handed back to steps 7 and 8 as
+    `-repin` hands a name back (below): the castable spell takes the plain name, and what the name meant takes a
+    qualified one. The run records each name whose meaning this changes, as a repin does. A name whose spell no build
+    registers keeps its meaning.
+
 10. **Is deterministic.** The same inputs give byte-identical output.
 11. **Reports** on standard error:
     - what it added: every entry, or a count for each scope when there are more than 50 and `-v` is not given;
+    - each name a `-repin` or the APL flag (step 9) gave another meaning, and each `.siml` file under `ui/specs` that
+      uses it;
     - each pinned spell-like name that no build registers while an id of the same base name is registered
       ("warrior.spell.eye_for_an_eye is pinned to spell 9799; the sim registers spell 25997");
     - each entry dropped as work in progress (step 9);
@@ -1067,18 +1089,19 @@ up-to-date check (below) is what catches a table not committed. The generator:
 `item.<name>`, `enchant.<name>`, `suffix.<name>`) drops that entry, and every entry of the same namespace and scope
 whose game name gives the same base name, and generates, so steps 7 and 8 name what the sim and the database
 hold now. It prints each dropped name's old and new meaning, and every `.siml` file under `ui/specs` that
-means one of them by a name it writes. It is the only way a name changes meaning, and it records itself: for each
-name whose meaning changed, it adds a line `<name>: was <meaning>, now <meaning>` (`warrior.spell.overpower: was
-spell 11585, now spell 11584`) to the repin record, `sim/siml/gen/repinned.txt`, unless the record holds that line.
-The record is committed with the table, and its lines are kept.
+means one of them by a name it writes. It and the APL flag's move of step 9 are the only ways a name changes
+meaning, and both record themselves: for each name whose meaning changed, `-w` adds a line `<name>: was <meaning>,
+now <meaning>` (`warrior.spell.overpower: was spell 11585, now spell 11584`) to the repin record,
+`sim/siml/gen/repinned.txt`, unless the record holds that line. The record is committed with the table, and its
+lines are kept.
 
 **Checks.**
 
 - **The table keeps its entries.** A `with_db` test in `sim/siml/gen` regenerates the table in memory and fails
   when the committed file is not in the generator's form, or when an entry of it comes back with another meaning
-  or registered-by list, listing each with the command `make siml-names`. The names the sim and the
-  database give beyond the committed table are logged, not failed: a database update or a class change adds names
-  without changing what is committed, and `make siml-names` adds them.
+  or spec list, or an item of `icdOnlyItems` with other specs, listing each with the command `make siml-names`. The
+  names the sim and the database give beyond the committed table are logged, not failed: a database update or a
+  class change adds names without changing what is committed, and `make siml-names` adds them.
 - **Names keep their meaning.** The test above regenerates from the table it is given, so it passes two names
   that swapped their ids. `go run ./sim/siml/cmd/simlnames -base <commit>` reads the table and the repin record at
   `<commit>`, and fails, listing each, when a name of that table means another id, tag, rank or slots, or nothing, in
@@ -1617,6 +1640,7 @@ are errors.
 | `unknown-name`                                                                                                | error    | §7.2; the message names where the name is, or a did-you-mean                               |
 | `spell-variable`                                                                                              | error    | §7.2; a variable where an `ActionID` goes                                                  |
 | `icd-trigger`                                                                                                 | error    | §7.4; an `icdOnlyBy` aura or an `icdOnlyItems` item outside ICD kinds                      |
+| `not-castable`                                                                                                | error    | §7.4; an `uncastableBy` spell where an action casts it                                     |
 | `ambiguous-variable`                                                                                          | error    | §7.5                                                                                       |
 | `duplicate-group`, `duplicate-variable`, `reference-cycle`                                                    | error    | §6.1, §7.5, §6.10; a variable two files declare, or a `with` list that sets one twice (§9) |
 | `undefined-variable`, `undefined-group`, `undefined-placeholder`, `undefined-sequence`                        | warning  | §7.5                                                                                       |
@@ -1764,10 +1788,10 @@ var ${Use Summon Hawk} = false
 priority:
   autocast_other_cooldowns if current_time >= 5s and at_range
   cast hunters_mark if not target.aura(hunters_mark).is_active
-  cast raptor_strike_tag1
+  cast raptor_strike
   cast mongoose_bite
   cast strider_kick
-  cast immolation_trap_14305 if in_melee
+  cast immolation_trap if in_melee
   cast wing_clip
   cast serpent_sting if not dot(serpent_sting).is_active
   reset_sequence("HHA") if hawk_and_arcane and sequence("HHA").is_complete

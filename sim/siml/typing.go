@@ -695,7 +695,7 @@ func (t *typer) singleOf(f *field, n node) (protoreflect.Value, bool) {
 	case "action":
 		return messageValue(t.actionTerm(n))
 	case "action_id":
-		return messageValue(t.actionID(n, t.kind.namespace(f)))
+		return messageValue(t.actionID(n, t.kind.namespace(f), t.kind.casts(f)))
 	case "unit":
 		return messageValue(t.unit(n))
 	case "bool":
@@ -1014,14 +1014,15 @@ func (t *typer) indexed(f *field, n node) (protoreflect.Value, bool) {
 
 // --- Refs and units (SPEC.md §6.6, §7.2)
 
-// An ActionID: a name of ns, item.<name>, other.<short>, none or raw JSON.
-func (t *typer) actionID(n node, ns Namespace) *proto.ActionID {
+// An ActionID: a name of ns, item.<name>, other.<short>, none or raw JSON. In a cast position (cast), a name is of a
+// spell the file's spec lets a rotation cast.
+func (t *typer) actionID(n node, ns Namespace, cast bool) *proto.ActionID {
 	if value, done, ok := t.named(n); ok {
 		defer done()
 		if value == nil {
 			return nil
 		}
-		return t.actionID(value, ns)
+		return t.actionID(value, ns, cast)
 	}
 	switch n := n.(type) {
 	case *noneNode:
@@ -1067,8 +1068,12 @@ func (t *typer) actionID(n node, ns Namespace) *proto.ActionID {
 		if !ok {
 			return nil
 		}
-		if e, _ := t.names.spellEntry(t.class, ns, n.name.text); slices.Contains(e.ICDOnlyBy, t.spec) && !t.kind.readsICD() {
+		e, _ := t.names.spellEntry(t.class, ns, n.name.text)
+		if slices.Contains(e.ICDOnlyBy, t.spec) && !t.kind.readsICD() {
 			t.report("icd-trigger", fmt.Sprintf("%s is an internal cooldown trigger, which only icd_is_ready, internal_cooldown and trigger_icd find", n.name.text), n.name.span)
+		}
+		if cast && slices.Contains(e.UncastableBy, t.spec) {
+			t.report("not-castable", t.notCastable(n.name.text), n.name.span)
 		}
 		t.refs = append(t.refs, r)
 		t.mark(n.span)
@@ -1229,7 +1234,7 @@ func (t *typer) step(n node) *proto.APLAction {
 // A cast's or channel's spell and its `on` unit, both typed whatever either gives.
 func (t *typer) spellAndTarget(spell, target node) (*proto.ActionID, *proto.UnitReference, bool) {
 	pop := t.in("spellId")
-	id := t.actionID(spell, NamespaceSpell)
+	id := t.actionID(spell, NamespaceSpell, true)
 	pop()
 	var unit *proto.UnitReference
 	if target != nil {

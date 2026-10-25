@@ -20,6 +20,7 @@ type want struct {
 	when    bool     // step: a when line may start here.
 	words   []string // words.
 	ns      Namespace
+	cast    bool     // ref: the spell an action casts, which a castable spell fills.
 	enum    string   // enum: the enum's name.
 	message *message // args.
 	kind    *aplKind // args.
@@ -436,7 +437,7 @@ func (r *contextReader) step(prepull bool) []string {
 	r.i++
 	switch t.text {
 	case "cast", "channel":
-		r.ref(NamespaceSpell)
+		r.ref(NamespaceSpell, true)
 		left := []string{"on"}
 		if t.text == "channel" {
 			left = []string{"on", "until", "recast"}
@@ -667,7 +668,7 @@ func (r *contextReader) accessor(head, unitWord string) {
 		} else {
 			unit = r.lookaheadUnit(kind)
 		}
-		r.ref(fieldNamespace(kind, subject, unit))
+		r.ref(fieldNamespace(kind, subject, unit), false)
 	}
 	r.need()
 	r.take(")")
@@ -754,8 +755,8 @@ func closingBracket(tokens []token, from int) int {
 }
 
 // A ref: a name of ns, `item.<name>`, `other.<short>`, `none` or raw JSON.
-func (r *contextReader) ref(ns Namespace) {
-	r.need(want{t: "ref", ns: ns})
+func (r *contextReader) ref(ns Namespace, cast bool) {
+	r.need(want{t: "ref", ns: ns, cast: cast})
 	if t := r.tok(); (t.text == "item" || t.text == "other") && isText(r.peek(1), ".") {
 		r.i += 2
 		if t.text == "item" {
@@ -873,7 +874,7 @@ func (r *contextReader) fieldWants(f *field, kind *aplKind, unit *proto.UnitRefe
 	case "action":
 		return []want{{t: "step"}}
 	case "action_id":
-		return []want{{t: "ref", ns: fieldNamespace(kind, f, unit)}}
+		return []want{{t: "ref", ns: fieldNamespace(kind, f, unit), cast: kindScope{kind: kind}.casts(f)}}
 	case "unit":
 		return []want{{t: "unit"}}
 	case "enum", "flag_enum":
@@ -920,7 +921,7 @@ func (r *contextReader) single(f *field, kind *aplKind, unit *proto.UnitReferenc
 	case "action":
 		r.action(false)
 	case "action_id":
-		r.ref(fieldNamespace(kind, f, unit))
+		r.ref(fieldNamespace(kind, f, unit), kindScope{kind: kind}.casts(f))
 	case "message", "indexed":
 		if t := r.tok(); t != nil && t.kind == tokIdent && isText(r.peek(1), "(") {
 			r.i++

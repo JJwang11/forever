@@ -53,6 +53,16 @@ type SpellName struct {
 	SpellID, Tag, Rank int32
 	RegisteredBy       []string // The specs that register it, by Player spec field name in byte order; empty when no build does.
 	ICDOnlyBy          []string // The specs of RegisteredBy that know the aura only as an internal cooldown trigger, which only the ICD kinds find.
+	UncastableBy       []string // The specs of RegisteredBy none of whose builds let a rotation cast the spell (the sim's APL flag).
+}
+
+// Whether a rotation of spec may cast the entry's spell: spec is not in UncastableBy. With no spec, whether some spec
+// of RegisteredBy lets a rotation cast it.
+func (e SpellName) castable(spec string) bool {
+	if spec != "" {
+		return !slices.Contains(e.UncastableBy, spec)
+	}
+	return slices.ContainsFunc(e.RegisteredBy, func(s string) bool { return !slices.Contains(e.UncastableBy, s) })
 }
 
 // An enchant entry: an effect id, and the slots of the item types its rows fit.
@@ -436,7 +446,7 @@ func spellNames(scope string, v any) (SpellNames, error) {
 		named := map[spellKey]string{}
 		for name, v := range entries {
 			where := scope + "." + space + "." + name
-			e, err := object(where, v, "spellId", "tag", "rank", "registeredBy", "icdOnlyBy")
+			e, err := object(where, v, "spellId", "tag", "rank", "registeredBy", "icdOnlyBy", "uncastableBy")
 			if err != nil {
 				return nil, err
 			}
@@ -470,7 +480,16 @@ func spellNames(scope string, v any) (SpellNames, error) {
 					return nil, fmt.Errorf("names: %s.icdOnlyBy lists %q, which is no spec of registeredBy on an aura", where, spec)
 				}
 			}
-			entry := SpellName{SpellID: id, Tag: tag, Rank: rank, RegisteredBy: specs, ICDOnlyBy: icdOnly}
+			uncastable, err := stringList(where+".uncastableBy", e["uncastableBy"])
+			if err != nil {
+				return nil, err
+			}
+			for _, spec := range uncastable {
+				if ns != NamespaceSpell || !slices.Contains(specs, spec) {
+					return nil, fmt.Errorf("names: %s.uncastableBy lists %q, which is no spec of registeredBy on a spell", where, spec)
+				}
+			}
+			entry := SpellName{SpellID: id, Tag: tag, Rank: rank, RegisteredBy: specs, ICDOnlyBy: icdOnly, UncastableBy: uncastable}
 			key := spellKey{id, tag}
 			if other, ok := named[key]; ok {
 				return nil, fmt.Errorf("names: %s.%s names %s twice, as %s and %s", scope, ns, spellText(entry), min(name, other), max(name, other))
@@ -693,22 +712,26 @@ func writeSpellNames(b *bytes.Buffer, names SpellNames, indent string) {
 			if e.Rank != 0 {
 				fmt.Fprintf(b, ", \"rank\": %d", e.Rank)
 			}
-			specs := slices.Sorted(slices.Values(e.RegisteredBy))
-			for k, s := range specs {
-				specs[k] = quote(s)
-			}
-			fmt.Fprintf(b, ", \"registeredBy\": [%s]", strings.Join(specs, ", "))
+			fmt.Fprintf(b, ", \"registeredBy\": [%s]", specList(e.RegisteredBy))
 			if len(e.ICDOnlyBy) > 0 {
-				icd := slices.Sorted(slices.Values(e.ICDOnlyBy))
-				for k, s := range icd {
-					icd[k] = quote(s)
-				}
-				fmt.Fprintf(b, ", \"icdOnlyBy\": [%s]", strings.Join(icd, ", "))
+				fmt.Fprintf(b, ", \"icdOnlyBy\": [%s]", specList(e.ICDOnlyBy))
+			}
+			if len(e.UncastableBy) > 0 {
+				fmt.Fprintf(b, ", \"uncastableBy\": [%s]", specList(e.UncastableBy))
 			}
 			fmt.Fprintf(b, "}%s", comma(j, len(keys)))
 		}
 		fmt.Fprintf(b, "%s}%s", indent, comma(i, len(spaces)))
 	}
+}
+
+// The specs, quoted and in byte order, as the members of a JSON list.
+func specList(specs []string) string {
+	quoted := slices.Sorted(slices.Values(specs))
+	for i, s := range quoted {
+		quoted[i] = quote(s)
+	}
+	return strings.Join(quoted, ", ")
 }
 
 func writeIDs(b *bytes.Buffer, names map[string]int32) {

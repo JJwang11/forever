@@ -102,6 +102,28 @@ func (s kindScope) namespace(f *field) Namespace {
 	return NamespaceSpell
 }
 
+// Whether f is the spell an action kind casts: the spell_id of cast_friendly_spell, multidot and the others.
+func (s kindScope) casts(f *field) bool {
+	return s.kind != nil && f.desc.ContainingMessage() == s.kind.message.desc && f.Name == "spell_id" &&
+		s.kind.field.ContainingMessage().FullName() == actionMessage.FullName()
+}
+
+// Why a rotation of the file's spec cannot cast name, with the castable spells the spec registers whose names extend
+// it or that it extends, which it may have meant: raptor_strike for raptor_strike_tag0.
+func (t *typer) notCastable(name string) string {
+	var near []string
+	for _, n := range t.names.Registered(t.class, t.spec, NamespaceSpell) {
+		if n.Entry.castable(t.spec) && (strings.HasPrefix(name, n.Name+"_") || strings.HasPrefix(n.Name, name+"_")) {
+			near = append(near, n.Name)
+		}
+	}
+	message := fmt.Sprintf("%s is a spell no %s build lets a rotation cast", name, t.spec)
+	if len(near) > 0 {
+		message += "; did you mean " + strings.Join(near[:min(len(near), 3)], ", ") + "?"
+	}
+	return message
+}
+
 // Whether the kind finds an aura by its internal cooldown trigger too, as the sim's GetIcdAuraByID does.
 func (s kindScope) readsICD() bool {
 	if s.kind == nil {

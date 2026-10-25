@@ -189,7 +189,7 @@ func (b *completer) offer(w want) {
 			b.add(word, CompletionKeyword, ranked(1).with(insert, ""))
 		}
 	case "ref":
-		b.refs(w.ns)
+		b.refs(w.ns, w.cast)
 	case "usable":
 		b.usable()
 	case "other":
@@ -473,12 +473,16 @@ func (b *completer) members() {
 
 // --- Names.
 
-// The names of a spell-like namespace the file's spec registers: the class's first, then the shared ones.
-func (b *completer) refs(ns Namespace) {
+// The names of a spell-like namespace the file's spec registers, castable ones only where an action casts (cast): the
+// class's first, then the shared ones.
+func (b *completer) refs(ns Namespace, cast bool) {
 	for _, p := range b.ctx.params {
 		b.add(p, CompletionTypeParameter, ranked(0).with("", "parameter"))
 	}
 	for _, n := range b.d.names.Registered(b.d.class(), b.d.specName(), ns) {
+		if cast && !n.Entry.castable(b.d.specName()) {
+			continue
+		}
 		game := ""
 		if b.c != nil {
 			if name, ok := b.c.SpellName(n.Entry.SpellID); ok && name != "" {
