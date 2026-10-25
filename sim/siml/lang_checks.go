@@ -58,12 +58,24 @@ func (d *Doc) checks(c *DatabaseCatalog, strict bool) Diagnostics {
 		}
 		if slices.Contains(parserChecks, f.Code) && slices.ContainsFunc(parser, func(x Diagnostic) bool {
 			return x.Code == f.Code && !before(at.End, x.Start) && !before(x.End, at.Start)
-		}) {
+		}) || f.Code == "unused-variable" && d.referenced(at) {
 			continue
 		}
 		out = append(out, Diagnostic{Path: d.path, Start: at.Start, End: at.End, Severity: lintSeverity[f.Severity], Code: f.Code, Message: f.Message})
 	}
 	return out
+}
+
+// Whether the variable declared at r is referenced where the rotation does not see it: in a def's value, or in a file
+// near this one that uses it, as a library rotation's variables are.
+func (d *Doc) referenced(r Range) bool {
+	start, end := d.Offset(r.Start), d.Offset(r.End)
+	for _, o := range d.occurrences() {
+		if o.kind == "variable" && o.definition && start <= o.start && o.end <= end {
+			return slices.ContainsFunc(everywhere(d, o, d), func(f foundOccurrence) bool { return !f.o.definition })
+		}
+	}
+	return false
 }
 
 // Whether a lies before b.
