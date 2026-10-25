@@ -28,7 +28,7 @@ type CatalogSuffix struct {
 }
 
 // The database files, from the repository root, in the order they are read: the first holds an id both hold.
-var CatalogFiles = []string{filepath.Join("assets", "database", "db.json"), filepath.Join("assets", "database", "leftover_db.json")}
+var catalogFiles = []string{filepath.Join("assets", "database", "db.json"), filepath.Join("assets", "database", "leftover_db.json")}
 
 // The catalog read from the database files.
 type DatabaseCatalog struct {
@@ -54,7 +54,7 @@ func ReadCatalog(root string) *DatabaseCatalog {
 	}
 	consumables := map[int32]bool{}
 	var iconNames []*proto.IconData
-	for _, file := range CatalogFiles {
+	for _, file := range catalogFiles {
 		text, err := os.ReadFile(filepath.Join(root, file))
 		if err != nil {
 			continue
@@ -182,8 +182,8 @@ func CatalogAt(root string) *DatabaseCatalog {
 		catalogs.byRoot[root] = held
 	}
 	catalogs.Unlock()
-	paths := make([]string, len(CatalogFiles))
-	for i, file := range CatalogFiles {
+	paths := make([]string, len(catalogFiles))
+	for i, file := range catalogFiles {
 		paths[i] = filepath.Join(root, file)
 	}
 	c, _ := held.Get(paths, func() (*DatabaseCatalog, error) { return ReadCatalog(root), nil })

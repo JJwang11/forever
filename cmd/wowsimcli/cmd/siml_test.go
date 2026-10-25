@@ -48,24 +48,20 @@ func writeFiles(t *testing.T, files map[string]string) string {
 	return dir
 }
 
-// A folder that reads as a repository, holding files: the name table marks its root, and its database files link to
+// A folder that reads as a repository, holding files: the name table marks its root, and its database folder links to
 // this repository's, which the checks of files under ui/specs read.
 func repositoryFiles(t *testing.T, files map[string]string) string {
 	t.Helper()
 	dir := writeFiles(t, files)
-	names, err := filepath.Abs("../../../sim/siml/names.json")
+	root, err := filepath.Abs("../../..")
 	if err != nil {
 		t.Fatal(err)
 	}
-	links := map[string]string{filepath.Join("sim", "siml", "names.json"): names}
-	for _, file := range siml.CatalogFiles {
-		links[file] = filepath.Join(filepath.Dir(filepath.Dir(filepath.Dir(names))), file)
-	}
-	for link, target := range links {
+	for _, link := range []string{filepath.Join("sim", "siml", "names.json"), filepath.Join("assets", "database")} {
 		if err := os.MkdirAll(filepath.Join(dir, filepath.Dir(link)), 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.Symlink(target, filepath.Join(dir, link)); err != nil {
+		if err := os.Symlink(filepath.Join(root, link), filepath.Join(dir, link)); err != nil {
 			t.Fatal(err)
 		}
 	}
