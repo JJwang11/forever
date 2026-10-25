@@ -113,8 +113,12 @@
 				{
 					"name": "Melee weave",
 					"value": {
-						"const": {
-							"val": "false"
+						"not": {
+							"val": {
+								"variableRef": {
+									"name": "Melee weave"
+								}
+							}
 						}
 					}
 				},

@@ -154,6 +154,7 @@ func typeFile(ix *schemaIndex, names *Names, tree *syntaxTree, kind Kind, u *use
 	for _, s := range used.settings {
 		merge(f.settings.ProtoReflect(), s.ProtoReflect())
 	}
+	f.checkVariableCycles(rotation.declarations, used)
 	for _, key := range used.present.keys {
 		f.present.add(key)
 	}
@@ -520,7 +521,8 @@ type usedFiles struct {
 	present      *keySet
 	declared     usedDeclarations
 	explicitType bool
-	withs        []func() // Types each with list, once the used files' defs are in, which its values may call.
+	withs        []func()        // Types each with list, once the used files' defs are in, which its values may call.
+	withSet      map[string]span // The variables the with lists set, each at the variable that sets it first.
 }
 
 // The variables and groups used rotations declare, which a file's references may name.
@@ -537,7 +539,7 @@ func (f *typedFile) readUses(u *uses) usedFiles {
 	t := f.typer
 	ix := t.ix
 	allowed := fileSections(ix, f.kind)
-	used := usedFiles{present: newKeySet(), declared: usedDeclarations{from: map[string]string{}, groups: map[string]map[string]bool{}}}
+	used := usedFiles{present: newKeySet(), declared: usedDeclarations{from: map[string]string{}, groups: map[string]map[string]bool{}}, withSet: map[string]span{}}
 	broughtBy := map[string]string{} // The used file that brought each key of used.present.
 	aplEntriesFrom := ""             // The used file that brought apl: entries.
 	for _, s := range f.tree.top {
@@ -632,7 +634,7 @@ func (f *typedFile) readUses(u *uses) usedFiles {
 		if len(use.with) > 0 && rotation == nil {
 			t.report("with-not-rotation", path+" holds no rotation whose variables with could set", use.with[0].variable.span)
 		} else {
-			used.withs = append(used.withs, func() { f.withs[use] = f.setVariables(rotation, use.with, path) })
+			used.withs = append(used.withs, func() { f.withs[use] = f.setVariables(rotation, use.with, path, used.withSet) })
 		}
 		if file.writesAPLEntries() && aplEntriesFrom == "" {
 			aplEntriesFrom = path
@@ -662,8 +664,9 @@ func (f *typedFile) readUses(u *uses) usedFiles {
 	return used
 }
 
-// Types the values of a with list into the variables of the used rotation they name, and gives the values.
-func (f *typedFile) setVariables(rotation *proto.APLRotation, with []varBind, path string) []*proto.APLValue {
+// Types the values of a with list into the variables of the used rotation they name, each at its variable in setAt
+// unless one is there, and gives the values.
+func (f *typedFile) setVariables(rotation *proto.APLRotation, with []varBind, path string, setAt map[string]span) []*proto.APLValue {
 	t := f.typer
 	names := make([]string, len(rotation.GetValueVariables()))
 	for i, v := range rotation.GetValueVariables() {
@@ -681,6 +684,9 @@ func (f *typedFile) setVariables(rotation *proto.APLRotation, with []varBind, pa
 			t.report("duplicate-variable", fmt.Sprintf("with sets %s twice", nodeText(b.variable, "")), b.variable.span)
 		default:
 			set[res.name] = true
+			if _, ok := setAt[res.name]; !ok {
+				setAt[res.name] = b.variable.span
+			}
 			k := slices.Index(names, res.name)
 			value := t.valueIn(b.value, slices.Concat(jsonKeys(t.ix.rotationPath), []any{"valueVariables", k, "value"})...)
 			if value != nil {

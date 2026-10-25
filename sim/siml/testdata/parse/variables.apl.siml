@@ -2,7 +2,7 @@ siml 1
 spec hunter
 
 // $x reads its exact name first, else the one value variable that folds to x; ${Exact} reads the exact name. A
-// group's own var replaces the value variable of its name.
+// group's own var replaces the value variable of its name in the group's rows, and its value reads the value variable.
 var ${Melee weave} = true
 var $exact = 1
 var ${Exact} = 2
@@ -14,6 +14,6 @@ priority:
   group "G" with %p = $melee_weave, %{Q r} = 1s
 
 group "G":
-  var ${Melee weave} = false
+  var ${Melee weave} = not $melee_weave
   var ${In group} = $melee_weave
   cast x if $melee_weave and %p and %{Q r} > 0s and $exact == 1

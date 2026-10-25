@@ -33,15 +33,13 @@ type variableDecl struct {
 	span
 	name  string
 	scope scope
-	uses  []*variableUse // The references in its value.
 }
 
 // `$x` or `${X}`, whose name the checks fill in once every declaration is known (SPEC.md §7.5).
 type variableUse struct {
-	node  *varNode
-	name  func(string) // Writes the declared name it refers to.
-	scope scope
-	site  *expansion // The def call it is read in, if any.
+	node *varNode
+	name func(string) // Writes the declared name it refers to.
+	site *expansion   // The def call it is read in, if any.
 }
 
 // A group reference, with the placeholders its with list sets.
@@ -73,9 +71,8 @@ type typer struct {
 	sequenceUses []nameUse
 	placeholders map[scope]map[string]bool // The placeholders each group's statements hold.
 	scope        scope
-	decl         *variableDecl // The declaration whose value is being typed.
-	at           []any         // The JSON path, from IndividualSimSettings, of what is being typed: JSON names and list indices.
-	spans        []pathSpan    // The nodes that read, each at the JSON path it writes, in the order they are read.
+	at           []any      // The JSON path, from IndividualSimSettings, of what is being typed: JSON names and list indices.
+	spans        []pathSpan // The nodes that read, each at the JSON path it writes, in the order they are read.
 	lines        *lineMap
 	defs         defTyping
 	site         *expansion    // The def call being read, if any.
@@ -247,11 +244,8 @@ func (t *typer) valueIn(n node, keys ...any) *proto.APLValue {
 
 // Records n, whose declared name the checks write through name.
 func (t *typer) useVariable(n *varNode, name func(string)) {
-	use := &variableUse{node: n, name: name, scope: t.scope, site: t.site}
+	use := &variableUse{node: n, name: name, site: t.site}
 	t.variableUses = append(t.variableUses, use)
-	if t.decl != nil {
-		t.decl.uses = append(t.decl.uses, use)
-	}
 }
 
 func (t *typer) valueOf(n node) *proto.APLValue {

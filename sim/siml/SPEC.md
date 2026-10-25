@@ -1122,8 +1122,12 @@ The record is committed with the table, and its lines are kept.
   `sequence` head: `sequence("N").is_complete` and `reset_sequence("N")`.
 
 **Cycles.** A cycle through variables, or through group references, is `reference-cycle`. The sim cannot run
-one. Each variable declaration that refers to itself through variable references, and each group that refers to
-itself through group references, is `reference-cycle` at its name.
+one. The sim reads every reference in a variable's value, a group's variable's too, as a value variable's, so a
+cycle runs through the value variables of the rotation the files make together (§9), with the values `with` gives
+them; a group's `var $x = $x + 1s` reads the value variable `$x` and is no cycle. Each value variable on a cycle is
+`reference-cycle` at the `with` variable that sets it, else at this file's `var` line, else, on a cycle that passes
+neither, at the `use` line that brings it. Each group that refers to itself through group references is
+`reference-cycle` at its name.
 
 ### 7.6 `identifier()`
 

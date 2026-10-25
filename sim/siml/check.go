@@ -2,8 +2,12 @@ package siml
 
 import (
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
+
+	"github.com/wowsims/forever/sim/core/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 // The checks that need the whole file: the references between variables, groups, placeholders and sequences
@@ -85,7 +89,6 @@ func (t *typer) checkReferences(declarations []*variableDecl, groups []nameUse, 
 	}
 
 	visible := append(declaredNames(declarations), used.variables...)
-	targets := map[*variableUse]*variableDecl{}
 	for _, use := range t.variableUses {
 		t.site = use.site
 		n := use.node
@@ -96,27 +99,12 @@ func (t *typer) checkReferences(declarations []*variableDecl, groups []nameUse, 
 		switch {
 		case res.found:
 			use.name(res.name)
-			targets[use] = declarationOf(declarations, res.name, use.scope)
 		case t.reportAmbiguous(n, res):
 		default:
 			t.warn("undefined-variable", "no variable here is named "+nodeText(n, ""), n.span)
 		}
 	}
 	t.site = nil
-	uses := func(d *variableDecl) []*variableDecl {
-		var out []*variableDecl
-		for _, u := range d.uses {
-			if target := targets[u]; target != nil {
-				out = append(out, target)
-			}
-		}
-		return out
-	}
-	for _, d := range declarations {
-		if reaches(d, d, uses) {
-			t.report("reference-cycle", d.name+" refers to itself through other variables", d.span)
-		}
-	}
 
 	defined := map[string]bool{}
 	for _, g := range groups {
@@ -164,19 +152,58 @@ func (t *typer) checkReferences(declarations []*variableDecl, groups []nameUse, 
 	}
 }
 
-// The declaration a resolved name refers to from sc: the group's own, else the value variable.
-func declarationOf(declarations []*variableDecl, name string, sc scope) *variableDecl {
-	for _, d := range declarations {
-		if d.name == name && sc.inGroup && d.scope == sc {
-			return d
+// reference-cycle for each value variable of the rotation the files make together that refers to itself through
+// other value variables, the sim reading every reference in a variable's value as a value variable's (SPEC.md §7.5):
+// at the with variable that sets it, else at this file's var line, else, on a cycle that passes neither, at the use
+// line that brings it. A used file with a cycle of its own brings nothing, as its error stops the use line.
+func (f *typedFile) checkVariableCycles(declarations []*variableDecl, used usedFiles) {
+	refs := map[string][]string{}
+	for _, v := range f.settings.GetPlayer().GetRotation().GetValueVariables() {
+		if _, ok := refs[v.Name]; ok {
+			continue // The sim reads the first of a name.
+		}
+		refs[v.Name] = []string{}
+		walkMessages(v.ProtoReflect(), func(m protoreflect.Message) {
+			if r, ok := m.Interface().(*proto.APLValueVariableRef); ok {
+				refs[v.Name] = append(refs[v.Name], r.Name)
+			}
+		})
+	}
+	next := func(n string) []string { return slices.Clone(refs[n]) }
+	// Where this file writes the value of name, if it does.
+	written := func(name string) (span, bool) {
+		if at, ok := used.withSet[name]; ok {
+			return at, true
+		}
+		for _, d := range declarations {
+			if d.name == name && !d.scope.inGroup {
+				return d.span, true
+			}
+		}
+		return span{}, false
+	}
+	names := slices.Sorted(maps.Keys(refs))
+	for _, name := range names {
+		if !reaches(name, name, next) {
+			continue
+		}
+		if at, ok := written(name); ok {
+			f.typer.report("reference-cycle", name+" refers to itself through other variables", at)
+			continue
+		}
+		if slices.ContainsFunc(names, func(o string) bool {
+			_, ok := written(o)
+			return ok && reaches(name, o, next) && reaches(o, name, next)
+		}) {
+			continue
+		}
+		for _, s := range f.tree.top {
+			if use, ok := s.(*useStmt); ok && f.usedPaths[use] == used.declared.from[name] {
+				f.typer.report("reference-cycle", name+" refers to itself through other variables", use.path.span)
+				break
+			}
 		}
 	}
-	for _, d := range declarations {
-		if d.name == name && !d.scope.inGroup {
-			return d
-		}
-	}
-	return nil
 }
 
 // Whether to is reachable from `from` in one step or more.

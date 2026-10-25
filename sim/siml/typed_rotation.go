@@ -55,9 +55,7 @@ func (f *typedFile) typeRotation() rotationTyping {
 		if s.value == nil {
 			v = &proto.APLValueVariable{Name: s.variable.name}
 		} else {
-			t.decl = d
 			value := t.valueIn(s.value, "value")
-			t.decl = nil
 			if value != nil {
 				v = &proto.APLValueVariable{Name: s.variable.name, Value: value}
 			}
