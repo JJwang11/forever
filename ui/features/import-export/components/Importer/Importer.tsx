@@ -26,11 +26,22 @@ export const Importer = ({ open, onOpenChange, title, allowFileUpload = false, o
 	// cleared, or pasted over whole.
 	const fileName = useRef<string>(undefined);
 	const [problems, setProblems] = useState<ImportProblems>();
+	// The import that has not ended, which the Import button waits on and closing the dialog drops.
+	const running = useRef<AbortController>(undefined);
+	const [pending, setPending] = useState(false);
 	const uploadInputId = `upload-input-${kebabCase(title)}`;
 
-	// A closed dialog drops its text, and with it the file the text came from and what was wrong with it.
+	const dropRunning = () => {
+		running.current?.abort();
+		running.current = undefined;
+		setPending(false);
+	};
+
+	// A closed dialog drops its text, and with it the file the text came from, what was wrong with it and the import
+	// that has not ended.
 	const changeOpen = (next: boolean) => {
 		if (!next) {
+			dropRunning();
 			fileName.current = undefined;
 			setProblems(undefined);
 		}
@@ -42,14 +53,23 @@ export const Importer = ({ open, onOpenChange, title, allowFileUpload = false, o
 		trackPageView(title, `/import/${kebabCase(title)}`);
 	}, [open, title]);
 
+	useEffect(() => () => running.current?.abort(), []);
+
 	const runImport = async () => {
+		const run = new AbortController();
+		running.current = run;
+		setPending(true);
 		setProblems(undefined);
 		try {
-			await onImport(host, textRef.current?.value || '', fileName.current);
-			changeOpen(false);
+			await onImport(host, textRef.current?.value || '', fileName.current, run.signal);
+			if (!run.signal.aborted) changeOpen(false);
 		} catch (error: any) {
-			if (error instanceof ImportProblems) setProblems(error);
-			else toastManager.add({ variant: 'error', body: `${i18n.t('import.error')} ${error?.message || error}` });
+			// Problems point into the text, which a closed dialog has dropped.
+			if (error instanceof ImportProblems) {
+				if (!run.signal.aborted) setProblems(error);
+			} else toastManager.add({ variant: 'error', body: `${i18n.t('import.error')} ${error?.message || error}` });
+		} finally {
+			if (running.current === run) dropRunning();
 		}
 	};
 
@@ -80,7 +100,7 @@ export const Importer = ({ open, onOpenChange, title, allowFileUpload = false, o
 							fileName.current = file.name;
 						}}
 					/>
-					<Button data-testid="import-button" className="w-48" onClick={runImport}>
+					<Button data-testid="import-button" className="w-48" disabled={pending} loading={pending} onClick={runImport}>
 						<Icon name="download" style="base" />
 						{i18n.t('import.json.import_button')}
 					</Button>

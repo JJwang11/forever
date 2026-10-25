@@ -27,6 +27,7 @@ vi.mock('@ui-kit/Toast', async importOriginal => ({
 
 const HOST_PARTS = { rootElem: document.createElement('div') };
 const theHost = expect.objectContaining(HOST_PARTS);
+const aSignal = expect.any(AbortSignal);
 
 const renderImporter = (props: Partial<Parameters<typeof Importer>[0]> = {}) => {
 	const onImport = props.onImport ?? vi.fn().mockResolvedValue(undefined);
@@ -87,7 +88,7 @@ describe('Importer', () => {
 
 		await clickImport();
 
-		expect(onImport).toHaveBeenCalledWith(theHost, '{"player":{}}', undefined);
+		expect(onImport).toHaveBeenCalledWith(theHost, '{"player":{}}', undefined, aSignal);
 		expect(onOpenChange).toHaveBeenCalledWith(false);
 	});
 
@@ -133,7 +134,7 @@ describe('Importer', () => {
 		await upload('setup.siml', 'from the file');
 
 		await clickImport();
-		expect(onImport).toHaveBeenCalledWith(theHost, 'from the file', 'setup.siml');
+		expect(onImport).toHaveBeenCalledWith(theHost, 'from the file', 'setup.siml', aSignal);
 	});
 
 	// A typo fixed in an uploaded p1.gear.siml still reads as a gear file.
@@ -147,7 +148,7 @@ describe('Importer', () => {
 		fireEvent.paste(textarea);
 
 		await clickImport();
-		expect(onImport).toHaveBeenCalledWith(theHost, 'siml 1\nhead y', 'p1.gear.siml');
+		expect(onImport).toHaveBeenCalledWith(theHost, 'siml 1\nhead y', 'p1.gear.siml', aSignal);
 	});
 
 	it('hands no file name on once the uploaded text is cleared', async () => {
@@ -160,7 +161,7 @@ describe('Importer', () => {
 		fireEvent.input(textarea);
 
 		await clickImport();
-		expect(onImport).toHaveBeenCalledWith(theHost, 'typed', undefined);
+		expect(onImport).toHaveBeenCalledWith(theHost, 'typed', undefined, aSignal);
 	});
 
 	it('hands no file name on for text pasted over the whole upload', async () => {
@@ -173,7 +174,7 @@ describe('Importer', () => {
 		fireEvent.input(textarea);
 
 		await clickImport();
-		expect(onImport).toHaveBeenCalledWith(theHost, 'pasted', undefined);
+		expect(onImport).toHaveBeenCalledWith(theHost, 'pasted', undefined, aSignal);
 	});
 
 	it('drops the problems and the uploaded file name when the dialog closes', async () => {
@@ -188,7 +189,7 @@ describe('Importer', () => {
 		expect(document.querySelector('[data-testid="importer-problems"]')).toBeNull();
 		document.querySelector('textarea')!.value = 'typed';
 		await clickImport();
-		expect(onImport).toHaveBeenLastCalledWith(theHost, 'typed', undefined);
+		expect(onImport).toHaveBeenLastCalledWith(theHost, 'typed', undefined, aSignal);
 	});
 
 	it('drops the uploaded file name when an import closes the dialog', async () => {
@@ -196,12 +197,72 @@ describe('Importer', () => {
 		const reopen = renderReopenable(onImport);
 		await upload('p1.gear.siml', 'siml 1');
 		await clickImport();
-		expect(onImport).toHaveBeenLastCalledWith(theHost, 'siml 1', 'p1.gear.siml');
+		expect(onImport).toHaveBeenLastCalledWith(theHost, 'siml 1', 'p1.gear.siml', aSignal);
 
 		await reopen();
 		document.querySelector('textarea')!.value = 'typed';
 		await clickImport();
-		expect(onImport).toHaveBeenLastCalledWith(theHost, 'typed', undefined);
+		expect(onImport).toHaveBeenLastCalledWith(theHost, 'typed', undefined, aSignal);
+	});
+
+	it('takes no second click while an import has not ended, and takes one once it has', async () => {
+		let end: () => void = () => {};
+		const onImport = vi.fn(() => new Promise<void>(resolve => (end = resolve)));
+		renderImporter({ onImport, onOpenChange: vi.fn() });
+		const button = document.querySelector('[data-testid="import-button"]')!;
+
+		await clickImport();
+		expect(button.hasAttribute('disabled')).toBe(true);
+		expect(button.getAttribute('aria-busy')).toBe('true');
+		await clickImport();
+		expect(onImport).toHaveBeenCalledTimes(1);
+
+		await act(async () => end());
+		expect(button.hasAttribute('disabled')).toBe(false);
+		await clickImport();
+		expect(onImport).toHaveBeenCalledTimes(2);
+	});
+
+	// A read that ends after the dialog closed would load into a page the user has gone on with.
+	it('aborts the import that has not ended when the dialog closes, and reports nothing of it', async () => {
+		let fail: (error: Error) => void = () => {};
+		const onImport = vi.fn((..._args: Parameters<ImporterProps['onImport']>) => new Promise<void>((_resolve, reject) => (fail = reject)));
+		const reopen = renderReopenable(onImport);
+
+		await clickImport();
+		const signal = onImport.mock.calls[0][3]!;
+		await closeDialog();
+		expect(signal.aborted).toBe(true);
+
+		await act(async () => fail(new ImportProblems('The text does not read:', ['5:8 no spell is named x'])));
+		await reopen();
+		expect(document.querySelector('[data-testid="importer-problems"]')).toBeNull();
+		expect(document.querySelector('[data-testid="import-button"]')!.hasAttribute('disabled')).toBe(false);
+	});
+
+	it('still reports an error of an import that ends after the dialog closed', async () => {
+		let fail: (error: Error) => void = () => {};
+		renderReopenable(vi.fn(() => new Promise<void>((_resolve, reject) => (fail = reject))));
+
+		await clickImport();
+		await closeDialog();
+		await act(async () => fail(new Error('Could not parse Class!')));
+
+		expect(toasts).toEqual([{ variant: 'error', body: 'import.error Could not parse Class!' }]);
+	});
+
+	it('aborts the import that has not ended when the importer unmounts', async () => {
+		const onImport = vi.fn((..._args: Parameters<ImporterProps['onImport']>) => new Promise<void>(() => {}));
+		const { unmount } = renderWithHost(
+			<Importer open title="SIML Import" onImport={onImport} onOpenChange={vi.fn()}>
+				<p>how to</p>
+			</Importer>,
+			HOST_PARTS,
+		);
+
+		await clickImport();
+		unmount();
+		expect(onImport.mock.calls[0][3]!.aborted).toBe(true);
 	});
 
 	it('ignores a cancelled file picker', async () => {
