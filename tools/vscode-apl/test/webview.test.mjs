@@ -195,10 +195,25 @@ const commit = async (input, value) => {
 };
 // Opens a row's editor, which a row opened before stays.
 const openRow = row => row.querySelector('.row-body') || click(row.querySelector('.chevron'));
-// Puts the text above in the document, and waits until the panel shows it at the document's version.
+// Puts the text above in the document, and waits until the panel has drawn it. The rotation the extension posts can be
+// ahead of the page, and rows an earlier test left would take a click as an edit of the version before, which the
+// extension drops, so the wait reads the page's rows: one block, its condition, the def and the calls as the text has
+// them, and none of what the tests below add.
 const useBlocksText = async () => {
 	if (document_.getText() !== blocksText) stand.change(document_, blocksText);
-	await until(() => lastRotation()?.version === document_.version && head(0) && priority().length === 5 && !document.querySelector('fieldset').disabled);
+	await until(
+		() =>
+			lastRotation()?.version === document_.version &&
+			priority().length === 5 &&
+			head(0) &&
+			!head(1) &&
+			/^when Current Time > 1s/.test(head(0).textContent) &&
+			condText(priority()[1]) === 'if fits(aimed_shot)' &&
+			condText(priority()[4]) === undefined &&
+			document.querySelector('[data-def="fits"]') &&
+			!document.querySelector('[data-def="def1"]') &&
+			!document.querySelector('fieldset').disabled,
+	);
 };
 
 test('a when block is a line over its rows, which show their own conditions and their def calls', async () => {
@@ -228,6 +243,8 @@ test('picked rows go in a new when block', async () => {
 	click([...document.querySelectorAll('.pick-bar button')].find(b => b.textContent === 'Put in a when block'));
 	await settled();
 	await until(() => head(1));
+	// The panel shows its change at once and the text catches up.
+	await until(() => /when true:/.test(document_.getText()));
 	assert.match(document_.getText(), /\n {2}when true:\n {4}cast arcane_shot\n {4}cast serpent_sting\n/);
 });
 
@@ -236,6 +253,7 @@ test('a block taken apart writes its condition on each of its rows', async () =>
 	click(head(0).querySelector('button[title^="Take the block apart"]'));
 	await settled();
 	await until(() => !head(0));
+	await until(() => !/when current_time > 1s:/.test(document_.getText()));
 	assert.match(document_.getText(), /\n {2}cast aimed_shot if current_time > 1s and fits\(aimed_shot\)\n {2}cast multi_shot if current_time > 1s\n/);
 });
 
