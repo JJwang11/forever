@@ -1736,11 +1736,6 @@ var ${Use Multi-Shot} = true
 var ${Use Arcane Shot} = true
 var ${Use Summon Hawk} = false
 
-prepull:
-  -22s cast hunters_mark
-  -20s cast aspect_of_the_hawk
-  -19s move $shoot_spot if $melee_weave
-
 priority:
   autocast_other_cooldowns if current_time >= 5s and at_range
   cast hunters_mark if not target.aura(hunters_mark).is_active
@@ -1758,6 +1753,8 @@ priority:
   cast aimed_shot
       if $use_aimed_shot
       and (spell(aimed_shot).cast_time + $time_to_melee <= auto_time_to_next(main_hand_auto) or not $melee_weave)
+  /// Start of the fight, before the first weave: get to my spot without losing an Auto Shot.
+  group "Walk in" if self.unit_distance != $shoot_spot and $not_weaving_yet
   group "Weave" if $melee_weave
 
 group "Weave":
@@ -1786,9 +1783,11 @@ Some notes on this file:
 - The JSON's `"type": "TypeAPL"` is inferred from the file kind (§6.2).
 - `"true"` and `"false"` consts print bare.
 - The walk times and the weave's conditions come from `apls/weave_common.apl.siml`, which `apls/clean_weave.apl.siml`
-  uses too, and which takes `in_melee`, `at_range` and `hawk_and_arcane` from `apls/common.apl.siml` (§9). Their
-  variables follow this file's in the proto, and `with` sets `Wait at melee` from this file's `$time_to_weave`.
-- `$shoot_spot` folds to `Shoot spot`, which the used file declares, while the proto keeps the exact names that
+  uses too (§9). It uses `apls/walk_in.apl.siml`, which the turret rotations use as well: the prepull rows and the
+  group `"Walk in"` that the row above `"Weave"` calls, and `Shoot spot`, which `weave_common` sets with `use … with`.
+  `walk_in` in turn takes `in_melee`, `at_range` and `hawk_and_arcane` from `apls/common.apl.siml`. Their variables
+  follow this file's in the proto, and `with` sets `Wait at melee` from this file's `$time_to_weave`.
+- `$shoot_spot` folds to `Shoot spot`, which a used file declares, while the proto keeps the exact names that
   `ui/specs/hunter/dps/spec.ts` sets.
 - `shot_soon(arcane_shot)` reads as the used file's def with `arcane_shot` for `x` (§6.10), in parentheses within the
   row's `and`.

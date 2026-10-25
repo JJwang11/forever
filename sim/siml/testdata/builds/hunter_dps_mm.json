@@ -533,14 +533,6 @@
 			],
 			"valueVariables": [
 				{
-					"name": "Shoot spot",
-					"value": {
-						"const": {
-							"val": "12"
-						}
-					}
-				},
-				{
 					"name": "Use Aimed Shot",
 					"value": {
 						"const": {
@@ -577,6 +569,14 @@
 					"value": {
 						"const": {
 							"val": "false"
+						}
+					}
+				},
+				{
+					"name": "Shoot spot",
+					"value": {
+						"const": {
+							"val": "12"
 						}
 					}
 				},

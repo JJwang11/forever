@@ -1545,25 +1545,6 @@
 					}
 				},
 				{
-					"name": "Shoot spot",
-					"value": {
-						"max": {
-							"vals": [
-								{
-									"variableRef": {
-										"name": "Ranged range"
-									}
-								},
-								{
-									"const": {
-										"val": "11.67"
-									}
-								}
-							]
-						}
-					}
-				},
-				{
 					"name": "Melee spot",
 					"value": {
 						"min": {
@@ -1834,6 +1815,25 @@
 							"rhs": {
 								"currentTime": {}
 							}
+						}
+					}
+				},
+				{
+					"name": "Shoot spot",
+					"value": {
+						"max": {
+							"vals": [
+								{
+									"variableRef": {
+										"name": "Ranged range"
+									}
+								},
+								{
+									"const": {
+										"val": "11.67"
+									}
+								}
+							]
 						}
 					}
 				},

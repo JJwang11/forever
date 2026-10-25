@@ -1,6 +1,6 @@
 siml 1
 spec hunter
-use "common.apl.siml"
+use "walk_in.apl.siml" with $shoot_spot = max($ranged_range, 11.67)
 
 // The walk times of a melee weave, from the run speed, and when a weave fits before the next Auto Shot. A weave walks
 // in for the next main-hand swing and is back before the Auto Shot it delays is more than Max Auto Shot delay late
@@ -11,7 +11,6 @@ var ${Walk-in range} = 4.99
 var ${Wait at melee} = input_delay
 var ${Max Auto Shot delay} = 1.2s
 var ${Max long weave delay} = 4s
-var ${Shoot spot} = max($ranged_range, 11.67)
 var ${Melee spot} = min($walk_in_range, 4.99)
 var ${Run speed} = self.unit_movement_speed
 var ${Time to melee} = 1s * ((self.unit_distance - $melee_spot) / $run_speed)
