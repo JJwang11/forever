@@ -29,7 +29,7 @@ group "Weave":
       if at_range
       and gcd_is_ready
       and (shot_soon(arcane_shot) or shot_soon(multi_shot))
-  wait input_delay - auto_time_since_last(main_hand_auto)
+  wait $wait_at_melee - auto_time_since_last(main_hand_auto)
   wait min(auto_time_to_next(main_hand_auto) + input_delay, max(gcd_time_to_ready, input_delay))
       if in_melee
       and auto_time_to_next(main_hand_auto) <= min($time_to_range, auto_swing_time(main_hand) / 2)
