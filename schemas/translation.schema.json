@@ -8333,7 +8333,7 @@
 											"additionalProperties": false,
 											"required": ["label", "tooltip"]
 										},
-										"assigned_seal": {
+										"assigned_judge": {
 											"type": "object",
 											"properties": {
 												"label": {
@@ -8348,6 +8348,19 @@
 											},
 											"additionalProperties": false,
 											"required": ["label", "tooltip", "none"]
+										},
+										"non_twist_seal": {
+											"type": "object",
+											"properties": {
+												"label": {
+													"type": "string"
+												},
+												"tooltip": {
+													"type": "string"
+												}
+											},
+											"additionalProperties": false,
+											"required": ["label", "tooltip"]
 										},
 										"pull_range": {
 											"type": "object",
@@ -8377,7 +8390,7 @@
 										}
 									},
 									"additionalProperties": false,
-									"required": ["aura", "assigned_seal", "pull_range", "delay_major_cds"]
+									"required": ["aura", "assigned_judge", "non_twist_seal", "pull_range", "delay_major_cds"]
 								}
 							},
 							"additionalProperties": false,
