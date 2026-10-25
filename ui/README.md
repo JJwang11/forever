@@ -230,7 +230,7 @@ import { defineSpec } from '@sim/spec_config';
 export default defineSpec<Spec.SpecDpsWarrior>({
     spec: Spec.SpecDpsWarrior,          // identity
     className, cssScheme, epStats, displayStats, …,  // everything IndividualSimUIConfig declares
-    defaults: { ...PresetUtils.specDefaultsFromSettings(Spec.SpecDpsWarrior, Defaults), epWeights, … },
+    defaults: { … },
     presets: { … },
     reforge: { getEPDefaults, updateSoftCaps },      // optional — wires ReforgeOptimizer
     enableHealing: false,                            // optional — overrides the tank/healer default
@@ -335,10 +335,12 @@ in `rollupOptions.input`) instead of one near-identical chunk per page.
 landing page translates through `i18n.t` as it renders and calls `updateLandingPageMetadata` for
 its title and `<meta name="description">`.
 
-Input configs shared by several specs of the same class live in `ui/specs/<class>/shared/inputs.ts`.
-Only the classes whose specs share them have the directory: `priest/shared/`, `shaman/shared/` and
-`warrior/shared/`. Druid's four specs and paladin's three share nothing at this level, so there is no
-`druid/shared/` or `paladin/shared/`.
+Anything shared by several specs of the same class lives in `ui/specs/<class>/shared/`, under a
+fixed name: `inputs.ts` for the input configs its specs share, and `presets.ts` for the defaults they
+share, such as one raid-buff default. Only the classes that need it have the directory:
+`priest/shared/inputs.ts`, `shaman/shared/inputs.ts` and `warrior/shared/{inputs,presets}.ts`. Druid's
+four specs and paladin's three share nothing at this level, so there is no `druid/shared/` or
+`paladin/shared/`.
 
 If a rule ever has to be shared as a `DerivedSetting`, declare it `DerivedSetting<any>`. `Player<S>`
 is invariant in `S`, so a rule typed against a spec union is not assignable into any one spec's
