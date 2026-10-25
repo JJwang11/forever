@@ -389,6 +389,13 @@ func TestSimFindsTheSpecDefaultsFromAnyFolder(t *testing.T) {
 	}
 }
 
+func TestIndividualSimRequestWithoutPlayer(t *testing.T) {
+	request, _ := individualSimRequest(&proto.IndividualSimSettings{}, nil)
+	if player := request.Raid.Parties[0].Players[0]; player == nil {
+		t.Fatalf("settings without a player gave no player in the raid")
+	}
+}
+
 func TestSettingsRequestSimsAsTheSiteDoes(t *testing.T) {
 	ring := func() *proto.EquipmentSpec {
 		items := make([]*proto.ItemSpec, 17)

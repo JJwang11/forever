@@ -197,7 +197,7 @@ func TestSIMLSimsWhatTheRotationItWasPrintedFromSims(t *testing.T) {
 		t.Fatal(fromSIML.Error)
 	}
 	char := hunterCharacter(t, "ui/specs/hunter/dps/apls/default.apl.siml")
-	base, _ := core.IndividualSimRequest(char.settings, &proto.SimOptions{RandomSeed: req.Seed})
+	base, _ := individualSimRequest(char.settings, &proto.SimOptions{RandomSeed: req.Seed})
 	direct, err := simAPL(context.Background(), base, "hunter/dps", rotation, req)
 	if err != nil {
 		t.Fatal(err)

@@ -204,7 +204,7 @@ func runSimlSim(ctx context.Context, root string, req simlSimRequest) simlSimRes
 	}
 	char.info.Race = char.settings.GetPlayer().GetRace().String()
 	char.info.Talents = char.settings.GetPlayer().GetTalentsString()
-	base, warnings := core.IndividualSimRequest(char.settings, &proto.SimOptions{RandomSeed: req.Seed})
+	base, warnings := individualSimRequest(char.settings, &proto.SimOptions{RandomSeed: req.Seed})
 	char.info.Warnings = append(char.info.Warnings, warnings...)
 
 	res := simlSimResult{Character: &char.info}

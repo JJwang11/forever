@@ -8,7 +8,9 @@ import (
 
 	"github.com/wowsims/forever/sim/core"
 	"github.com/wowsims/forever/sim/core/proto"
+	"github.com/wowsims/forever/sim/core/stats"
 	"google.golang.org/protobuf/encoding/protojson"
+	googleProto "google.golang.org/protobuf/proto"
 )
 
 const (
@@ -54,8 +56,8 @@ func readSimRequest(path string) (*proto.RaidSimRequest, []string, error) {
 	return request, append(warnings, more...), nil
 }
 
-// The request the site's individual sim sends for settings (core.IndividualSimRequest), for the iterations and fixed
-// seed of the sim settings, or the site's 12500 iterations and a random seed.
+// The request the site's individual sim sends for settings (individualSimRequest), for the iterations and fixed seed
+// of the sim settings, or the site's 12500 iterations and a random seed.
 func settingsRequest(s *proto.IndividualSimSettings) (*proto.RaidSimRequest, []string) {
 	options := &proto.SimOptions{Iterations: s.GetSettings().GetIterations(), RandomSeed: s.GetSettings().GetFixedRngSeed()}
 	if options.Iterations == 0 {
@@ -64,5 +66,72 @@ func settingsRequest(s *proto.IndividualSimSettings) (*proto.RaidSimRequest, []s
 	if options.RandomSeed == 0 {
 		options.RandomSeed = rand.Int64N(maxRandomSeed)
 	}
-	return core.IndividualSimRequest(s, options)
+	return individualSimRequest(s, options)
+}
+
+// The request the site's individual sim sends for settings, with options: the player alone in the first of the raid's
+// five parties, with the party buffs, the raid buffs, debuffs, tanks and target dummies, against the encounter. A ring enchant needs
+// Enchanting, so a player without it is simmed without its ring enchants. Settings with no encounter, or one with no
+// target, are simmed against one default target, in the site's default fight, which the warnings say. s is not
+// changed. The potions and conjured items the site adds for simming (getConsumes(true)) are not added: which are
+// relevant comes from the spec configs under ui/specs.
+func individualSimRequest(s *proto.IndividualSimSettings, options *proto.SimOptions) (*proto.RaidSimRequest, []string) {
+	var warnings []string
+	player := googleProto.Clone(orEmpty(s.GetPlayer())).(*proto.Player)
+	if player.Profession1 != proto.Profession_Enchanting && player.Profession2 != proto.Profession_Enchanting {
+		for _, slot := range []proto.ItemSlot{proto.ItemSlot_ItemSlotFinger1, proto.ItemSlot_ItemSlotFinger2} {
+			if items := player.GetEquipment().GetItems(); int(slot) < len(items) && items[slot] != nil {
+				items[slot].Enchant = 0
+			}
+		}
+	}
+	raid := core.SinglePlayerRaidProto(player, orEmpty(s.PartyBuffs), orEmpty(s.RaidBuffs), orEmpty(s.Debuffs))
+	// The target dummies take the free places after the player, up to 24.
+	for len(raid.Parties) < 5 {
+		raid.Parties = append(raid.Parties, &proto.Party{})
+	}
+	raid.Tanks = s.Tanks
+	raid.TargetDummies = s.TargetDummies
+
+	encounter := s.Encounter
+	switch {
+	case encounter == nil:
+		encounter = siteDefaultEncounter()
+		warnings = append(warnings, "the settings hold no encounter; simmed against one default target")
+	case len(encounter.Targets) == 0:
+		encounter = googleProto.Clone(encounter).(*proto.Encounter)
+		encounter.Targets = []*proto.Target{siteDefaultTarget()}
+		warnings = append(warnings, "the encounter has no target; simmed against one default target")
+	}
+	return &proto.RaidSimRequest{Raid: raid, Encounter: encounter, SimOptions: options, Type: proto.SimType_SimTypeIndividual}, warnings
+}
+
+// The fight the site starts with (Encounter.defaultEncounterProto in ui/sim/raid/encounter.ts): 180 s varied by 5 s,
+// against one default target. Each call returns a new message.
+func siteDefaultEncounter() *proto.Encounter {
+	return &proto.Encounter{
+		Duration:             180,
+		DurationVariation:    5,
+		ExecuteProportion_20: 0.2,
+		ExecuteProportion_35: 0.35,
+		Targets:              []*proto.Target{siteDefaultTarget()},
+	}
+}
+
+// The site's default target (Encounter.defaultTargetProto): the sim tests' default target with the raid target's id,
+// name and health, and the block value the site gives it. Each call returns a new message.
+func siteDefaultTarget() *proto.Target {
+	target := core.FreshDefaultTargetConfig()
+	target.Id, target.Name = 31146, "Raid Target"
+	target.Stats[stats.Health] = 1428900
+	target.Stats[stats.BlockValue] = 54
+	return target
+}
+
+// m, or an empty message of its type when it is nil.
+func orEmpty[M googleProto.Message](m M) M {
+	if m.ProtoReflect().IsValid() {
+		return m
+	}
+	return m.ProtoReflect().Type().New().Interface().(M)
 }
