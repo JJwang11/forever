@@ -53,16 +53,24 @@ export const DefaultRotation = WeaveAPLRotation;
 // The simple rotation of the spec's defaults.
 export const SimpleRotation = PresetUtils.makePresetSimpleRotation('Simple', Spec.SpecHunter, Defaults.simpleRotation!);
 
+// A build from `json`, which leaves "in front of target" and item swap as the page has them: a .siml file has no
+// unset bool, so its settings: section turns both off.
+const build = (name: string, json: any, gear: PresetUtils.PresetGear): PresetUtils.PresetBuild => {
+	const preset = PresetUtils.makePresetBuildFromJSON(name, Spec.SpecHunter, json, { gear });
+	const { inFrontOfTarget: _inFrontOfTarget, enableItemSwap: _enableItemSwap, ...playerOptions } = preset.settings!.playerOptions!;
+	return { ...preset, settings: { ...preset.settings!, playerOptions } };
+};
+
 // Gear, talents, rotation, pet and distance together, one per tree and playstyle: the best build found for each on
 // the P1 gear over a three minute fight.
 export const Builds = [
-	PresetUtils.makePresetBuildFromJSON('SV Weave', Spec.SpecHunter, SvWeaveBuild, { gear: P1Gear }),
-	PresetUtils.makePresetBuildFromJSON('MM Weave', Spec.SpecHunter, MmWeaveBuild, { gear: P1Gear }),
-	PresetUtils.makePresetBuildFromJSON('BM Weave', Spec.SpecHunter, BmWeaveBuild, { gear: P1Gear }),
-	PresetUtils.makePresetBuildFromJSON('MM', Spec.SpecHunter, MmBuild, { gear: P1Gear }),
-	PresetUtils.makePresetBuildFromJSON('BM', Spec.SpecHunter, BmBuild, { gear: P1Gear }),
-	PresetUtils.makePresetBuildFromJSON('SV', Spec.SpecHunter, SvBuild, { gear: P1Gear }),
-	PresetUtils.makePresetBuildFromJSON('SV Melee', Spec.SpecHunter, SvMeleeBuild, { gear: P1MeleeGear }),
+	build('SV Weave', SvWeaveBuild, P1Gear),
+	build('MM Weave', MmWeaveBuild, P1Gear),
+	build('BM Weave', BmWeaveBuild, P1Gear),
+	build('MM', MmBuild, P1Gear),
+	build('BM', BmBuild, P1Gear),
+	build('SV', SvBuild, P1Gear),
+	build('SV Melee', SvMeleeBuild, P1MeleeGear),
 ];
 
 // Each build's talents, under its name.
