@@ -290,9 +290,6 @@ const makePresetSettingsHelper = (name: string, spec: Spec, simSettings: Individ
 	return settings;
 };
 
-export const makePresetSettingsFromJSON = (name: string, spec: Spec, json: any): PresetSettings =>
-	makePresetSettingsHelper(name, spec, IndividualSimSettings.fromJson(json));
-
 export const makePresetBuild = (name: string, options: PresetBuildOptions): PresetBuild => {
 	return { name, ...options };
 };
