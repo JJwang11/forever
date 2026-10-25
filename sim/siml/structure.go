@@ -47,7 +47,7 @@ type DefCall struct {
 type DefInfo struct {
 	Name   string   `json:"name"`
 	Params []string `json:"params"`
-	Value  string   `json:"value"` // As written, on one line.
+	Value  string   `json:"value"` // As format writes it, on one line and without the comments in it.
 	Used   bool     `json:"used"`
 	Range  Range    `json:"-"`
 }
@@ -119,8 +119,7 @@ func (d *Doc) Structure() *Structure {
 			info.Params = append(info.Params, p.text)
 		}
 		if def.value != nil {
-			v := def.value.pos()
-			info.Value = strings.Join(strings.Fields(d.src[v.start:v.end]), " ")
+			info.Value = nodeText(def.value, d.src)
 		}
 		out.Defs = append(out.Defs, info)
 	}

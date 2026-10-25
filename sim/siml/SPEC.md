@@ -1556,6 +1556,8 @@ JSON does:
 - A row printed again stays in its `when` blocks while its condition still starts with theirs, and splits them
   otherwise (§6.9).
 - A def call in a row printed again stays while the edits leave its value as it was (§6.10).
+- A def whose parameters or value an edit sets is written again as `format` writes it, and a comment inside it goes
+  above it.
 - The JSON lists the variables that used files bring after the file's own (§9). An edit of one of them is refused, as
   the used file writes it, and a variable put among them goes after the file's own.
 - An edit is refused when it changes what another line reads: it removes a def, or removes or renames a variable

@@ -602,7 +602,7 @@ func defText(name string, params []string, value string) string {
 	if len(params) > 0 {
 		head += "(" + strings.Join(params, ", ") + ")"
 	}
-	return head + " = " + strings.Join(strings.Fields(value), " ")
+	return head + " = " + strings.TrimSpace(value)
 }
 
 // Adds the def line e.Name(e.Params) = e.Text.
@@ -839,5 +839,18 @@ func (d *Doc) editDef(e AplEdit) ([]TextEdit, error) {
 	if problem := firstError(back); problem != "" {
 		return nil, errors.New("the def has an error: " + problem)
 	}
-	return []TextEdit{{Range: d.rangeOf(def.span), NewText: line}}, nil
+	// The def as format writes it, with the comments inside it above it; one at the end of its last line stays there.
+	indent := columnOf(def, d.lines)
+	var lines []string
+	for _, c := range def.inner {
+		if c.kind == triviaComment && c.line < d.lines.line(def.end) {
+			lines = append(lines, commentLine(c, indent).line)
+		}
+	}
+	lines = append(lines, statementLines(defLine(back.typer.defs.byName[e.Name], back.tree.lines.src, indent))...)
+	eol := "\n"
+	if strings.Contains(d.src, "\r\n") {
+		eol = "\r\n"
+	}
+	return []TextEdit{{Range: d.rangeOf(def.span), NewText: strings.Join(lines, eol)[indent:]}}, nil
 }

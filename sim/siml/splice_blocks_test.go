@@ -141,6 +141,21 @@ func TestSpliceDefLines(t *testing.T) {
 	if !strings.Contains(got, "def fits(x) = spell(x).cast_time < 3s\n") {
 		t.Errorf("defSet wrote:\n%s", got)
 	}
+	// The panel shows a def's value without the comments in it and sends it back as it shows it; the comments go above
+	// the def.
+	commented := strings.Replace(spliceBlocks, "< 2s or not $a", "< 2s // short casts\n    or not $a", 1)
+	d := Analyze(splicePath, []byte(commented), corpusNames(t), nil)
+	value := d.Structure().Defs[0].Value
+	if value != "spell(x).cast_time < 2s or not $a" {
+		t.Errorf("the def's value reads %q", value)
+	}
+	out, err := d.Splice([]AplEdit{{Op: "defSet", Name: "fits", Params: []string{"x"}, Text: value}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := applied(d, out); !strings.Contains(got, "\n// short casts\ndef fits(x) = spell(x).cast_time < 2s or not $a\n") {
+		t.Errorf("defSet of a def with a comment in it wrote:\n%s", got)
+	}
 	got = splicedText(t, spliceBlocks, `[{"op": "defRename", "name": "fits", "text": "fits_weave"}]`)
 	if !strings.Contains(got, "def fits_weave(x) =") || !strings.Contains(got, "if fits_weave(multi_shot)") {
 		t.Errorf("defRename wrote:\n%s", got)
