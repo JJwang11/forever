@@ -119,8 +119,9 @@ test('a spell picked for a tagged one is written as its own name, with no tag ca
 	option().dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
 	await settled();
 	const edit = sent.filter(m => m.type === 'edit').at(-1);
-	const { spellId, rank } = names.classes.hunter.spell.raptor_strike;
-	assert.deepEqual(edit.edits[0].value, { spellId, rank });
+	// The entry's id, with its own tag and rank where it has them.
+	const { spellId, tag, rank } = names.classes.hunter.spell.raptor_strike;
+	assert.deepEqual(edit.edits[0].value, { spellId, ...(tag && { tag }), ...(rank && { rank }) });
 	assert.match(document_.getText(), /\npriority:\n {2}cast raptor_strike\n/);
 });
 
