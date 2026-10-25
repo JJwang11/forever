@@ -15,7 +15,10 @@ test('the manifest carries only what VS Code reads, and says it is generated', (
 	assert.deepEqual(Object.keys(manifest), [...MANIFEST_KEYS, 'x-generated']);
 	assert.equal(manifest['x-generated'], 'make vscode-apl');
 	assert.equal(manifest.main, './out/extension.js');
-	assert.deepEqual(manifest.activationEvents, ['onWebviewPanel:wowsims-apl.editor', 'onLanguage:siml']);
+	// VS Code activates the extension on a .siml file from the language it contributes, so only the panel's restore
+	// after a reload is listed.
+	assert.deepEqual(manifest.activationEvents, ['onWebviewPanel:wowsims-apl.editor']);
+	assert.ok(manifest.contributes.languages.some(language => language.id === 'siml'));
 });
 
 test('the panel, the sims and Insert Pattern are offered on .apl.siml files', () => {

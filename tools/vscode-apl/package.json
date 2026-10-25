@@ -11,8 +11,7 @@
 	},
 	"main": "./out/extension.js",
 	"activationEvents": [
-		"onWebviewPanel:wowsims-apl.editor",
-		"onLanguage:siml"
+		"onWebviewPanel:wowsims-apl.editor"
 	],
 	"contributes": {
 		"commands": [
