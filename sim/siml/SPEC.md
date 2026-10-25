@@ -1309,7 +1309,8 @@ use "default.apl.siml" with $use_summon_hawk = true
 
 - **`//` comments.** They are file trivia, and can be a full line or trailing. They never reach the proto, so
   a site round trip loses them. `format` and editor splices keep them:
-    - a trailing comment stays with its line;
+    - a trailing comment on a statement's last line stays at its end, and any other comment inside a statement
+      goes above it (§12.1);
     - a full-line comment directly above a statement, with no blank line between, moves with that statement;
     - any other comment keeps its place between the statements around it.
 - **`///` notes.** One or more `///` lines directly above a `priority:` or group row, with no blank line
@@ -1386,12 +1387,13 @@ their order; only `print` orders a file as above.
   line comes before each block but the first. Inside a block a run of blank lines becomes one, and none is
   kept before the file's first line or before a section's first body line.
 - **Comments.** A full-line comment takes the indent of the statement below it, and a comment after the last
-  statement takes column 1. A comment loses the spaces and tabs that end it. One comment on a statement's last
-  line stays at the end of its last printed line, after one space; any other comment inside a statement is
-  written above it. A header's body line goes on a line of its own, and the comment at the end of the header
-  line goes with it, except for a section of entries whose only statement is that body line: it stays on the
-  header line when it is one line and the two fit in 100 columns. `format` never takes a body up onto its header
-  line.
+  statement takes column 1. A comment loses the white space that ends it: tabs, U+000B, U+000C, U+FEFF,
+  `\r`, U+2028, U+2029 and every space separator (Unicode Zs: the space, U+00A0, U+3000, …). The comment on a
+  statement's last line stays at the end of its last printed line, after one space; the other comments inside a
+  statement are written above it, in order. A header's body line goes on a line of its own, and the comment at the
+  end of the header line goes with it, except for a section of entries whose only statement is that body line: it
+  stays on the header line when it is one line and the two fit in 100 columns. `format` never takes a body up onto
+  its header line.
 - **Entries** are re-printed as `print` writes the fields each one sets (§12.2): a run of flags of one line as
   flag lists, the values one line gives a list together, and every other field on a line of its own.
 - **Slot rows** are re-printed as §12.2 writes them, with the names they are written with.

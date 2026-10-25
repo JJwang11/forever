@@ -319,12 +319,12 @@ func (p *printer) blockRow(own *proto.APLListItem, full protoreflect.Message, on
 	return st
 }
 
-// A statement's inner comments (SPEC.md §10): the one on its last line, when it is the only one, as trailing text;
-// else all of them, to go above it.
+// A statement's inner comments (SPEC.md §10): the one on its last line as trailing text, and the others, to go above
+// it.
 func innerComments(inner []trivia, last int) (trailing string, above []trivia) {
 	comments := slices.DeleteFunc(slices.Clone(inner), func(t trivia) bool { return t.kind != triviaComment })
-	if len(comments) == 1 && comments[0].line == last {
-		return trailingText(comments[0]), nil
+	if n := len(comments); n > 0 && comments[n-1].line == last {
+		return trailingText(comments[n-1]), comments[:n-1]
 	}
 	return "", comments
 }
