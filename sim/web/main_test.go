@@ -138,7 +138,7 @@ func TestSimlRoutes(t *testing.T) {
 		t.Fatal(err)
 	}
 	saved := siteFS
-	siteFS = fstest.MapFS{"forever/siml_names.json": &fstest.MapFile{Data: data}}
+	siteFS = fstest.MapFS{}
 	defer func() { siteFS, simlNamesTable = saved, nil }()
 	post := func(route string, req, result googleProto.Message) {
 		t.Helper()
@@ -160,6 +160,13 @@ func TestSimlRoutes(t *testing.T) {
 	}
 
 	const text = "siml 1\nspec hunter\n\npriority:\n  cast multi_shot\n"
+	// Without the table, a request answers with the error, as one to the browser's worker does.
+	missing := &proto.SimlParseResult{}
+	if post("/simlParse", &proto.SimlParseRequest{Path: "rotation.apl.siml", Text: text}, missing); missing.Error != "no SIML name table is read" {
+		t.Errorf("/simlParse without the table gave %v", missing)
+	}
+	siteFS = fstest.MapFS{"forever/siml_names.json": &fstest.MapFile{Data: data}}
+
 	parsed := &proto.SimlParseResult{}
 	post("/simlParse", &proto.SimlParseRequest{Path: "rotation.apl.siml", Text: text}, parsed)
 	if parsed.Error != "" || parsed.Spec != proto.Spec_SpecHunter || len(parsed.Categories) != 1 || parsed.Categories[0] != "r" {

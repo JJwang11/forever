@@ -30,7 +30,6 @@ import (
 	"github.com/wowsims/forever/sim/siml"
 
 	googleProto "google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 func init() {
@@ -163,16 +162,15 @@ func simlNames() (*siml.Names, error) {
 	return names, err
 }
 
-// The handler of a SIML request. When the name table does not read, the result's error says why.
+// The handler of a SIML request. A name table that does not read is logged, and the request, handled without one,
+// answers with the error that no table is read.
 func simlHandler[Req, Res googleProto.Message](newReq func() Req, handle func(Req, *siml.Names) Res) apiHandler {
 	return apiHandler{msg: func() googleProto.Message { return newReq() }, handle: func(msg googleProto.Message) googleProto.Message {
 		names, err := simlNames()
-		result := handle(msg.(Req), names)
 		if err != nil {
-			m := result.ProtoReflect()
-			m.Set(m.Descriptor().Fields().ByName("error"), protoreflect.ValueOfString("the SIML name table does not read: "+err.Error()))
+			log.Printf("[ERROR] The SIML name table does not read: %s", err)
 		}
-		return result
+		return handle(msg.(Req), names)
 	}}
 }
 
