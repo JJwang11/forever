@@ -792,18 +792,45 @@ func (b *completer) enchants(slot, itemName, before string) {
 
 // --- Composition.
 
-// The .siml files near the file, by their path from its folder.
+// The .siml files near the file that it can use, by their path from its folder: those of a kind its own holds, and
+// none that uses it, which section-not-allowed and use-cycle would refuse.
 func (b *completer) pathsForUse() {
 	if b.d.path == "" {
 		return
 	}
+	kind := b.d.Kind()
+	allowed := fileSections(b.d.ix, kind)
 	for _, file := range nearbyFiles(b.d.path) {
+		if kind.Section != "" && !allowed[kindOf(file).Section] || b.d.usesFile(file, map[string]bool{}) {
+			continue
+		}
 		rel, err := filepath.Rel(filepath.Dir(b.d.path), file)
 		if err != nil {
 			continue
 		}
 		b.add(jsonString(filepath.ToSlash(rel)), CompletionFile, offerAs{detail: "file"})
 	}
+}
+
+// Whether the file at path uses this one, itself or through the files it uses.
+func (d *Doc) usesFile(path string, seen map[string]bool) bool {
+	if seen[path] {
+		return false
+	}
+	seen[path] = true
+	text, ok := d.readUsed(path)
+	if !ok {
+		return false
+	}
+	tree, _ := parseSyntax(text, d.ix, kindOf(path))
+	for _, s := range tree.top {
+		if u, ok := s.(*useStmt); ok {
+			if next := resolveUse(path, u.path.value); SamePath(next, d.path) || d.usesFile(next, seen) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // The variables a with list of a use line naming path sets.

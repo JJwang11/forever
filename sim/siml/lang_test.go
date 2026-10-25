@@ -362,6 +362,41 @@ func TestDefCompletion(t *testing.T) {
 	}
 }
 
+// A use line offers the files near its own that it can use: none of a kind this file cannot hold, and none that uses
+// this file, which section-not-allowed and use-cycle would refuse.
+func TestCompleteUsePaths(t *testing.T) {
+	dir := t.TempDir()
+	for name, text := range map[string]string{
+		"apls/a.apl.siml":        plainPreface + "use \"b.apl.siml\"\n",
+		"apls/b.apl.siml":        plainPreface,
+		"apls/lib.apl.siml":      plainPreface,
+		"gear_sets/p1.gear.siml": plainPreface,
+		"builds/x.siml":          plainPreface,
+		"defaults.siml":          plainPreface,
+	} {
+		path := filepath.Join(dir, filepath.FromSlash(name))
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(text), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, c := range []struct {
+		file string
+		want []string
+	}{
+		{"apls/b.apl.siml", []string{`"lib.apl.siml"`}},
+		{"gear_sets/p1.gear.siml", []string{}},
+		{"builds/x.siml", []string{`"../apls/a.apl.siml"`, `"../apls/b.apl.siml"`, `"../apls/lib.apl.siml"`, `"../defaults.siml"`, `"../gear_sets/p1.gear.siml"`}},
+	} {
+		path := filepath.Join(dir, filepath.FromSlash(c.file))
+		if got := labelsOf(completionsIn(t, smallNames(), nil, path, plainPreface+"use \"|\n")); !slices.Equal(got, c.want) {
+			t.Errorf("%s offers %q, want %q", c.file, got, c.want)
+		}
+	}
+}
+
 // The line right under a when line is its first row; under an unfinished condition, the condition goes on (SPEC.md
 // §6.9).
 func TestCompleteWhenBody(t *testing.T) {
