@@ -1,9 +1,11 @@
 package siml
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"io/fs"
+	"maps"
 	"path"
 	"regexp"
 	"slices"
@@ -525,11 +527,12 @@ type usedFiles struct {
 	withSet      map[string]span // The variables the with lists set, each at the variable that sets it first.
 }
 
-// The variables and groups used rotations declare, which a file's references may name.
+// The variables, groups and sequences used rotations declare, which a file's references may name.
 type usedDeclarations struct {
 	variables []declared
 	from      map[string]string          // The used file that declares each variable outside groups.
 	groups    map[string]map[string]bool // Each group's placeholders.
+	sequences map[string]bool
 }
 
 // Reads each use line's file and checks it against this one: a section in both is section-conflict, and the with
@@ -539,9 +542,14 @@ func (f *typedFile) readUses(u *uses) usedFiles {
 	t := f.typer
 	ix := t.ix
 	allowed := fileSections(ix, f.kind)
-	used := usedFiles{present: newKeySet(), declared: usedDeclarations{from: map[string]string{}, groups: map[string]map[string]bool{}}, withSet: map[string]span{}}
+	used := usedFiles{present: newKeySet(), declared: usedDeclarations{from: map[string]string{}, groups: map[string]map[string]bool{}, sequences: map[string]bool{}}, withSet: map[string]span{}}
 	broughtBy := map[string]string{} // The used file that brought each key of used.present.
 	aplEntriesFrom := ""             // The used file that brought apl: entries.
+	type broughtVariable struct {
+		file  string // The file that declares it.
+		value *proto.APLValueVariable
+	}
+	brought := map[string]broughtVariable{} // The first value variable of each name the use lines bring.
 	for _, s := range f.tree.top {
 		use, ok := s.(*useStmt)
 		if !ok {
@@ -634,7 +642,35 @@ func (f *typedFile) readUses(u *uses) usedFiles {
 		if len(use.with) > 0 && rotation == nil {
 			t.report("with-not-rotation", path+" holds no rotation whose variables with could set", use.with[0].variable.span)
 		} else {
-			used.withs = append(used.withs, func() { f.withs[use] = f.setVariables(rotation, use.with, path, used.withSet) })
+			used.withs = append(used.withs, func() {
+				f.withs[use] = f.setVariables(rotation, use.with, path, used.withSet)
+				// A variable an earlier use line brought is brought again by a file both reach, from that file and
+				// with the same value, and is taken in once; any other is declared twice.
+				declaring := map[string]string{}
+				for _, v := range variablesOf(declaredByFile(file, path)) {
+					declaring[v.name] = cmp.Or(declaring[v.name], v.file)
+				}
+				var twice []string
+				variables := slices.DeleteFunc(rotation.GetValueVariables(), func(v *proto.APLValueVariable) bool {
+					first, ok := brought[v.Name]
+					switch {
+					case !ok:
+						brought[v.Name] = broughtVariable{declaring[v.Name], v}
+						used.declared.from[v.Name] = path
+						return false
+					case first.file == declaring[v.Name] && googleProto.Equal(first.value, v):
+						return true
+					}
+					twice = append(twice, fmt.Sprintf("%s is declared in both %s and %s", v.Name, used.declared.from[v.Name], path))
+					return false
+				})
+				if rotation != nil {
+					rotation.ValueVariables = variables
+				}
+				if len(twice) > 0 {
+					t.report("duplicate-variable", strings.Join(twice, "; "), at)
+				}
+			})
 		}
 		if file.writesAPLEntries() && aplEntriesFrom == "" {
 			aplEntriesFrom = path
@@ -642,24 +678,11 @@ func (f *typedFile) readUses(u *uses) usedFiles {
 		used.settings = append(used.settings, file.settings)
 		used.explicitType = used.explicitType || file.explicitType
 		declared := declaredBy(rotation)
-		var twice []string
-		for _, v := range declared.variables {
-			if v.scope.inGroup {
-				continue
-			}
-			if other, ok := used.declared.from[v.name]; ok {
-				twice = append(twice, fmt.Sprintf("%s is declared in both %s and %s", v.name, other, path))
-			} else {
-				used.declared.from[v.name] = path
-			}
-		}
-		if len(twice) > 0 {
-			t.report("duplicate-variable", strings.Join(twice, "; "), at)
-		}
 		used.declared.variables = append(used.declared.variables, declared.variables...)
 		for group, placeholders := range declared.groups {
 			used.declared.groups[group] = placeholders
 		}
+		maps.Copy(used.declared.sequences, declared.sequences)
 	}
 	return used
 }
@@ -713,9 +736,16 @@ func listed(keys []string) string {
 	return strings.Join(names[:len(names)-1], ", ") + " and " + names[len(names)-1]
 }
 
-// The variables, groups and placeholders a rotation declares.
+// The variables, groups, placeholders and sequences a rotation declares.
 func declaredBy(rotation *proto.APLRotation) usedDeclarations {
-	out := usedDeclarations{groups: map[string]map[string]bool{}}
+	out := usedDeclarations{groups: map[string]map[string]bool{}, sequences: map[string]bool{}}
+	if rotation != nil {
+		walkMessages(rotation.ProtoReflect(), func(m protoreflect.Message) {
+			if s, ok := m.Interface().(*proto.APLActionSequence); ok {
+				out.sequences[s.Name] = true
+			}
+		})
+	}
 	for _, v := range rotation.GetValueVariables() {
 		out.variables = append(out.variables, declared{name: v.GetName()})
 	}

@@ -144,7 +144,7 @@ func (t *typer) checkReferences(declarations []*variableDecl, groups []nameUse, 
 	}
 
 	for _, use := range t.sequenceUses {
-		if !t.sequenceDefs[use.name] {
+		if !t.sequenceDefs[use.name] && !used.sequences[use.name] {
 			t.site = use.site
 			t.warn("undefined-sequence", fmt.Sprintf(`no sequence is named "%s"`, use.name), use.span)
 			t.site = nil

@@ -1118,8 +1118,8 @@ The record is committed with the table, and its lines are kept.
 - `undefined-group`, for a group reference, `group "N"` or `group_reference(...)`, that names no group;
 - `undefined-placeholder`, for a `with %p` that names no placeholder of that group;
 - `undefined-sequence`, for a sequence name that no `sequence "N" [...]` action, or the `sequence` kind
-  written generically, defines. Sequence names are the string fields named like the subject of the
-  `sequence` head: `sequence("N").is_complete` and `reset_sequence("N")`.
+  written generically, defines, in this file or a used rotation. Sequence names are the string fields named like
+  the subject of the `sequence` head: `sequence("N").is_complete` and `reset_sequence("N")`.
 
 **Cycles.** A cycle through variables, or through group references, is `reference-cycle`. The sim cannot run
 one. The sim reads every reference in a variable's value, a group's variable's too, as a value variable's, so a
@@ -1291,10 +1291,12 @@ use "default.apl.siml" with $use_summon_hawk = true
   of every file go together, and only `apl:` entries such as `type` conflict as `apl:`. A variable outside the
   groups that this file and a used file both declare is `duplicate-variable` at this file's `var` line, and one that
   two used files declare is `duplicate-variable` at the `use` line of the second; `with` sets a used file's
-  variable. A def two of the files declare is `duplicate-def` (§6.10). The message names where each
-  section was first: this file, or the used file that brought it. A section file that uses a section its kind
-  does not hold, or a talents line (§3.3), is `section-not-allowed`. Each is reported once per `use` line,
-  listing the sections.
+  variable. A file that two `use` lines reach, directly or through the files they use, brings its variables once
+  where they have the same value through both, after `with`; with another value, one is `duplicate-variable` as
+  above. Its defs come in once (§6.10), and its sections conflict as any two files' do. A def two of the files
+  declare is `duplicate-def` (§6.10). The message names where each section was first: this file, or the used file
+  that brought it. A section file that uses a section its kind does not hold, or a talents line (§3.3), is
+  `section-not-allowed`. Each is reported once per `use` line, listing the sections.
 - **Specs.** The two files' `spec` lines must agree (`spec-mismatch`).
 - **`with`.** It sets the value of variables the used rotation declares, matched by the rule of §7.5. An
   unknown variable is `with-unknown-variable` and one that matches several is `ambiguous-variable`, each at the
@@ -1302,7 +1304,7 @@ use "default.apl.siml" with $use_summon_hawk = true
   list that sets one variable twice is `duplicate-variable`, at the second.
   Names in `with` values are read in the using file, variables in them are this file's and the used rotation's, and
   a call in them may name a def of this file or of any used file (§6.10).
-- **References.** This file's rows may refer to the variables and groups that a used rotation declares.
+- **References.** This file's rows may refer to the variables, groups and sequences that a used rotation declares.
 - **Errors in the used file.** The used file's first error, in the order of §13, is reported at the `use` line
   with its own code, and its message names the used file's line and column; the other checks of that `use`
   line are not made. A cycle is `use-cycle`, reported in the file whose `use`
