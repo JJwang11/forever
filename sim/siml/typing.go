@@ -1058,14 +1058,8 @@ func (t *typer) actionID(n node, ns Namespace) *proto.ActionID {
 			return &proto.ActionID{RawId: &proto.ActionID_ItemId{ItemId: r.id}}
 		}
 	case *varNode:
-		if actionIDVariable == nil {
-			t.report("spell-variable", "a variable holds no spell: ActionID has no field to name one", n.span)
-			return nil
-		}
-		id := &proto.ActionID{}
-		t.useVariable(n, func(name string) { id.ProtoReflect().Set(actionIDVariable, protoreflect.ValueOfString(name)) })
-		t.mark(n.span)
-		return id
+		t.report("spell-variable", "a variable holds no spell: ActionID has no field to name one", n.span)
+		return nil
 	case *callNode:
 		if n.args != nil {
 			break

@@ -816,7 +816,6 @@ meaning among the shared entries.
 | `item.<name>` in any `ActionID` position                                                                                                                     | `item`                        | `{"itemId": id}`                                         |
 | `other.<short>` in any `ActionID` position                                                                                                                   | the `OtherAction` enum (§8.2) | `{"otherId": "OtherAction…"}` (`other.offensive_potion`) |
 | `none` in any `ActionID` position                                                                                                                            |                               | `{}`                                                     |
-| `$x` or `${X}`, the variable holding a spell (§7.5), in any `ActionID` position                                                                              |                               | `raw_id`'s string member: its name                       |
 | `ItemSpec.id`, the item of a slot row, and the item ref fields of `ConsumesSpec` (§8.1 `refs`)                                                               | `item`                        | the item id                                              |
 | `ItemSpec.enchant`, `+ <name>` on a slot row                                                                                                                 | `enchant`                     | the effect id                                            |
 | `ItemSpec.random_suffix`, the suffix of a slot row                                                                                                           | `suffix`                      | the random suffix id                                     |
@@ -831,11 +830,9 @@ meaning among the shared entries.
   `selected_potion(item.major_frenzy_potion)`. A name without it never falls back to the items, so a spell that
   takes an item's name later cannot change what a committed line means. `item.` is written nowhere else: in an
   item field it is `wrong-type`.
-- **`$x`.** A variable in an `ActionID` position stands for the spell the variable holds, which the sim reads when
-  it reads the rotation, so `cast $filler`, `spell($filler).cast_time` and `target.aura($curse).remaining_time` follow
-  a spell picked in the variable. It writes the declared name, found as §7.5 finds it, into the one string member of
-  `ActionID`'s `raw_id` oneof, and the printer writes that member back as `$x`. While `ActionID` has no string member,
-  a variable there is `spell-variable`.
+- **`$x`.** A variable in an `ActionID` position, such as `cast $filler`, is `spell-variable`: `ActionID`'s `raw_id`
+  oneof has no member that names a variable, so no spell can be picked in one. A def for a name (§6.10) picks one
+  where the file is read.
 - **Errors.** A name that the position's namespace does not hold for the file is `unknown-name`, at the name (for
   `item.<name>`, at the name after the dot). The table decides its message, which is written
   exactly so:
@@ -1614,7 +1611,7 @@ are errors.
 | `wrong-type`, `unknown-enum`, `bad-literal`, `bad-raw`                                                        | error    | a value that does not fit its field                                                        |
 | `unknown-slot`, `duplicate-slot`                                                                              | error    | §5.3                                                                                       |
 | `unknown-name`                                                                                                | error    | §7.2; the message names where the name is, or a did-you-mean                               |
-| `spell-variable`                                                                                              | error    | §7.2; while `ActionID` has no string member                                                |
+| `spell-variable`                                                                                              | error    | §7.2; a variable where an `ActionID` goes                                                  |
 | `icd-trigger`                                                                                                 | error    | §7.4; an `icdOnlyBy` aura or an `icdOnlyItems` item outside ICD kinds                      |
 | `ambiguous-variable`                                                                                          | error    | §7.5                                                                                       |
 | `duplicate-group`, `duplicate-variable`, `reference-cycle`                                                    | error    | §6.1, §7.5, §6.10; a variable two files declare, or a `with` list that sets one twice (§9) |

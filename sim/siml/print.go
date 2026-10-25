@@ -548,15 +548,11 @@ func (p *printer) zero(f *field) string {
 	return "none"
 }
 
-// An ActionID: the name of its spell id and tag in ns, item.<name>, other.<short>, $x for a variable, none, or raw
-// JSON (SPEC.md §7.4).
+// An ActionID: the name of its spell id and tag in ns, item.<name>, other.<short>, none, or raw JSON (SPEC.md §7.4).
 func (p *printer) ref(v protoreflect.Message, ns Namespace, sc scope) text {
 	set := p.setFields(v)
 	if len(set) == 0 {
 		return word("none")
-	}
-	if actionIDVariable != nil && len(set) == 1 && set[0].desc == actionIDVariable && v.Get(actionIDVariable).String() != "" {
-		return p.variableRef(v.Get(actionIDVariable).String())
 	}
 	only := func(names ...string) bool {
 		return !slices.ContainsFunc(set, func(f *field) bool { return !slices.Contains(names, f.Name) })

@@ -119,5 +119,5 @@ item, enchant, suffix.
   (`other.offensive_potion`).
 - Ranks and duplicates carry suffixes: `frostbolt_rank10`, `heroic_strike_tag1`, `fireball_18082`.
 - A name the table lacks is `unknown-name` with a did-you-mean; `make siml-names` adds newly registered spells.
-- `$var` where a name goes (`cast $filler`, `aura($curse)`) is the spell the variable holds, once ActionID has a
-  string member to name a variable in; until then it is `spell-variable`.
+- `$var` where a name goes (`cast $filler`, `aura($curse)`) is `spell-variable`: ActionID has no member to name a
+  variable in. A def for a name (`def filler = arcane_shot`, then `cast filler`) picks the spell in one line.
