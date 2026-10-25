@@ -492,11 +492,6 @@ func enchantRowAppliesToItem(enchant Enchant, item Item) bool {
 	return itemfit.EnchantFits(enchant.fit(), item.fit())
 }
 
-// The slots an enchant's item types reach; a weapon enchant reaches both hands.
-func EligibleEnchantSlots(enchant Enchant) []proto.ItemSlot {
-	return itemfit.EnchantSlots(enchant.fit())
-}
-
 func (enchant Enchant) fit() itemfit.Enchant {
 	return itemfit.Enchant{Type: enchant.Type, EnchantType: enchant.EnchantType, ExtraTypes: enchant.ExtraTypes}
 }

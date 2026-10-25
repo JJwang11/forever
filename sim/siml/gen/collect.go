@@ -19,6 +19,7 @@ import (
 	"github.com/wowsims/forever/assets/database"
 	"github.com/wowsims/forever/sim"
 	"github.com/wowsims/forever/sim/core"
+	"github.com/wowsims/forever/sim/core/itemfit"
 	"github.com/wowsims/forever/sim/core/proto"
 	"github.com/wowsims/forever/sim/core/spelldata"
 	"github.com/wowsims/forever/sim/siml"
@@ -822,7 +823,7 @@ func databaseEntries(db *proto.UIDatabase) ([]Item, []EnchantRow, []Suffix) {
 // The slots of the item types an enchant row fits: those of its type and extra types, a weapon's main and off
 // hand, narrowed to the main hand for a two-hander or staff enchant and to the off hand for a shield or off-hand one.
 func enchantSlots(e *proto.UIEnchant) []proto.ItemSlot {
-	slots := core.EligibleEnchantSlots(core.Enchant{Type: e.Type, ExtraTypes: e.ExtraTypes})
+	slots := itemfit.EnchantSlots(itemfit.Enchant{Type: e.Type, ExtraTypes: e.ExtraTypes})
 	switch e.EnchantType {
 	case proto.EnchantType_EnchantTypeTwoHand, proto.EnchantType_EnchantTypeStaff:
 		slots = slices.DeleteFunc(slots, func(s proto.ItemSlot) bool { return s == proto.ItemSlot_ItemSlotOffHand })
