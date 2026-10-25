@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"testing"
 	"testing/fstest"
@@ -160,9 +161,9 @@ func TestSimlRoutes(t *testing.T) {
 	}
 
 	const text = "siml 1\nspec hunter\n\npriority:\n  cast multi_shot\n"
-	// Without the table, a request answers with the error, as one to the browser's worker does.
+	// Without the table, a request answers with the reason it does not read.
 	missing := &proto.SimlParseResult{}
-	if post("/simlParse", &proto.SimlParseRequest{Path: "rotation.apl.siml", Text: text}, missing); missing.Error != "no SIML name table is read" {
+	if post("/simlParse", &proto.SimlParseRequest{Path: "rotation.apl.siml", Text: text}, missing); !strings.HasPrefix(missing.Error, "the SIML name table does not read: ") {
 		t.Errorf("/simlParse without the table gave %v", missing)
 	}
 	siteFS = fstest.MapFS{"forever/siml_names.json": &fstest.MapFile{Data: data}}
