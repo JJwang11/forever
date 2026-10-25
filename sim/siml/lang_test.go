@@ -246,6 +246,63 @@ func TestDefNavigation(t *testing.T) {
 	}
 }
 
+// A rename leaves the rotation as it was, its new name aside, or is refused: a name that another word of a def's
+// value, a def's caller or a used file's variable already has would make that word read as the renamed symbol
+// (SPEC.md §6.10).
+func TestRenameKeepsRotation(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "a.apl.siml"), []byte(plainPreface+"var ${Ranged range} = 12\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(dir, "b.apl.siml")
+	text := plainPreface + textLines(
+		`use "a.apl.siml"`,
+		"",
+		"var ${Foo} = 3",
+		"def g = current_time > 1s",
+		"def f(alpha) = spell(alpha).is_ready and spell(everyones).is_ready",
+		"def h(x) = x > 1 and g",
+		"",
+		"priority:",
+		"  cast steady if f(steady) and h(2) and $ranged_range > 1 and $foo > 1",
+	)
+	d := Analyze(path, []byte(text), smallNames(), langOpen)
+	before := string(d.RotationJSON())
+	if before == "" {
+		t.Fatalf("the text holds no rotation: %v", d.Diagnostics())
+	}
+	for _, c := range []struct {
+		needle, newName string
+		refused         bool
+	}{
+		{"(alpha", "everyones", true},
+		{"(x", "g", true},
+		{"def g", "x", true},
+		{"${Foo", "ranged_range", true},
+		{"${Foo", "Ranged range", true},
+		{"(alpha", "beta", false},
+		{"(x", "y", false},
+		{"def g", "late", false},
+		{"${Foo", "Bar", false},
+	} {
+		at := positionOf(text, c.needle, len(c.needle)-1)
+		edits, err := d.Rename(at, c.newName)
+		if (err != nil) != c.refused {
+			t.Errorf("%s → %s: refused %v (%v), want refused %v", c.needle, c.newName, err != nil, err, c.refused)
+		}
+		if err != nil || len(edits) != 1 {
+			continue
+		}
+		want := before
+		if strings.HasPrefix(c.needle, "$") {
+			want = strings.ReplaceAll(want, `"Foo"`, jsonString(c.newName))
+		}
+		if got := string(Analyze(path, []byte(applied(d, edits[0].Edits)), smallNames(), langOpen).RotationJSON()); got != want {
+			t.Errorf("%s → %s changes the rotation:\n%s\nwant\n%s", c.needle, c.newName, got, want)
+		}
+	}
+}
+
 func TestDefCompletion(t *testing.T) {
 	find := func(items []Completion, label string) (Completion, bool) {
 		i := slices.IndexFunc(items, func(x Completion) bool { return x.Label == label })

@@ -670,18 +670,39 @@ func identifierRefusal(kind, name string) string {
 	return ""
 }
 
-// Why what key names in d cannot take newName: it cannot be written, or another of its kind, seen where it is, has the
-// name, which would merge the two. Variables compare by identifier, which a $name reference also resolves by.
-func (d *Doc) renameRefusal(key occurrence, newName string) string {
+// Why what key names in d cannot take newName: it cannot be written; another of its kind, seen where it is, has the
+// name, which would merge the two; or another word would then read as it (SPEC.md §6.10), a word of a parameter's def
+// value or a parameter of a def calling the renamed def. found is every occurrence the rename edits. Variables compare
+// by identifier, which a $name reference also resolves by, with this file's and its used files'.
+func (d *Doc) renameRefusal(key occurrence, newName string, found []foundOccurrence) string {
 	if why := identifierRefusal(key.kind, newName); why != "" {
 		return why
 	}
 	if key.kind == "parameter" && d.ix.keywords[newName] {
 		return newName + " is a reserved word."
 	}
+	if def := d.defHolding(key.start); key.kind == "parameter" && def != nil && !def.isParam(newName) && slices.Contains(parameterWords(def), newName) {
+		return fmt.Sprintf("%s reads %s, which the parameter would then stand for.", def.name.text, newName)
+	}
 	if t := d.typed; key.kind == "def" && t != nil {
 		if what := t.typer.meaning(newName); what != "" {
 			return fmt.Sprintf("%s is %s; a def takes a name of its own.", newName, what)
+		}
+		for _, f := range found {
+			if caller := f.doc.defHolding(f.o.start); !f.o.definition && caller != nil && caller.isParam(newName) {
+				return fmt.Sprintf("%s calls %s and has a parameter named %s, which the call would then read.", caller.name.text, key.name, newName)
+			}
+		}
+	}
+	for _, s := range d.tree().statements {
+		u, ok := s.(*useStmt)
+		if !ok || key.kind != "variable" {
+			continue
+		}
+		for _, x := range variablesOf(declaredByFile(d.typed.used[u], resolveUse(d.path, u.path.value))) {
+			if Identifier(x.name) == Identifier(newName) {
+				return fmt.Sprintf("%s has a variable named %s already.", filepath.Base(x.file), x.name)
+			}
 		}
 	}
 	seen := func(o occurrence) bool {
@@ -706,6 +727,37 @@ func (d *Doc) renameRefusal(key occurrence, newName string) string {
 	return ""
 }
 
+// The def whose line holds offset, or nil.
+func (d *Doc) defHolding(offset int) *defStmt {
+	for _, s := range d.tree().statements {
+		if def, ok := s.(*defStmt); ok && def.holds(offset) {
+			return def
+		}
+	}
+	return nil
+}
+
+// The words of a def's value that a parameter of the same name stands for (SPEC.md §6.10): bare words and units before
+// a dot.
+func parameterWords(def *defStmt) []string {
+	var out []string
+	walkTree(def.value, nil, func(n, _ any) {
+		switch x := n.(type) {
+		case *callNode:
+			if x.args == nil {
+				out = append(out, x.name.text)
+			}
+		case *memberNode:
+			out = append(out, x.object.text)
+		case *accessorNode:
+			if x.unit != nil {
+				out = append(out, x.unit.text)
+			}
+		}
+	})
+	return out
+}
+
 // A file's edits.
 type FileEdits struct {
 	Path  string
@@ -723,11 +775,12 @@ func (d *Doc) Rename(at Position, newName string) ([]FileEdits, error) {
 	if !ok {
 		return nil, nil
 	}
-	if why := home.renameRefusal(key, newName); why != "" {
+	found := everywhere(home, key, d)
+	if why := home.renameRefusal(key, newName, found); why != "" {
 		return nil, fmt.Errorf("%s", why)
 	}
 	var out []FileEdits
-	for _, f := range everywhere(home, key, d) {
+	for _, f := range found {
 		i := slices.IndexFunc(out, func(e FileEdits) bool { return SamePath(e.Path, f.doc.path) })
 		if i < 0 {
 			out = append(out, FileEdits{Path: f.doc.path})
