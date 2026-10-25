@@ -225,16 +225,6 @@ func caseCategories(file string) []string {
 	return strings.Split(strings.TrimSpace(string(letters)), "")
 }
 
-// The class whose names a file of spec reads.
-func classOf(spec proto.Spec) proto.Class {
-	for _, info := range Specs() {
-		if info.Spec == spec {
-			return info.Class
-		}
-	}
-	return proto.Class_ClassUnknown
-}
-
 // SPEC.md §15 item 2: every print case prints to its expected text exactly, and reads back to its input, or with
 // categories to a file holding exactly those.
 func TestPrintCases(t *testing.T) {
@@ -257,12 +247,11 @@ func TestPrintCases(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			class := classOf(f.Spec)
 			if categories != nil {
 				if !slices.Equal(f.Categories, categories) {
 					t.Errorf("the print holds the categories %v, want %v", f.Categories, categories)
 				}
-			} else if back, in := Normalize(f.Message(), names, class), Normalize(input, names, class); !googleProto.Equal(back, in) {
+			} else if back, in := Normalize(f.Message(), names, f.Spec), Normalize(input, names, f.Spec); !googleProto.Equal(back, in) {
 				t.Errorf("the print reads back differently\ngot:  %s\nwant: %s", protojson.Format(back), protojson.Format(in))
 			}
 		})
@@ -320,8 +309,7 @@ func TestCorpusRoundTrips(t *testing.T) {
 			if err != nil {
 				t.Fatalf("the print does not read: %v\n%s", err, printed)
 			}
-			class := classOf(f.Spec)
-			if got, want := Normalize(back.Message(), names, class), Normalize(f.Message(), names, class); !googleProto.Equal(got, want) {
+			if got, want := Normalize(back.Message(), names, f.Spec), Normalize(f.Message(), names, f.Spec); !googleProto.Equal(got, want) {
 				t.Errorf("the print reads back differently\n%s\ngot:  %s\nwant: %s", printed, protojson.Format(got), protojson.Format(want))
 			}
 		})

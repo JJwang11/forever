@@ -341,8 +341,7 @@ func simlVerify(out, errOut io.Writer, args []string) error {
 // Where f reads back differently from the JSON message want, after the normalisation of SPEC.md §12.4: one
 // "path: <JSON value> in the JSON, <its value> in the SIML" for each difference, by JSON path.
 func readBackDifferences(want googleProto.Message, f *siml.File, names *siml.Names) []string {
-	info, _ := siml.SpecOf(f.Spec)
-	a, b := siml.Normalize(want, names, info.Class), siml.Normalize(f.Message(), names, info.Class)
+	a, b := siml.Normalize(want, names, f.Spec), siml.Normalize(f.Message(), names, f.Spec)
 	var lines []string
 	for _, d := range messageDiff(a.ProtoReflect(), b.ProtoReflect()) {
 		lines = append(lines, fmt.Sprintf("%s: %s in the JSON, %s in the SIML", d.path, d.old, d.new))

@@ -11,19 +11,20 @@ import (
 // the items of an EquipmentSpec or ItemSwap padded to 17, every array an enum indexes padded to its enum's length, an
 // absent one too, spec_rotation_json rewritten as the canonical JSON of the spec's Rotation it holds (an empty string,
 // or one that does not read as the Rotation, as {}, which is what its print reads back as), and the rank cleared of
-// each ActionID whose spell id and tag a name of class names, since the name reads back with the rank of its entry.
-// It panics if the protos break a rule of SPEC.md §8, as Print does.
-func Normalize(m googleProto.Message, names *Names, class proto.Class) googleProto.Message {
+// each ActionID whose spell id and tag a name of the spec's class names, since the name reads back with the rank of
+// its entry. The spec is spec, or for SpecUnknown the one IndividualSimSettings sets. It panics if the protos break a
+// rule of SPEC.md §8, as Print does.
+func Normalize(m googleProto.Message, names *Names, spec proto.Spec) googleProto.Message {
 	ix, err := loadIndex()
 	if err != nil {
 		panic(err)
 	}
 	out := googleProto.Clone(m)
+	settings, _ := out.(*proto.IndividualSimSettings)
 	var rotation protoreflect.MessageDescriptor
-	if s, ok := out.(*proto.IndividualSimSettings); ok {
-		if spec := specFor(ix, proto.Spec_SpecUnknown, s); spec != nil {
-			rotation = spec.Rotation
-		}
+	class := proto.Class_ClassUnknown
+	if info := specFor(ix, spec, settings); info != nil {
+		rotation, class = info.Rotation, info.Class
 	}
 	var pad func(m protoreflect.Message)
 	pad = func(m protoreflect.Message) {

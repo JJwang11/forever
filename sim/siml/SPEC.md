@@ -1552,7 +1552,8 @@ normalisations:
 - `uuid` and `api_version` fields are cleared;
 - `EquipmentSpec.items` and `ItemSwap.items` are padded to 17;
 - indexed arrays are padded with zeros to their enum's length, an absent one included;
-- `spec_rotation_json` is compared as the protojson of the spec's `Rotation` it holds, an empty string as `{}`;
+- `spec_rotation_json` is compared as the protojson of the spec's `Rotation` it holds, an empty string as `{}`, in
+  an `APLRotation` too, whose spec is the one its file's `spec` line names;
 - an `ActionID` with a `spellId` that a spell-like name prints takes the rank of the name's entry (§7.3).
 
 The protos are then compared with `proto.Equal`.

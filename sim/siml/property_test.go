@@ -358,7 +358,7 @@ func TestEverySectionField(t *testing.T) {
 					if err != nil {
 						t.Fatalf("%s: %v\n%s", p.Siml, err, text)
 					}
-					if got, want := Normalize(f.Settings, names, spec.Class), Normalize(settings, names, spec.Class); !googleProto.Equal(got, want) {
+					if got, want := Normalize(f.Settings, names, spec.Spec), Normalize(settings, names, spec.Spec); !googleProto.Equal(got, want) {
 						t.Errorf("%s reads back differently\n%s\ngot:  %s\nwant: %s", p.Siml, text, protojson.Format(got), protojson.Format(want))
 					}
 					if body, form := sectionBody(string(text), def.Name), entryForm(p.field); !form.MatchString(body) {
