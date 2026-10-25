@@ -393,9 +393,7 @@ export const specDefaultsFromSettings = <SpecType extends Spec>(spec: SpecType, 
 		...(rotation?.type === APLRotationType.TypeSimple && {
 			simpleRotation: functions.rotationFromJson(JSON.parse(rotation.simple?.specRotationJson || '{}')),
 		}),
-		...(settings.encounter && {
-			encounter: makePresetEncounter('Default', settings.encounter, undefined, undefined, settings.targetDummies),
-		}),
+		...(settings.encounter && { encounter: makePresetEncounter('Default', settings.encounter) }),
 		...(player.enableItemSwap && player.itemSwap && { itemSwap: player.itemSwap }),
 		...(settings.epWeightsStats && { epWeights: Stats.fromProto(settings.epWeightsStats) }),
 		settings,
