@@ -38,9 +38,10 @@ var namespaceThings = map[Namespace]string{
 }
 
 // What n means in ns for the file (SPEC.md §7.2); false, and unknown-name, when ns holds no such name. position is
-// what takes the name, for the message: "this position", a field's name, "a slot". A name the namespace does not hold
-// goes into refs here; the caller adds one it holds.
-func (t *typer) lookup(n name, ns Namespace, position string) (nameRef, bool) {
+// what takes the name, for the message: "this position", a field's name, "a slot"; cast, whether it is the spell an
+// action casts, whose did-you-mean offers castable spells only. A name the namespace does not hold goes into refs here;
+// the caller adds one it holds.
+func (t *typer) lookup(n name, ns Namespace, position string, cast bool) (nameRef, bool) {
 	r := nameRef{span: n.span, name: n.text, ns: ns, path: append([]any{}, t.at...)}
 	var ok bool
 	switch ns {
@@ -56,14 +57,15 @@ func (t *typer) lookup(n name, ns Namespace, position string) (nameRef, bool) {
 	}
 	r.known = ok
 	if !ok {
-		t.report("unknown-name", t.unknownName(n.text, ns, position), n.span)
+		t.report("unknown-name", t.unknownName(n.text, ns, position, cast), n.span)
 		t.refs = append(t.refs, r)
 	}
 	return r, ok
 }
 
-// Why ns holds no name: what the name is where another namespace holds it, else the names it may have meant.
-func (t *typer) unknownName(name string, ns Namespace, position string) string {
+// Why ns holds no name: what the name is where another namespace holds it, else the names it may have meant, castable
+// ones where an action casts (cast).
+func (t *typer) unknownName(name string, ns Namespace, position string, cast bool) string {
 	for _, other := range t.names.Holding(t.class, name) {
 		switch {
 		case other == ns:
@@ -75,7 +77,14 @@ func (t *typer) unknownName(name string, ns Namespace, position string) string {
 	}
 	thing, _ := strings.CutPrefix(namespaceThings[ns], "a ")
 	thing, _ = strings.CutPrefix(thing, "an ")
-	message := fmt.Sprintf("no %s is named %s%s", thing, name, didYouMean(name, t.names.Visible(t.class, ns)))
+	candidates := t.names.Visible(t.class, ns)
+	if cast {
+		candidates = slices.DeleteFunc(candidates, func(c string) bool {
+			e, _ := t.names.spellEntry(t.class, ns, c)
+			return !e.castable(t.spec)
+		})
+	}
+	message := fmt.Sprintf("no %s is named %s%s", thing, name, didYouMean(name, candidates))
 	if ns.SpellLike() && t.class == proto.Class_ClassUnknown {
 		message += "; with no spec, a file reads only the spells and auras every class shares"
 	}

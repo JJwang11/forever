@@ -36,3 +36,20 @@ func TestCastPositionsTakeCastableSpells(t *testing.T) {
 		t.Errorf("quick fixes %v, want Change to strike", fixes)
 	}
 }
+
+// An unknown name where an action casts suggests only the spells the spec lets a rotation cast; a value position
+// suggests any.
+func TestCastPositionsSuggestCastableSpells(t *testing.T) {
+	names := &Names{Classes: map[proto.Class]SpellNames{proto.Class_ClassHunter: {NamespaceSpell: {
+		"strike":      {SpellID: 900001, Tag: 1, RegisteredBy: []string{"hunter"}},
+		"strike_tag0": {SpellID: 900001, RegisteredBy: []string{"hunter"}, UncastableBy: []string{"hunter"}},
+	}}}}
+	text := plainPreface + "priority:\n  cast strike_tag1 if spell(strike_tag1).is_ready\n"
+	var got []string
+	for _, x := range Analyze(hunterPath, []byte(text), names, langOpen).Diagnostics() {
+		got = append(got, x.Message)
+	}
+	if want := []string{"no spell is named strike_tag1", "no spell is named strike_tag1; did you mean strike_tag0?"}; !slices.Equal(got, want) {
+		t.Errorf("got %q, want %q", got, want)
+	}
+}

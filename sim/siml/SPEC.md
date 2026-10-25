@@ -844,8 +844,9 @@ meaning among the shared entries.
        thing being the position's: "falcons_call is an enchant; a slot takes an item", "battle_shout is a spell;
        this position takes an aura on a target", "multi_shot is a spell; item. takes an item".
     2. Otherwise it is `no <thing> is named <name>`, the thing without its article; then `; did you mean <names>?`
-       with the names of the namespace that the file reads within edit distance 2, at most three, closest first
-       and then in byte order, joined with `, `; and for a spell-like namespace in a file with no class (§7.1),
+       with the names of the namespace that the file reads within edit distance 2, where an action casts only those
+       the file's spec lets a rotation cast (§7.4), at most three, closest first and then in byte order, joined with
+       `, `; and for a spell-like namespace in a file with no class (§7.1),
        `; with no spec, a file reads only the spells and auras every class shares`.
 
     The things are: a spell, an aura, an aura on a target, a boss spell, a pet aura, an item, an enchant, a random
@@ -924,9 +925,9 @@ meaning among the shared entries.
   of `cast` and `channel` and the `spell_id` of each other action kind that has one (`multidot`,
   `cast_friendly_spell`, …), and reads in every other position. The message is
   `<name> is a spell no <spec> build lets a rotation cast`, then `; did you mean <names>?` with the names of the
-  `spell` entries the file reads that its spec registers castable and that `<name>` extends, or that extend it, by
-  `_` and more (`raptor_strike` for `raptor_strike_tag0`), at most three, the class's before the shared ones, each in byte order. Where an action
-  casts, editors offer only the names the file's spec registers castable.
+  `spell` entries the file reads that its spec registers castable and that `<name>` extends, or that extend it, by `_`
+  and more (`raptor_strike` for `raptor_strike_tag0`), at most three, the class's before the shared ones, each in byte
+  order. Where an action casts, editors offer only the names the file's spec registers castable.
 - `icdOnlyBy`, only on an `aura` entry and left out when empty, lists the specs of `registeredBy` whose builds list
   the aura only as an internal cooldown trigger, in byte order. For a file of one of those specs the sim finds it in
   `icd_is_ready`, `internal_cooldown` and `trigger_icd` and in no other aura position, where a name of it is

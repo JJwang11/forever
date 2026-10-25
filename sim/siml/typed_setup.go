@@ -421,7 +421,7 @@ func (f *typedFile) slotRow(s *slotRowStmt, slots *placed, taken map[int32]bool)
 			}
 			fd := itemSpec.byProto[part.field].desc
 			pop := t.in(slices.Concat(at, []any{fd.JSONName()})...)
-			r, ok := t.lookup(*part.written, part.ns, part.position)
+			r, ok := t.lookup(*part.written, part.ns, part.position, false)
 			if ok {
 				t.mark(part.written.span)
 			}

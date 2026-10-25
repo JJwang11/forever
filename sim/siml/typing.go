@@ -863,7 +863,7 @@ func (t *typer) ref(f *field, n node) (protoreflect.Value, bool) {
 	if !ok || c.args != nil {
 		return t.wrongType(f, "the name of "+namespaceThings[ns]+", written alone", n)
 	}
-	r, ok := t.lookup(c.name, ns, f.Siml)
+	r, ok := t.lookup(c.name, ns, f.Siml, false)
 	if !ok {
 		return protoreflect.Value{}, false
 	}
@@ -1046,7 +1046,7 @@ func (t *typer) actionID(n node, ns Namespace, cast bool) *proto.ActionID {
 			t.mark(n.span)
 			return &proto.ActionID{RawId: &proto.ActionID_OtherId{OtherId: proto.OtherAction(v.Number)}}
 		case "item":
-			r, ok := t.lookup(n.name, NamespaceItem, "item.")
+			r, ok := t.lookup(n.name, NamespaceItem, "item.", false)
 			if !ok {
 				return nil
 			}
@@ -1064,7 +1064,7 @@ func (t *typer) actionID(n node, ns Namespace, cast bool) *proto.ActionID {
 		if n.args != nil {
 			break
 		}
-		r, ok := t.lookup(n.name, ns, "this position")
+		r, ok := t.lookup(n.name, ns, "this position", cast)
 		if !ok {
 			return nil
 		}
