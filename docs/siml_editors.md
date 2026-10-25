@@ -20,7 +20,7 @@ new editor never reimplements them; it starts the server and says which files it
 | Files           | `*.siml`; the kind is the double extension (`x.apl.siml`, `x.gear.siml`, `x.<section>.siml`), so an editor matches on the last `.siml` only       |
 | Line comment    | `//`, and `///` for a note that stays with the next row; there are no block comments                                                              |
 | Brackets        | `( )` and `[ ]`; `"` and `` ` `` close on themselves                                                                                              |
-| Indentation     | the line after a `section:` header or a `group "name":` header is indented one level; nothing dedents by pattern                                  |
+| Indentation     | the line after a `section:` header, a `group "name":` header or a `when …:` line is indented one level; nothing dedents by pattern                |
 | Word characters | letters, digits and `_`, with a leading `$` or `%` for a variable or placeholder, and `${…}` or `%{…}` for a name with spaces; `2.5s` is one word |
 | Scope name      | `source.siml`                                                                                                                                     |
 | Server command  | `wowsimcli siml lsp`, with the repository root as its working directory when the editor lets it choose                                            |
