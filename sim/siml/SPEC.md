@@ -922,10 +922,10 @@ meaning among the shared entries.
   editor lists the spells a cast can pick), in byte order: an inner spell, such as a trap's effect or the strike a
   queue casts. For a file of one of those specs the name is `not-castable` (§13) where an action casts it, the subject
   of `cast` and `channel` and the `spell_id` of each other action kind that has one (`multidot`,
-  `cast_friendly_spell`, …), and reads in every other position. The message is `<name> is a spell no <spec> build
-  lets a rotation cast`, then `; did you mean <names>?` with the names of the `spell` entries the file reads that its
-  spec registers castable and that `<name>` extends, or that extend it, by `_` and more (`raptor_strike` for
-  `raptor_strike_tag0`), at most three, the class's before the shared ones, each in byte order. Where an action
+  `cast_friendly_spell`, …), and reads in every other position. The message is
+  `<name> is a spell no <spec> build lets a rotation cast`, then `; did you mean <names>?` with the names of the
+  `spell` entries the file reads that its spec registers castable and that `<name>` extends, or that extend it, by
+  `_` and more (`raptor_strike` for `raptor_strike_tag0`), at most three, the class's before the shared ones, each in byte order. Where an action
   casts, editors offer only the names the file's spec registers castable.
 - `icdOnlyBy`, only on an `aura` entry and left out when empty, lists the specs of `registeredBy` whose builds list
   the aura only as an internal cooldown trigger, in byte order. For a file of one of those specs the sim finds it in
