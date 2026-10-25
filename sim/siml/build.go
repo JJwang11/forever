@@ -4,8 +4,8 @@ import "github.com/wowsims/forever/sim/core/proto"
 
 // Loads the settings of a preset build b over s, a spec's defaults, as the site applies a build (applyBuild in
 // ui/features/settings/model/apply_build.ts). Each message b holds replaces s's own, except an Auto rotation, which
-// keeps s's, and a build with no item swap set turns item swap off. An encounter brings the healing model, the tanks
-// and the target dummies with it. When b sets the spec's options it also sets the distance and whether the player
+// keeps s's, and a build with no item swap set turns item swap off. An encounter brings the tanks and the target
+// dummies with it, and the healing model when b sets one. When b sets the spec's options it also sets the distance and whether the player
 // stands in front of the target, and the race, professions and timings it does not leave at 0.
 func LoadBuild(s, b *proto.IndividualSimSettings) {
 	p, bp := s.Player, b.GetPlayer()
@@ -38,7 +38,10 @@ func LoadBuild(s, b *proto.IndividualSimSettings) {
 		s.Debuffs = b.Debuffs
 	}
 	if b.Encounter != nil {
-		s.Encounter, p.HealingModel, s.Tanks, s.TargetDummies = b.Encounter, bp.HealingModel, b.Tanks, b.TargetDummies
+		s.Encounter, s.Tanks, s.TargetDummies = b.Encounter, b.Tanks, b.TargetDummies
+		if bp.HealingModel != nil {
+			p.HealingModel = bp.HealingModel
+		}
 	}
 
 	m := bp.ProtoReflect()
