@@ -137,7 +137,7 @@ func simlSim(out, errOut io.Writer, args []string) error {
 	if req, err := readRequest(os.Stdin); err != nil {
 		res.Error = fmt.Sprintf("reading the request: %v", err)
 	} else {
-		res = runSimlSim(context.Background(), ".", req)
+		res = runSimlSim(context.Background(), repositoryRootOf(req.Path), req)
 	}
 	return json.NewEncoder(out).Encode(res)
 }

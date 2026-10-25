@@ -96,14 +96,20 @@ func buildsUsing(root, folder, path string) ([]*siml.File, error) {
 	if err != nil {
 		return nil, err
 	}
-	target := filepath.Clean(path)
+	target, err := filepath.Abs(path)
+	if err != nil {
+		return nil, err
+	}
 	var found []*siml.File
 	for _, p := range paths {
 		build, err := repoFiles.read(p)
 		if err != nil {
 			return nil, err
 		}
-		if slices.ContainsFunc(build.Uses, func(u string) bool { return filepath.Clean(filepath.FromSlash(u)) == target }) {
+		if slices.ContainsFunc(build.Uses, func(u string) bool {
+			used, err := filepath.Abs(filepath.FromSlash(u))
+			return err == nil && used == target
+		}) {
 			found = append(found, build)
 		}
 	}

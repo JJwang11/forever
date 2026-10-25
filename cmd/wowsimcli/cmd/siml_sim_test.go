@@ -4,6 +4,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -236,6 +237,58 @@ func TestUseLinesAreReadAgainstThePath(t *testing.T) {
 	}
 	if len(used.Rows) != len(direct.Rows) || used.DPS == direct.DPS {
 		t.Errorf("with Multi-Shot off: %d rows and %v, the file it uses: %d rows and %v", len(used.Rows), used.DPS, len(direct.Rows), direct.DPS)
+	}
+}
+
+// What the siml sim command writes for req, which it reads on stdin.
+func simlSimCommand(t *testing.T, req simlSimRequest) (result struct {
+	Character *characterInfo `json:"character"`
+	Error     string         `json:"error"`
+}) {
+	t.Helper()
+	data, err := json.Marshal(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := tempPath(t, "request.json")
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	stdin, err := os.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer stdin.Close()
+	defer func(saved *os.File) { os.Stdin = saved }(os.Stdin)
+	os.Stdin = stdin
+	out, _, err := runSiml(simlSim)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal([]byte(out), &result); err != nil {
+		t.Fatalf("%v in %s", err, out)
+	}
+	return result
+}
+
+func TestSimlSimFindsTheBuildOfARotationFromAnyFolder(t *testing.T) {
+	// The test runs in cmd/wowsimcli/cmd, so the repository root is root, and the path names the file absolute and
+	// against the root.
+	const rotation = "ui/specs/hunter/dps/apls/melee.apl.siml"
+	abs, err := filepath.Abs(filepath.Join(root, rotation))
+	if err != nil {
+		t.Fatal(err)
+	}
+	text, err := os.ReadFile(abs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := filepath.Join(root, "ui/specs/hunter/dps/builds/sv_melee.siml") + " over " + filepath.Join(root, "ui/specs/hunter/dps/defaults.siml")
+	for _, path := range []string{abs, rotation} {
+		res := simlSimCommand(t, simlSimRequest{SIML: string(text), Path: path, Iterations: 2})
+		if res.Error != "" || res.Character == nil || res.Character.Source != want {
+			t.Errorf("%s: error %q, character %+v, want it simmed on %s", path, res.Error, res.Character, want)
+		}
 	}
 }
 

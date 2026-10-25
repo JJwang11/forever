@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -12,6 +13,25 @@ import (
 
 // The codes of the editor's repository checks (sim/siml/SPEC.md §7.4), which fail a file under ui/specs.
 var repositoryCodes = []string{"unregistered-name", "gear-item", "gear-slot", "gear-suffix", "gear-enchant"}
+
+// The root of the repository the file at path sits in, relative to the working folder where it can be, so the files
+// read under it print relative too; the working folder when no repository holds the file.
+func repositoryRootOf(path string) string {
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		return "."
+	}
+	root, ok := siml.RepositoryRoot(abs)
+	if !ok {
+		return "."
+	}
+	if wd, err := os.Getwd(); err == nil {
+		if rel, err := filepath.Rel(wd, root); err == nil {
+			return rel
+		}
+	}
+	return root
+}
 
 // The class folder of a path under ui/specs: hunter for ui/specs/hunter/dps/apls/default.apl.siml, and "" for a file
 // in no folder of ui/specs.

@@ -34,7 +34,7 @@ func readSimRequest(path string) (*proto.RaidSimRequest, []string, error) {
 		}
 		return request, nil, nil
 	}
-	c, err := readSetup(".", path)
+	c, err := readSetup(repositoryRootOf(path), path)
 	if err != nil {
 		return nil, nil, err
 	}

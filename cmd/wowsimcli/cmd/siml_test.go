@@ -368,6 +368,27 @@ func TestSimLoadsAPresetBuildOverItsSpecDefaults(t *testing.T) {
 	}
 }
 
+func TestSimFindsTheSpecDefaultsFromAnyFolder(t *testing.T) {
+	// The test runs in cmd/wowsimcli/cmd, below the repository root, which holds the defaults.
+	build := filepath.Join(root, "ui/specs/hunter/dps/builds/sv.siml")
+	abs, err := filepath.Abs(build)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range []string{build, abs} {
+		request, warnings, err := readSimRequest(path)
+		if err != nil {
+			t.Fatalf("%s: %v", path, err)
+		}
+		if want := path + " is a preset build: simmed over " + filepath.Join(root, "ui/specs/hunter/dps/defaults.siml"); !slices.Contains(warnings, want) {
+			t.Errorf("%s: warnings %q, want %q", path, warnings, want)
+		}
+		if player := request.Raid.Parties[0].Players[0]; player.Race != proto.Race_RaceOrc || player.TalentsString != "1-00531500114-52225303000021005" {
+			t.Errorf("%s: race %v, talents %q, want the defaults' race under the build's talents", path, player.Race, player.TalentsString)
+		}
+	}
+}
+
 func TestSettingsRequestSimsAsTheSiteDoes(t *testing.T) {
 	ring := func() *proto.EquipmentSpec {
 		items := make([]*proto.ItemSpec, 17)
