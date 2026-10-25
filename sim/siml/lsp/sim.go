@@ -67,9 +67,6 @@ func difference(base, compare simRun) dpsDifference {
 }
 
 func (s *server) sim(ctx context.Context, p simParams) (any, *ResponseError) {
-	if s.opts.Sim == nil {
-		return nil, failed("%s", errNoSim.Error())
-	}
 	text, path, root, rpcErr := s.simInput(p.uri)
 	if rpcErr != nil {
 		return nil, rpcErr

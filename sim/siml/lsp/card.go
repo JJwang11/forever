@@ -25,9 +25,6 @@ func (c *cards) row(spellID int32) (string, bool) {
 	if ok {
 		return row, true
 	}
-	if c.read == nil {
-		return "", false
-	}
 	row, ok = c.read(spellID)
 	if !ok {
 		return "", false

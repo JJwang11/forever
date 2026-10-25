@@ -3,7 +3,6 @@ package lsp
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 	"unicode"
@@ -366,5 +365,3 @@ func (s *server) insertPattern(uri string, version *int, id string, values map[s
 	}
 	return map[string]any{"edits": toTextEdits(out)}, nil
 }
-
-var errNoSim = errors.New("this server sims nothing")

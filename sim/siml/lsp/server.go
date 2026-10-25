@@ -34,9 +34,9 @@ var triggerCharacters = []string{" ", "(", ".", `"`, "$", "%", ",", "=", "[", "+
 // What the server needs from the program that starts it.
 type Options struct {
 	// Sims a request of `wowsimcli siml sim` in the repository at root and gives its result; it stops when ctx is
-	// done. Nil answers siml/sim with an error.
+	// done.
 	Sim func(ctx context.Context, root string, req json.RawMessage) (json.RawMessage, error)
-	// The game files' row of a spell, as `go run ./tools/spelldata <id>` prints it. Nil shows no row on a hover.
+	// The game files' row of a spell, as `go run ./tools/spelldata <id>` prints it, for a hover.
 	Row func(spellID int32) (string, bool)
 }
 
