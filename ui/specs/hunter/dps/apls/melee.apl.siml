@@ -12,13 +12,13 @@ prepull:
 
 priority:
   autocast_other_cooldowns if current_time >= 5s
-  cast raptor_strike_tag1
+  cast raptor_strike
   cast hunters_mark if not target.aura(hunters_mark).is_active
   /// Start of the fight: walk into melee, shooting on the way without losing an Auto Shot.
   group "Walk in" if self.unit_distance > $melee_range
   cast mongoose_bite
   cast strider_kick
-  cast immolation_trap_14305
+  cast immolation_trap
   cast summon_hawk if $use_summon_hawk
   cast wing_clip
 

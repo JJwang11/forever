@@ -12,10 +12,10 @@ var ${Use Summon Hawk} = false
 priority:
   autocast_other_cooldowns if current_time >= 5s and at_range
   cast hunters_mark if not target.aura(hunters_mark).is_active
-  cast raptor_strike_tag1
+  cast raptor_strike
   cast mongoose_bite
   cast strider_kick
-  cast immolation_trap_14305 if in_melee
+  cast immolation_trap if in_melee
   cast wing_clip
   cast serpent_sting if not dot(serpent_sting).is_active
   reset_sequence("HHA") if hawk_and_arcane and sequence("HHA").is_complete
