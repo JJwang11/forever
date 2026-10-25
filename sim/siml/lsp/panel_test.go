@@ -2,6 +2,7 @@ package lsp
 
 import (
 	"fmt"
+	"path/filepath"
 	"reflect"
 	"regexp"
 	"strings"
@@ -246,6 +247,30 @@ func TestPathThatDoesNotExistIsRefused(t *testing.T) {
 	}
 	if err := spliceError(c, uri, 1, map[string]any{"op": "move", "path": []any{"priorityList"}, "from": 20, "to": 0}); !strings.Contains(err, "does not exist") {
 		t.Errorf("move from past the end = %q", err)
+	}
+}
+
+// An aura the spec knows only as an internal cooldown trigger comes marked, so the pickers offer it in the ICD kinds
+// alone.
+func TestRegisteredMarksICDOnlyAuras(t *testing.T) {
+	c := started(t)
+	uri := pathURI(filepath.Join(repository, "mage.apl.siml"))
+	c.open(uri, lines("siml 1", "spec mage", ""))
+	var answer struct {
+		Registered struct {
+			Auras []struct {
+				Name    string `json:"name"`
+				ICDOnly bool   `json:"icdOnly"`
+			} `json:"auras"`
+		} `json:"registered"`
+	}
+	c.request("siml/registered", map[string]any{"uri": uri}, &answer)
+	icdOnly := map[string]bool{}
+	for _, n := range answer.Registered.Auras {
+		icdOnly[n.Name] = n.ICDOnly
+	}
+	if !icdOnly["arcane_concentration"] || icdOnly["arcane_power"] {
+		t.Errorf("arcane_concentration marked %v, arcane_power marked %v; want only the first", icdOnly["arcane_concentration"], icdOnly["arcane_power"])
 	}
 }
 

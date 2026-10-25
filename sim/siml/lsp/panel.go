@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -89,8 +90,9 @@ type actionID struct {
 }
 
 type registeredName struct {
-	Name string   `json:"name"`
-	ID   actionID `json:"id"`
+	Name    string   `json:"name"`
+	ID      actionID `json:"id"`
+	ICDOnly bool     `json:"icdOnly,omitempty"` // Known only as an internal cooldown trigger, which only the ICD kinds find.
 }
 
 // What the panel's pickers offer: the names a spec's builds register by the namespace each position reads (SPEC.md
@@ -260,7 +262,7 @@ func (s *server) registeredFor(a *analysis, info siml.SpecInfo, c *siml.Database
 	list := func(ns siml.Namespace) []registeredName {
 		out := []registeredName{}
 		for _, n := range a.names.Registered(info.Class, spec, ns) {
-			out = append(out, registeredName{Name: n.Name, ID: actionID{SpellID: n.Entry.SpellID, Tag: n.Entry.Tag, Rank: n.Entry.Rank}})
+			out = append(out, registeredName{Name: n.Name, ID: actionID{SpellID: n.Entry.SpellID, Tag: n.Entry.Tag, Rank: n.Entry.Rank}, ICDOnly: slices.Contains(n.Entry.ICDOnlyBy, spec)})
 		}
 		return out
 	}

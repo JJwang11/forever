@@ -7,7 +7,7 @@ import { activateBuilt, fakeVscode, serverRunning } from './vscode.mjs';
 // Sims from the editor, which the SIML server runs: the hunter's default rotation, whose path picks the hunter's
 // default build, as ui/specs/hunter/dps/apls/default.apl.siml.
 
-const fixture = fileURLToPath(new URL('fixtures/default.apl.siml', import.meta.url));
+const fixture = fileURLToPath(new URL('../../../sim/siml/lsp/testdata/default.apl.siml', import.meta.url));
 
 let stand;
 let extension;

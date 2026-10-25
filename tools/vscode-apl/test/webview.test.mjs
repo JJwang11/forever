@@ -16,7 +16,7 @@ import { activateBuilt, fakeVscode, serverRunning } from './vscode.mjs';
 // key in the panel does to the text.
 
 const out = mkdtempSync(join(tmpdir(), 'wowsims-apl-panel-'));
-const fixture = fileURLToPath(new URL('fixtures/default.apl.siml', import.meta.url));
+const fixture = fileURLToPath(new URL('../../../sim/siml/lsp/testdata/default.apl.siml', import.meta.url));
 // The committed name table, which the expected ids are read from.
 const names = JSON.parse(readFileSync(new URL('../../../sim/siml/names.json', import.meta.url), 'utf8'));
 

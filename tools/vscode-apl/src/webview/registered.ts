@@ -22,6 +22,8 @@ export function idKey(json: Json | ActionIdJson | undefined): string | undefined
 // The sets whose fields hold an item, and those that take an item as well as a spell.
 const ITEM_ONLY = new Set<ACTION_ID_SET>(['potions', 'conjured_items']);
 const ITEM_SETS = new Set<ACTION_ID_SET>(['spells', 'castable_spells']);
+// The kinds that find an aura by its internal cooldown trigger too, as the sim's GetIcdAuraByID does.
+const ICD_KINDS = new Set(['auraIcdIsReady', 'auraInternalCooldown', 'triggerIcd']);
 
 // The auras a unit of `type` (a UnitReference type's JSON name) carries, as the parser reads an aura's name on it: the
 // pet's, the player's (with no unit too), or the target's.
@@ -30,9 +32,10 @@ function auraNamespaceOf(type: string | undefined): 'aura' | 'pet_aura' | 'targe
 	return type === undefined || ['Self', 'Player', 'AllPlayers', 'Unknown'].includes(type) ? 'aura' : 'target_aura';
 }
 
-// What an ActionID field offers, in the namespace the parser reads its name in (SPEC.md §7.2): an aura id among the auras of the unit the field's JSON names (the player's with none), a
-// boss spell's id among the target's spells, and any other id among the spec's spells, with the items with a use
-// where the site's set takes one. Each prints as its name.
+// What an ActionID field offers, in the namespace the parser reads its name in (SPEC.md §7.2): an aura id among the
+// auras of the unit the field's JSON names (the player's with none), a boss spell's id among the target's spells, and
+// any other id among the spec's spells, with the items with a use where the site's set takes one. An aura known only as
+// an internal cooldown trigger is offered in the ICD kinds alone. Each prints as its name.
 export function offeredFor(
 	registered: Extract<Registered, { status: 'ready' }>,
 	field: { kind: string; name: string; set: ACTION_ID_SET },
@@ -42,7 +45,8 @@ export function offeredFor(
 	if (ITEM_ONLY.has(field.set)) return items;
 	if (field.name === 'auraId') {
 		const ns = auraNamespaceOf(isObject(unit) && typeof unit.type === 'string' ? unit.type : undefined);
-		return ns === 'pet_aura' ? petAuras : ns === 'target_aura' ? targetAuras : auras;
+		const list = ns === 'pet_aura' ? petAuras : ns === 'target_aura' ? targetAuras : auras;
+		return ICD_KINDS.has(field.kind) ? list : list.filter(entry => !entry.icdOnly);
 	}
 	if (field.kind.startsWith('bossSpell')) return targetSpells;
 	return ITEM_SETS.has(field.set) ? [...spells, ...items] : spells;

@@ -10,7 +10,7 @@ import { activateBuilt, fakeVscode, serverRunning } from './vscode.mjs';
 // The extension's host, run against a stand-in vscode module and the SIML server it builds: the panel's messages go in
 // as its page would send them, and the documents are in memory.
 
-const fixtures = fileURLToPath(new URL('fixtures/', import.meta.url));
+const fixtures = fileURLToPath(new URL('../../../sim/siml/lsp/testdata/', import.meta.url));
 const manifest = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 // The committed name table, which the expected ids are read from.
 const names = JSON.parse(readFileSync(new URL('../../../sim/siml/names.json', import.meta.url), 'utf8'));

@@ -547,7 +547,7 @@ func TestUseLinks(t *testing.T) {
 // default.apl.siml declares ${Use Summon Hawk}, which hawks.apl.siml beside it sets.
 func fixtureDoc(t *testing.T, name string) (string, *Doc) {
 	t.Helper()
-	path := filepath.Join(langRoot, "tools", "vscode-apl", "test", "fixtures", name)
+	path := filepath.Join(langRoot, "sim", "siml", "lsp", "testdata", name)
 	src, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatal(err)
@@ -739,7 +739,7 @@ func TestServerContentCases(t *testing.T) {
 	// A file that uses one which does not declare the variable its with list sets.
 	usedText, _ := fixtureDoc(t, "default.apl.siml")
 	settingText, _ := fixtureDoc(t, "hawks.apl.siml")
-	usedPath := filepath.Join(langRoot, "tools", "vscode-apl", "test", "fixtures", "default.apl.siml")
+	usedPath := filepath.Join(langRoot, "sim", "siml", "lsp", "testdata", "default.apl.siml")
 	unsaved := strings.Replace(usedText, "var ${Use Summon Hawk} = false\n", "", 1)
 	open := func(path string) ([]byte, error) {
 		if SamePath(filepath.Clean(path), usedPath) {
