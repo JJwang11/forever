@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { activateBuilt, fakeVscode, serverRunning } from './vscode.mjs';
+import { activateBuilt, fakeVscode, serverRunning, until } from './vscode.mjs';
 
 // Sims from the editor, which the SIML server runs: the hunter's default rotation, whose path picks the hunter's
 // default build, as ui/specs/hunter/dps/apls/default.apl.siml.
@@ -22,22 +22,17 @@ before(async () => {
 
 after(() => extension.deactivate());
 
-async function until(condition, ms = 300000) {
-	const end = Date.now() + ms;
-	while (!condition()) {
-		if (Date.now() > end) throw new Error('timed out');
-		await new Promise(resolve => setTimeout(resolve, 20));
-	}
-}
+// A sim takes minutes on a loaded machine.
+const untilSimmed = condition => until(condition, 300000);
 
 test('a compare sims HEAD and the text on one seed, and the panel shows the row counts', async () => {
 	stand.state.config.simIterations = 20;
 	await stand.state.commands.get('wowsims-apl.openToSide')(document.uri);
 	const panel = stand.state.panels.at(-1);
 	panel.send({ type: 'ready' });
-	await until(() => panel.posted.some(m => m.type === 'rotation'));
+	await untilSimmed(() => panel.posted.some(m => m.type === 'rotation'));
 	panel.send({ type: 'sim', compare: true });
-	await until(() => panel.posted.some(m => m.type === 'sim' && m.sim && !m.running));
+	await untilSimmed(() => panel.posted.some(m => m.type === 'sim' && m.sim && !m.running));
 	const { sim } = panel.posted.findLast(m => m.type === 'sim');
 	assert.equal(sim.result.baseline, 'HEAD');
 	assert.equal(sim.stale, false);
@@ -62,7 +57,7 @@ test('a cancelled sim stops in the server and says nothing', async () => {
 	stand.state.config.simIterations = 100000;
 	const messages = stand.state.messages.length;
 	const sim = stand.state.commands.get('wowsims-apl.sim')(document.uri);
-	await until(() => stand.state.progress.length > 0);
+	await untilSimmed(() => stand.state.progress.length > 0);
 	await new Promise(resolve => setTimeout(resolve, 300));
 	const started = Date.now();
 	stand.state.progress[0].cancel();

@@ -22,8 +22,6 @@ export function idKey(json: Json | ActionIdJson | undefined): string | undefined
 // The sets whose fields hold an item, and those that take an item as well as a spell.
 const ITEM_ONLY = new Set<ACTION_ID_SET>(['potions', 'conjured_items']);
 const ITEM_SETS = new Set<ACTION_ID_SET>(['spells', 'castable_spells']);
-// The kinds that find an aura by its internal cooldown trigger too, as the sim's GetIcdAuraByID does.
-const ICD_KINDS = new Set(['auraIcdIsReady', 'auraInternalCooldown', 'triggerIcd']);
 
 // The auras a unit of `type` (a UnitReference type's JSON name) carries, as the parser reads an aura's name on it: the
 // pet's, the player's (with no unit too), or the target's.
@@ -47,7 +45,8 @@ export function offeredFor(
 	if (field.name === 'auraId') {
 		const ns = auraNamespaceOf(isObject(unit) && typeof unit.type === 'string' ? unit.type : undefined);
 		const list = ns === 'pet_aura' ? petAuras : ns === 'target_aura' ? targetAuras : auras;
-		return ICD_KINDS.has(field.kind) ? list : list.filter(entry => !entry.icdOnly);
+		// Only the ICD kinds, whose set is icd_auras, find an aura by its internal cooldown trigger too.
+		return field.set === 'icd_auras' ? list : list.filter(entry => !entry.icdOnly);
 	}
 	if (field.kind.startsWith('bossSpell')) return targetSpells;
 	const offered = field.family === 'action' && field.name === 'spellId' ? spells.filter(entry => !entry.uncastable) : spells;

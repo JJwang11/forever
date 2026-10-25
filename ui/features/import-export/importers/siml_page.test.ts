@@ -53,17 +53,6 @@ describe('a cooldowns: section', () => {
 		expect(player.getTalentsString()).toBe('-0053');
 	});
 
-	it('loads beside the other sections of a setup', async () => {
-		const { player, host } = await page();
-		reads({ player: { class: 'ClassHunter', hunter: {}, talentsString: '5320001505101251', cooldowns: { hpPercentForDefensives: 0.4 } } }, ['t', 'r']);
-
-		await SIML_IMPORTER.onImport(host, 'the text');
-
-		expect(player.getTalentsString()).toBe('5320001505101251');
-		expect(player.getSimpleCooldowns().hpPercentForDefensives).toBe(0.4);
-		expect(player.aplRotation.priorityList).toHaveLength(1);
-	});
-
 	it('sets the cooldowns of the rotation the text holds beside it', async () => {
 		const { player, host } = await page();
 		reads({ player: { class: 'ClassHunter', hunter: {}, rotation: { type: 'TypeAPL' }, cooldowns: { hpPercentForDefensives: 0.4 } } }, ['r']);

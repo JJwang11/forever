@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
 
-import { activateBuilt, fakeVscode } from './vscode.mjs';
+import { activateBuilt, fakeVscode, until } from './vscode.mjs';
 
 // A file in a repository nested inside another, such as a worktree under .claude/worktrees, goes to the server of the
 // nearest repository only: the outer server is never told it is open. The servers here are a stand-in that answers
@@ -38,14 +38,6 @@ connection.listen();
 	);
 	chmodSync(file, 0o755);
 	return file;
-}
-
-async function until(condition, ms = 10000) {
-	const end = Date.now() + ms;
-	while (!condition()) {
-		if (Date.now() > end) throw new Error('timed out');
-		await new Promise(resolve => setTimeout(resolve, 10));
-	}
 }
 
 for (const order of [

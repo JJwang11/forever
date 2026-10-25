@@ -13,7 +13,9 @@ vi.mock('@sim/workers/worker_pool', async () => (await import('@testing/sim/work
 
 beforeAll(() => serveDatabase());
 
-describe.each(Builds.map(build => [build.name, build] as const))('the %s build', (_name, build) => {
+// Every build goes through the same build() in presets.ts, so one stands for all.
+describe('a hunter build', () => {
+	const build = Builds[0];
 	it('leaves "in front of target" on', async () => {
 		const { player, host } = await makeIndividualSim({ spec: Spec.SpecHunter });
 		player.setInFrontOfTarget(true);

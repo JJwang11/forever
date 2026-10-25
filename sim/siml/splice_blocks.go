@@ -823,17 +823,15 @@ func (d *Doc) editDef(e AplEdit) ([]TextEdit, error) {
 			return nil, err
 		}
 		// The panel edits this file alone, so the calls in a file that uses it are renamed with F2.
-		var own []TextEdit
 		for _, file := range files {
 			if !SamePath(file.Path, d.path) {
 				return nil, fmt.Errorf("the def %s is called in %s; rename it in the text with F2, which renames those calls too", e.Name, filepath.Base(file.Path))
 			}
-			own = file.Edits
 		}
-		if own == nil {
+		if len(files) == 0 {
 			return nil, errors.New("the def does not rename")
 		}
-		return own, nil
+		return files[0].Edits, nil
 	}
 	if strings.TrimSpace(e.Text) == "" {
 		return nil, errors.New("a def needs a value")
@@ -846,10 +844,9 @@ func (d *Doc) editDef(e AplEdit) ([]TextEdit, error) {
 	// The def as format writes it, with the comments inside it above it; one at the end of its last line stays there.
 	indent := columnOf(def, d.lines)
 	var lines []string
-	for _, c := range def.inner {
-		if c.kind == triviaComment && c.line < d.lines.line(def.end) {
-			lines = append(lines, commentLine(c, indent).line)
-		}
+	_, above := innerComments(def.inner, d.lines.line(def.end))
+	for _, c := range above {
+		lines = append(lines, commentLine(c, indent).line)
 	}
 	lines = append(lines, statementLines(defLine(back.typer.defs.byName[e.Name], back.tree.lines.src, indent))...)
 	eol := "\n"

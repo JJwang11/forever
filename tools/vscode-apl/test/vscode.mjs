@@ -407,6 +407,17 @@ export async function activateBuilt(stand, installed = fileURLToPath(new URL('..
 
 // Waits for the stand-in's first server to run, which the first .siml document opened builds and starts; fails as soon
 // as the extension reports that it did not build.
+// Waits for condition to hold, up to ms, and gives what it gave.
+export async function until(condition, ms = 30000) {
+	const end = Date.now() + ms;
+	for (;;) {
+		const held = condition();
+		if (held) return held;
+		if (Date.now() > end) throw new Error('timed out');
+		await new Promise(resolve => setTimeout(resolve, 10));
+	}
+}
+
 export async function serverRunning(stand) {
 	const end = Date.now() + 600000;
 	while (!stand.state.clients[0]?.running) {

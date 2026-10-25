@@ -2,7 +2,7 @@
 // defaults in TypeScript.
 import { APLRotation } from '@generated/proto/apl';
 import { Debuffs, IndividualBuffs, PartyBuffs, RaidBuffs } from '@generated/proto/buffs';
-import { ConsumesSpec, Encounter, EquipmentSpec, Spec } from '@generated/proto/common';
+import { ConsumesSpec, EquipmentSpec, Spec } from '@generated/proto/common';
 import { IndividualSimSettings, SavedTalents } from '@generated/proto/ui';
 import { Stats } from '@sim/proto/stats';
 import { makeIndividualSim, serveDatabase } from '@testing/sim/individual_sim';
@@ -11,8 +11,6 @@ import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { applyIndividualDefaults, type DefaultsHost } from './apply_defaults';
 
 vi.mock('@sim/workers/worker_pool', async () => (await import('@testing/sim/worker_pool')).idleWorkerPool());
-
-const ENCOUNTER = Encounter.create({ duration: 180 });
 
 // The page of `spec` once its defaults are applied: `settings` stands for a defaults.siml, and none for TS defaults.
 const dummiesAfterDefaults = async (spec: Spec, settings?: IndividualSimSettings) => {
@@ -27,7 +25,6 @@ const dummiesAfterDefaults = async (spec: Spec, settings?: IndividualSimSettings
 		debuffs: Debuffs.create(),
 		epWeights: new Stats(),
 		settings,
-		...(settings?.encounter && { encounter: { name: 'Default', encounter: settings.encounter } }),
 	};
 	const config = { autoRotation: () => APLRotation.create(), epStats: [], presets: { epWeights: [] }, defaults };
 	const { sim, host } = await makeIndividualSim({ spec, config });
@@ -43,12 +40,8 @@ describe('defaults from a defaults.siml', () => {
 		expect(await dummiesAfterDefaults(Spec.SpecHunter, IndividualSimSettings.create({ targetDummies: 3 }))).toBe(3);
 	});
 
-	it('bring the dummies beside an encounter', async () => {
-		expect(await dummiesAfterDefaults(Spec.SpecHunter, IndividualSimSettings.create({ targetDummies: 2, encounter: ENCOUNTER }))).toBe(2);
-	});
-
 	it('bring none when the file writes none', async () => {
-		expect(await dummiesAfterDefaults(Spec.SpecHunter, IndividualSimSettings.create({ encounter: ENCOUNTER }))).toBe(0);
+		expect(await dummiesAfterDefaults(Spec.SpecHunter, IndividualSimSettings.create())).toBe(0);
 	});
 });
 

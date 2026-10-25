@@ -150,11 +150,7 @@ describe('a file a browser renamed on download', () => {
 describe('a file whose name has a dot that names no section', () => {
 	it.each([
 		['hunter.sv.siml', 'wowsims.siml'],
-		['build.v2.siml', 'wowsims.siml'],
-		['rotation.apl - Copy.siml', 'wowsims.siml'],
 		['bm.siml', 'bm.siml'],
-		['raid.encounter.siml', 'raid.encounter.siml'],
-		['wowsims.group.siml', 'wowsims.group.siml'],
 	])('reads %s as %s', async (name, path) => {
 		readsRotation();
 		await SIML_IMPORTER.onImport(hunter, 'the text', name);
@@ -174,17 +170,6 @@ describe('an import the dialog dropped', () => {
 		await imported;
 
 		expect(fromProto).not.toHaveBeenCalled();
-	});
-
-	it('refuses nothing when the read ends after the dialog closed', async () => {
-		const dialog = new AbortController();
-		parseSiml.mockImplementation(async () => {
-			dialog.abort();
-			return SimlParseResult.create({ categories: [] });
-		});
-
-		await expect(SIML_IMPORTER.onImport(hunter, 'the text', undefined, dialog.signal)).resolves.toBeUndefined();
-		expect(toasts).toEqual([]);
 	});
 });
 

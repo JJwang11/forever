@@ -9,7 +9,7 @@ import vm from 'node:vm';
 import { GlobalRegistrator } from '@happy-dom/global-registrator';
 
 import { buildPanel } from '../scripts/bundle.mjs';
-import { activateBuilt, fakeVscode, serverRunning } from './vscode.mjs';
+import { activateBuilt, fakeVscode, serverRunning, until } from './vscode.mjs';
 
 // The panel, bundled from its sources as the build bundles it, mounted in happy-dom and talking to the extension host
 // and its SIML server through the stand-in for VS Code, as it talks to the extension in a webview: what a click or a
@@ -25,17 +25,6 @@ let extension;
 let panel;
 let document_;
 const sent = [];
-
-// Waits for condition to hold, and gives what it gave.
-async function until(condition, ms = 30000) {
-	const end = Date.now() + ms;
-	for (;;) {
-		const held = condition();
-		if (held) return held;
-		if (Date.now() > end) throw new Error('timed out');
-		await new Promise(resolve => setTimeout(resolve, 10));
-	}
-}
 
 const rows = list => [...document.querySelectorAll(`[data-row^="${list}/"]`)].filter(row => /^[a-zA-Z]+\/\d+$/.test(row.dataset.row));
 const priority = () => rows('priorityList');

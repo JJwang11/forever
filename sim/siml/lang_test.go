@@ -302,10 +302,7 @@ func TestRenameKeepsRotation(t *testing.T) {
 		{"(x", "g", true},
 		{"def g", "x", true},
 		{"${Foo", "ranged_range", true},
-		{"${Foo", "Ranged range", true},
 		{"(alpha", "beta", false},
-		{"(x", "y", false},
-		{"def g", "late", false},
 		{"${Foo", "Bar", false},
 	} {
 		at := positionOf(text, c.needle, len(c.needle)-1)

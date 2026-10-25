@@ -695,13 +695,11 @@ func (d *Doc) renameRefusal(key occurrence, newName string, found []foundOccurre
 		}
 	}
 	for _, s := range d.tree().statements {
-		u, ok := s.(*useStmt)
-		if !ok || key.kind != "variable" || d.typed == nil {
-			continue
-		}
-		for _, x := range variablesOf(declaredByFile(d.typed.used[u], resolveUse(d.path, u.path.value))) {
-			if Identifier(x.name) == Identifier(newName) {
-				return fmt.Sprintf("%s has a variable named %s already.", filepath.Base(x.file), x.name)
+		if u, ok := s.(*useStmt); ok && key.kind == "variable" {
+			for _, x := range d.settableVariables(u.path.value) {
+				if Identifier(x.name) == Identifier(newName) {
+					return fmt.Sprintf("%s has a variable named %s already.", filepath.Base(x.file), x.name)
+				}
 			}
 		}
 	}

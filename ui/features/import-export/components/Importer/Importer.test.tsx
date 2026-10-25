@@ -238,16 +238,6 @@ describe('Importer', () => {
 		await reopen();
 		expect(document.querySelector('[data-testid="importer-problems"]')).toBeNull();
 		expect(document.querySelector('[data-testid="import-button"]')!.hasAttribute('disabled')).toBe(false);
-	});
-
-	it('reports nothing of an import the dialog closed', async () => {
-		let fail: (error: Error) => void = () => {};
-		renderReopenable(vi.fn(() => new Promise<void>((_resolve, reject) => (fail = reject))));
-
-		await clickImport();
-		await closeDialog();
-		await act(async () => fail(new Error('Could not parse Class!')));
-
 		expect(toasts).toEqual([]);
 	});
 

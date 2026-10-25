@@ -1,6 +1,0 @@
-siml 1
-spec hunter
-
-priority:
-  sequence "Opener  A" [cast arcane_shot, cast multi_shot]
-  cast aimed_shot if sequence("Opener  A").is_complete

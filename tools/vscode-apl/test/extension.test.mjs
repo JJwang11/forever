@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { after, before, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { activateBuilt, fakeVscode, serverRunning } from './vscode.mjs';
+import { activateBuilt, fakeVscode, serverRunning, until } from './vscode.mjs';
 
 // The extension's host, run against a stand-in vscode module and the SIML server it builds: the panel's messages go in
 // as its page would send them, and the documents are in memory.
@@ -44,14 +44,6 @@ async function openPanel(file) {
 	panel.send({ type: 'ready' });
 	await until(() => panel.posted.some(m => m.type === 'rotation'));
 	return { panel, document };
-}
-
-async function until(condition, ms = 30000) {
-	const end = Date.now() + ms;
-	while (!condition()) {
-		if (Date.now() > end) throw new Error('timed out');
-		await new Promise(resolve => setTimeout(resolve, 10));
-	}
 }
 
 const rotations = panel => panel.posted.filter(m => m.type === 'rotation');
