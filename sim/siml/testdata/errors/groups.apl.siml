@@ -7,6 +7,9 @@ priority:
   reset_sequence("Missing")
   cast x if sequence("Also missing").is_ready and sequence("S").is_complete
   group_reference("Generic missing")
+  // The sim finds a sequence in a live row of the priority list or a group only.
+  # sequence "Hidden" [cast x]
+  reset_sequence("Hidden") if sequence("Pre").is_complete
 
 group "A":
   cast x if %p
@@ -18,3 +21,6 @@ group "B":
 
 group "C":
   group "C"
+
+prepull:
+  -1s sequence "Pre" [cast x]

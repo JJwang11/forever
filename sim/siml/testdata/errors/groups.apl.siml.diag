@@ -3,6 +3,8 @@
 7:18 warning undefined-sequence
 8:22 warning undefined-sequence
 9:3 warning undefined-group
-11:7 error reference-cycle
-15:7 error reference-cycle
-19:7 error reference-cycle
+12:18 warning undefined-sequence
+12:40 warning undefined-sequence
+14:7 error reference-cycle
+18:7 error reference-cycle
+22:7 error reference-cycle

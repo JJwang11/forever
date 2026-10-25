@@ -179,6 +179,37 @@ func TestLintVariables(t *testing.T) {
 	wantLines(t, findingLines(findingsOf(findings, "placeholder-outside"), "path"), "priorityList/4/action/condition/variablePlaceholder/name")
 }
 
+// The codes the parser reports too have the parser's severities, and a sequence only a hidden or prepull row holds is
+// undefined-sequence in both.
+func TestLintAgreesWithTheParser(t *testing.T) {
+	text := "siml 1\nspec hunter\n\nvar $dup = 1\nvar $dup = 2\n\nprepull:\n  -1s sequence \"Pre\" [cast x]\n\n" +
+		"priority:\n  # sequence \"Hidden\" [cast x]\n  group \"Nowhere\"\n  reset_sequence(\"Pre\") if $nowhere\n  reset_sequence(\"Hidden\")\n"
+	_, err := Parse("x.apl.siml", []byte(text), corpusNames(t), nil)
+	parser := map[string][]Severity{}
+	for _, d := range diagnosticsOf(t, nil, err) {
+		parser[d.Code] = append(parser[d.Code], d.Severity)
+	}
+	findings := lintText(t, `{
+		"prepullActions": [{"action": {"sequence": {"name": "Pre", "actions": [{`+castOf(1)+`}]}}, "doAtValue": `+constOfText("-1s")+`}],
+		"priorityList": [
+			{"hide": true, "action": {"sequence": {"name": "Hidden", "actions": [{`+castOf(1)+`}]}}},
+			{"action": {"groupReference": {"groupName": "Nowhere"}}},
+			{"action": {"condition": {"variableRef": {"name": "nowhere"}}, "resetSequence": {"sequenceName": "Pre"}}},
+			{"action": {"resetSequence": {"sequenceName": "Hidden"}}}
+		],
+		"valueVariables": [{"name": "dup", "value": `+constOfText("1")+`}, {"name": "dup", "value": `+constOfText("2")+`}]
+	}`)
+	for _, code := range parserChecks {
+		var lint []Severity
+		for _, f := range findingsOf(findings, code) {
+			lint = append(lint, lintSeverity[f.Severity])
+		}
+		if len(lint) == 0 || !slices.Equal(lint, parser[code]) {
+			t.Errorf("%s: the lint gives %v, the parser %v", code, lint, parser[code])
+		}
+	}
+}
+
 func TestLintUnnamedReferences(t *testing.T) {
 	findings := lintText(t, `{
 		"priorityList": [

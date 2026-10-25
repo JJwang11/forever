@@ -144,11 +144,14 @@ func (t *typer) checkReferences(declarations []*variableDecl, groups []nameUse, 
 	}
 
 	for _, use := range t.sequenceUses {
-		if !t.sequenceDefs[use.name] && !used.sequences[use.name] {
-			t.site = use.site
+		t.site = use.site
+		switch live, held := t.sequenceDefs[use.name]; {
+		case !held:
 			t.warn("undefined-sequence", fmt.Sprintf(`no sequence is named "%s"`, use.name), use.span)
-			t.site = nil
+		case !live:
+			t.warn("undefined-sequence", fmt.Sprintf(`only a hidden or prepull row holds sequence "%s", which the sim does not find`, use.name), use.span)
 		}
+		t.site = nil
 	}
 }
 

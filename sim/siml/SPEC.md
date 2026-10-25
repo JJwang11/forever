@@ -1118,8 +1118,9 @@ The record is committed with the table, and its lines are kept.
 - `undefined-group`, for a group reference, `group "N"` or `group_reference(...)`, that names no group;
 - `undefined-placeholder`, for a `with %p` that names no placeholder of that group;
 - `undefined-sequence`, for a sequence name that no `sequence "N" [...]` action, or the `sequence` kind
-  written generically, defines, in this file or a used rotation. Sequence names are the string fields named like
-  the subject of the `sequence` head: `sequence("N").is_complete` and `reset_sequence("N")`.
+  written generically, defines in a row of the priority list or a group that is not hidden, in this file or a used
+  rotation: the sim finds no sequence that only a hidden or a prepull row holds. Sequence names are the string fields
+  named like the subject of the `sequence` head: `sequence("N").is_complete` and `reset_sequence("N")`.
 
 **Cycles.** A cycle through variables, or through group references, is `reference-cycle`. The sim cannot run
 one. The sim reads every reference in a variable's value, a group's variable's too, as a value variable's, so a

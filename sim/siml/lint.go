@@ -22,14 +22,14 @@ import (
 // |                         |          | item of an `and`, `or`, `max` or `min`, an empty overlap or offset (0s) and an empty channel      |
 // |                         |          | interrupt (a plain cast) are `info`. A move's range or duration, empty or missing, and a          |
 // |                         |          | reference's value for a placeholder are errors: the sim fails to run.                             |
-// | `undefined-group`       | error    | A group reference to a group no `groups` entry names, or with no name.                            |
+// | `undefined-group`       | warning  | A group reference to a group no `groups` entry names, or with no name.                            |
 // | `group-never-used`      | warning  | `actionGroupUsed` of a group that no row references, hidden or not: it is always false.           |
 // | `undefined-sequence`    | warning  | A sequence name no live sequence in the priority list or a group carries (prepull ones don't).    |
-// | `undefined-variable`    | error    | A `variableRef` to a name no value variable has. A group's variables and those a reference sets   |
+// | `undefined-variable`    | warning  | A `variableRef` to a name no value variable has. A group's variables and those a reference sets   |
 // |                         |          | only replace a value variable of the same name, so a name only they set is dropped too.           |
 // | `placeholder-unset`     | error    | A group reference that leaves one of the group's `variablePlaceholder`s unfilled.                 |
 // | `placeholder-outside`   | warning  | A `variablePlaceholder` outside a group, which nothing replaces.                                  |
-// | `duplicate-variable`    | warning  | A value variable whose name an earlier one already takes; references read the first.              |
+// | `duplicate-variable`    | error    | A value variable whose name an earlier one already takes; references read the first.              |
 // | `unused-variable`       | info     | A value variable nothing references.                                                              |
 // | `unused-group`          | info     | A group nothing references, by group reference or `actionGroupUsed`.                              |
 // | `prepull-no-time`       | warning  | A prepull row with no Do At time; the sim skips it.                                               |
@@ -42,6 +42,10 @@ import (
 // | `always-true`           | info     | A condition, or a comparison, `not`, `and` or `or` inside one, that is always true or false.      |
 // | `shadowed-row`          | warning  | A row whose action an earlier row in the same list takes with no condition or the same one: the   |
 // |                         |          | later row is only reached when that action cannot run, so it never runs.                          |
+//
+// The parser reports undefined-group, undefined-sequence, undefined-variable and duplicate-variable too (SPEC.md §7.5),
+// by the same rules and with the same severities, so that the editor, which shows the parser's where both find one,
+// shows the same either way. These checks also find the references raw JSON holds, which the parser does not read.
 //
 // Hidden rows: the sim parses none of them, so every check skips them except the references. A hidden row's references
 // are still checked and still count as uses, since unhiding the row brings them back (a hidden group reference is how
@@ -643,9 +647,9 @@ func Lint(r *proto.APLRotation) []Finding {
 		switch {
 		case groupIndex(ref.name) >= 0:
 		case ref.name != "":
-			report(ref.path, "error", "undefined-group", fmt.Sprintf("No group is named \"%s\".", ref.name))
+			report(ref.path, "warning", "undefined-group", fmt.Sprintf("No group is named \"%s\".", ref.name))
 		default:
-			report(ref.path, "error", "undefined-group", "No group name set; the sim skips this.")
+			report(ref.path, "warning", "undefined-group", "No group name set; the sim skips this.")
 		}
 	}
 	for _, ref := range c.groupUsed {
@@ -691,7 +695,7 @@ func Lint(r *proto.APLRotation) []Finding {
 	for i, variable := range variables {
 		if name, ok := variable.value("name").(string); ok {
 			if variableNames[name] {
-				report([]any{"valueVariables", i, "name"}, "warning", "duplicate-variable", fmt.Sprintf("An earlier variable is also named \"%s\"; references read that one.", name))
+				report([]any{"valueVariables", i, "name"}, "error", "duplicate-variable", fmt.Sprintf("An earlier variable is also named \"%s\"; references read that one.", name))
 			}
 			variableNames[name] = true
 		}
@@ -718,7 +722,7 @@ func Lint(r *proto.APLRotation) []Finding {
 		case ref.scope.group >= 0 && groupSets(ref.scope.group, ref.name):
 			message = fmt.Sprintf("Only the group's variables or a reference to it set \"%s\"; they replace a value variable of that name, and there is none, so the sim drops this.", ref.name)
 		}
-		report(ref.path, "error", "undefined-variable", message)
+		report(ref.path, "warning", "undefined-variable", message)
 	}
 	for i, variable := range variables {
 		if name, ok := variable.value("name").(string); ok && !referencedVariables[name] {

@@ -67,7 +67,7 @@ type typer struct {
 	kind         kindScope // The kind whose own arguments are being typed.
 	variableUses []*variableUse
 	groupUses    []groupUse
-	sequenceDefs map[string]bool
+	sequenceDefs map[string]bool // The sequences the rows of the file and of the files it uses hold, as sequencesIn gives them.
 	sequenceUses []nameUse
 	placeholders map[scope]map[string]bool // The placeholders each group's statements hold.
 	scope        scope
@@ -116,7 +116,6 @@ func newTyper(ix *schemaIndex, names *Names) *typer {
 	return &typer{
 		ix:           ix,
 		names:        names,
-		sequenceDefs: map[string]bool{},
 		placeholders: map[scope]map[string]bool{},
 		reported:     map[[2]diag]bool{},
 	}
@@ -1209,7 +1208,6 @@ func (t *typer) step(n node) *proto.APLAction {
 		}
 		return &proto.APLAction{Action: &proto.APLAction_Schedule{Schedule: &proto.APLActionSchedule{Schedule: s.schedule.value, InnerAction: inner}}}
 	case *sequenceStep:
-		t.sequenceDefs[s.name.value] = true
 		actions := make([]*proto.APLAction, len(s.actions))
 		ok := true
 		for i, a := range s.actions {
@@ -1276,11 +1274,8 @@ func (t *typer) actionCall(c *callNode) *proto.APLAction {
 	if body == nil {
 		return nil
 	}
-	switch m := body.Interface().(type) {
-	case *proto.APLActionGroupReference:
+	if m, ok := body.Interface().(*proto.APLActionGroupReference); ok {
 		t.groupUses = append(t.groupUses, groupUse{span: c.span, name: m.GroupName, scope: t.scope})
-	case *proto.APLActionSequence:
-		t.sequenceDefs[m.Name] = true
 	}
 	return kindAction(k, body)
 }

@@ -141,6 +141,8 @@ func typeFile(ix *schemaIndex, names *Names, tree *syntaxTree, kind Kind, u *use
 	}
 	f.encodeSimple()
 
+	t.sequenceDefs = maps.Clone(used.declared.sequences)
+	sequencesIn(f.settings.GetPlayer().GetRotation(), t.sequenceDefs)
 	t.checkReferences(rotation.declarations, rotation.groups, used.declared)
 	if f.writesRows() {
 		t.checkDefsUsed()
@@ -523,7 +525,7 @@ type usedFiles struct {
 	present      *keySet
 	declared     usedDeclarations
 	explicitType bool
-	withs        []func()        // Types each with list, once the used files' defs are in, which its values may call.
+	withs        []func()        // Types each with list and takes in its use line's variables, once the used files' defs are in, which a with value may call.
 	withSet      map[string]span // The variables the with lists set, each at the variable that sets it first.
 }
 
@@ -532,7 +534,7 @@ type usedDeclarations struct {
 	variables []declared
 	from      map[string]string          // The used file that declares each variable outside groups.
 	groups    map[string]map[string]bool // Each group's placeholders.
-	sequences map[string]bool
+	sequences map[string]bool            // Each sequence's name, as sequencesIn gives it.
 }
 
 // Reads each use line's file and checks it against this one: a section in both is section-conflict, and the with
@@ -682,7 +684,7 @@ func (f *typedFile) readUses(u *uses) usedFiles {
 		for group, placeholders := range declared.groups {
 			used.declared.groups[group] = placeholders
 		}
-		maps.Copy(used.declared.sequences, declared.sequences)
+		sequencesIn(rotation, used.declared.sequences)
 	}
 	return used
 }
@@ -736,16 +738,9 @@ func listed(keys []string) string {
 	return strings.Join(names[:len(names)-1], ", ") + " and " + names[len(names)-1]
 }
 
-// The variables, groups, placeholders and sequences a rotation declares.
+// The variables, groups and placeholders a rotation declares.
 func declaredBy(rotation *proto.APLRotation) usedDeclarations {
-	out := usedDeclarations{groups: map[string]map[string]bool{}, sequences: map[string]bool{}}
-	if rotation != nil {
-		walkMessages(rotation.ProtoReflect(), func(m protoreflect.Message) {
-			if s, ok := m.Interface().(*proto.APLActionSequence); ok {
-				out.sequences[s.Name] = true
-			}
-		})
-	}
+	out := usedDeclarations{groups: map[string]map[string]bool{}}
 	for _, v := range rotation.GetValueVariables() {
 		out.variables = append(out.variables, declared{name: v.GetName()})
 	}
@@ -762,6 +757,29 @@ func declaredBy(rotation *proto.APLRotation) usedDeclarations {
 		out.groups[g.GetName()] = placeholders
 	}
 	return out
+}
+
+// Adds the names of the sequences the rows of rotation hold to into: true for one a live row of the priority list or
+// of a group holds, which the sim finds, and false for one that only hidden and prepull rows hold.
+func sequencesIn(rotation *proto.APLRotation, into map[string]bool) {
+	add := func(item googleProto.Message, live bool) {
+		walkMessages(item.ProtoReflect(), func(m protoreflect.Message) {
+			if s, ok := m.Interface().(*proto.APLActionSequence); ok {
+				into[s.Name] = into[s.Name] || live
+			}
+		})
+	}
+	for _, item := range rotation.GetPriorityList() {
+		add(item, !item.Hide)
+	}
+	for _, g := range rotation.GetGroups() {
+		for _, item := range g.Actions {
+			add(item, !item.Hide)
+		}
+	}
+	for _, item := range rotation.GetPrepullActions() {
+		add(item, false)
+	}
 }
 
 // Calls visit on m and on every message it holds.
