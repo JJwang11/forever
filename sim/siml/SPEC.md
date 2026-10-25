@@ -738,7 +738,9 @@ rotations read.
   way: `$a and fits(x)` reads as `$a and (…)`.
 - A diagnostic in the def's value is reported at the call, its message ending in `(in def fits, at L:C)`, where it is
   in the value. One at an argument stays at the argument, its message ending in `(passed to def fits, at L:C)`, where
-  the def's name is. A diagnostic of a call in a def's value moves again at each call around it.
+  the def's name is. A diagnostic of a call in a def's value moves again at each call around it. One that reaches a
+  place by several paths of calls, as `def b = a and a` reaches `a`'s value twice, is reported there once, with the
+  first path in its message.
 - Typing reads a def's value at each call, and only there, so a def that no call reads has only its name and
   parameters checked.
 - A file's calls, in a value and where a name goes, expand at most 65536 times, and each call past that is `parse`

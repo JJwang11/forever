@@ -75,8 +75,8 @@ type typer struct {
 	spans        []pathSpan // The nodes that read, each at the JSON path it writes, in the order they are read.
 	lines        *lineMap
 	defs         defTyping
-	site         *expansion    // The def call being read, if any.
-	reported     map[diag]bool // A node read more than once, as a when condition is for each row, reports once.
+	site         *expansion       // The def call being read, if any.
+	reported     map[[2]diag]bool // Each diagnostic as written, and the span it moves to: a node read more than once, as a when condition is for each row, reports once.
 }
 
 // A node's text and the JSON path of what it writes.
@@ -118,7 +118,7 @@ func newTyper(ix *schemaIndex, names *Names) *typer {
 		names:        names,
 		sequenceDefs: map[string]bool{},
 		placeholders: map[scope]map[string]bool{},
-		reported:     map[diag]bool{},
+		reported:     map[[2]diag]bool{},
 	}
 }
 
@@ -130,12 +130,14 @@ func (t *typer) warn(code, message string, at span) {
 	t.add(diag{span: at, severity: Warning, code: code, message: message})
 }
 
-// Adds d, at the def call it is in when it lies in a def's value (SPEC.md §6.10), unless it is reported already.
+// Adds d, at the def call it is in when it lies in a def's value (SPEC.md §6.10), unless it is reported there already.
+// The calls it came through are no part of that, so a def that a call reaches through other defs by several paths
+// reports it once, with the first path.
 func (t *typer) add(d diag) {
-	d = t.site.relocate(d, t.lines)
-	if !t.reported[d] {
-		t.reported[d] = true
-		t.diags = append(t.diags, d)
+	moved := t.site.relocate(d, t.lines)
+	if key := [2]diag{d, {span: moved.span}}; !t.reported[key] {
+		t.reported[key] = true
+		t.diags = append(t.diags, moved)
 	}
 }
 
