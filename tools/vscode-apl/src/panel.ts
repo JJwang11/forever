@@ -8,7 +8,7 @@ import * as vscode from 'vscode';
 import { applyEdits, documentFor, isAplSiml, readRotation, samePath, spanFor, spansOf, vscodeRange } from './host';
 import { insertPattern } from './insert_pattern';
 import type { AplDatabase, FromPanel, JsonPath, PanelState, Range, Registered, TextEdit, ToPanel } from './protocol';
-import { databaseFor, logFailedBuild, onServerStarted, request } from './server';
+import { databaseFor, log, logFailedBuild, onServerStarted, request } from './server';
 import { onSimRecord, type SimRecord, simRecord, simulate } from './simulate';
 
 const VIEW_TYPE = 'wowsims-apl.editor';
@@ -286,7 +286,11 @@ function bind(panel: vscode.WebviewPanel, uri: vscode.Uri, extensionUri: vscode.
 async function openToSide(extensionUri: vscode.Uri, uri: vscode.Uri | undefined): Promise<void> {
 	const chosen = uri ?? vscode.window.activeTextEditor?.document.uri;
 	if (!chosen || !isAplSiml(chosen.path)) {
-		void vscode.window.showInformationMessage('The APL editor opens on an .apl.siml file.');
+		const message = chosen
+			? `The APL editor panel opens on .apl.siml rotations only, and ${basename(chosen.fsPath)} is not one. The SIML server still checks, completes, highlights and formats it.`
+			: 'The APL editor panel opens on an .apl.siml rotation: open one first.';
+		log(message);
+		void vscode.window.showInformationMessage(message);
 		return;
 	}
 	const open = panels.get(chosen.toString());

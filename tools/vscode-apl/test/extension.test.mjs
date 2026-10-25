@@ -287,6 +287,17 @@ test('Insert Pattern puts no condition on a prepull row, whose condition the sim
 	panel.dispose();
 });
 
+test('the panel does not open on a gear set, and says the server still serves the file', async () => {
+	const gear = await stand.vscode.workspace.openTextDocument(
+		stand.vscode.Uri.file(fileURLToPath(new URL('../../../ui/specs/hunter/dps/gear_sets/p1.gear.siml', import.meta.url))),
+	);
+	const panels = stand.state.panels.length;
+	await stand.state.commands.get('wowsims-apl.openToSide')(gear.uri);
+	assert.equal(stand.state.panels.length, panels);
+	assert.match(stand.state.messages.at(-1).message, /opens on \.apl\.siml rotations only, and p1\.gear\.siml is not one\. The SIML server still checks/);
+	stand.close(gear);
+});
+
 test('WoWSims: Restart SIML Server stops the server and starts a new one, which answers the panel', async () => {
 	const before = stand.state.clients.length;
 	const old = stand.state.clients.at(-1);

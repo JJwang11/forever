@@ -184,9 +184,30 @@ export async function stopServers(last = false): Promise<void> {
 	await Promise.all(running.map(client => client.then(c => c.stop()).catch(() => undefined)));
 }
 
+// Starts the server of a .siml document as it opens, and says in the WoWSims SIML output whether it serves the file:
+// every .siml file in a repository gets the checks, completion, hover, highlighting and formatting, while the APL
+// editor panel opens on .apl.siml rotations only.
 function served(document: vscode.TextDocument): void {
-	if (document.languageId === 'siml' && (document.uri.scheme === 'file' || document.uri.scheme === 'untitled'))
-		serverFor(document.uri).catch(() => undefined);
+	if (document.languageId !== 'siml' || (document.uri.scheme !== 'file' && document.uri.scheme !== 'untitled')) return;
+	const file = document.uri.scheme === 'file' ? document.uri.fsPath : document.uri.toString();
+	const starting = serverFor(document.uri);
+	starting.then(
+		() =>
+			output.info(
+				`${file}: served by the SIML server${/\.apl\.siml$/.test(document.uri.path) ? '' : '; the APL editor panel opens on .apl.siml rotations only'}`,
+			),
+		error => {
+			// A start a restart or the extension's stop ended: the next start says whether it serves the file.
+			const root = rootOf(document.uri);
+			if (root && clients.get(root) !== starting) return;
+			output.warn(`${file}: not served: ${(error as Error).message}`);
+		},
+	);
+}
+
+// Writes a line to the WoWSims SIML output.
+export function log(text: string): void {
+	output.info(text);
 }
 
 // Writes a failed build's output to the WoWSims SIML output and shows it.
