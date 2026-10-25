@@ -2,6 +2,8 @@ package siml
 
 import (
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -172,5 +174,15 @@ func TestStructure(t *testing.T) {
 	}
 	if broken := Analyze(splicePath, []byte(spliceBlocks+"  cast nonsense\n"), corpusNames(t), nil); broken.Structure() != nil {
 		t.Error("a text with an error has a structure")
+	}
+	// The calls of a file with a use line, of its own defs and of the used file's.
+	main := filepath.Join("testdata", "splice", "use", "main.apl.siml")
+	text, err := os.ReadFile(main)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, _ = json.Marshal(Analyze(main, text, corpusNames(t), os.ReadFile).Structure().Calls)
+	if want := `[{"path":["priorityList",0,"action","condition"],"name":"far","args":[]},{"path":["priorityList",1,"action","condition"],"name":"at_range","args":[]}]`; string(got) != want {
+		t.Errorf("the calls of a file with a use line: %s", got)
 	}
 }

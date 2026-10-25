@@ -141,8 +141,11 @@ func typeFile(ix *schemaIndex, names *Names, tree *syntaxTree, kind Kind, u *use
 	}
 	f.usedDeclared = slices.DeleteFunc(slices.Clone(used.declared.variables), func(d declared) bool { return d.scope.inGroup })
 
-	if len(used.settings) > 0 && f.settings.GetPlayer().GetRotation() != nil {
-		f.ownRotation = googleProto.Clone(f.settings.GetPlayer().GetRotation()).(*proto.APLRotation)
+	if len(used.settings) > 0 {
+		f.ownRotation = &proto.APLRotation{}
+		if r := f.settings.GetPlayer().GetRotation(); r != nil {
+			f.ownRotation = googleProto.Clone(r).(*proto.APLRotation)
+		}
 	}
 	for _, s := range used.settings {
 		merge(f.settings.ProtoReflect(), s.ProtoReflect())

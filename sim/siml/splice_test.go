@@ -95,12 +95,22 @@ func TestSpliceCases(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if got := splicedText(t, string(text), string(edits)); got != string(want) {
+			// A case in a folder of its own is read at its path, with the files it uses.
+			path, open := splicePath, Opener(nil)
+			if filepath.Base(filepath.Dir(file)) != "splice" {
+				path, open = file, caseOpener(file)
+			}
+			d := Analyze(path, text, names, open)
+			out, err := d.Splice(aplEdits(t, string(edits)))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got := applied(d, out); got != string(want) {
 				t.Errorf("the spliced text differs from %s.want\ngot:\n%s", filepath.Base(file), got)
 			}
 			// A file in canonical form stays in it.
 			for _, src := range [][]byte{text, want} {
-				if formatted, err := Format(file, src, names, nil); err != nil || string(formatted) != string(src) {
+				if formatted, err := Format(file, src, names, open); err != nil || string(formatted) != string(src) {
 					t.Errorf("format changes the text (%v):\n%s", err, formatted)
 				}
 			}
@@ -208,8 +218,39 @@ func TestSplice(t *testing.T) {
 		if len(out) != 1 || out[0].NewText != "var $a = $range\n" {
 			t.Errorf("edits %+v", out)
 		}
-		if _, err := d.Splice(aplEdits(t, `[{"op":"set","path":["valueVariables",1,"value"],"value":{"const":{"val":"3"}}}]`)); err == nil || !strings.Contains(err.Error(), "valueVariables[1] does not exist") {
-			t.Errorf("an edit of the used file's variable: %v", err)
+		// The panel's JSON lists the used file's variables after the file's own: a new one goes after the file's own, and
+		// those of the used file are edited there.
+		out, err = d.Splice(aplEdits(t, `[{"op":"insert","path":["valueVariables"],"index":2,"value":{"name":"b","value":{"const":{"val":"2"}}}}]`))
+		if err != nil || len(out) != 1 || out[0].Range.Start.Line != 6 || out[0].NewText != "var $b = 2\n" {
+			t.Errorf("a variable put after the used file's: %+v, %v", out, err)
+		}
+		for _, edits := range []string{
+			`[{"op":"set","path":["valueVariables",1,"value"],"value":{"const":{"val":"3"}}}]`,
+			`[{"op":"move","path":["valueVariables"],"from":1,"to":0}]`,
+		} {
+			if _, err := d.Splice(aplEdits(t, edits)); err == nil || err.Error() != "range is declared in y.apl.siml; edit it there" {
+				t.Errorf("%s: %v", edits, err)
+			}
+		}
+		// A file whose every variable a used file brings holds none of its own.
+		d = Analyze(splicePath, []byte(textLines("siml 1", "spec hunter", `use "y.apl.siml"`)), corpusNames(t), open)
+		out, err = d.Splice(aplEdits(t, `[{"op":"insert","path":["priorityList"],"index":0,"value":{"action":{"castSpell":{"spellId":{"spellId":2643}}}}}]`))
+		if err != nil || len(out) != 1 || out[0].NewText != "\npriority:\n  cast multi_shot\n" {
+			t.Errorf("a row in a file of a use line alone: %+v, %v", out, err)
+		}
+	})
+
+	t.Run("refuses an edit that changes what a use line's with list reads", func(t *testing.T) {
+		main := filepath.Join("testdata", "splice", "use", "main.apl.siml")
+		text, err := os.ReadFile(main)
+		if err != nil {
+			t.Fatal(err)
+		}
+		want := "a use line's with list reads a variable the edits rename or remove; change the with list first"
+		for _, edits := range []string{`[{"op":"set","path":["valueVariables",0]}]`, `[{"op":"set","path":["valueVariables",0,"name"],"value":"Weave time"}]`} {
+			if got := spliceRefused(t, main, string(text), edits, os.ReadFile); got != want {
+				t.Errorf("%s: got %q", edits, got)
+			}
 		}
 	})
 

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"slices"
 	"strings"
 
@@ -97,7 +98,7 @@ func (d *Doc) Splice(edits []AplEdit) ([]TextEdit, error) {
 
 	w := func() *spliceWriter { return newSpliceWriter(d, m) }
 	if before := declaredBy(m.rotation).variables; !slices.Equal(before, declaredBy(m.json()).variables) {
-		for _, s := range w().unsettled(before) {
+		for _, s := range w().unsettled(append(before, f.usedDeclared...)) {
 			s.dirty = true
 		}
 	}
@@ -127,6 +128,10 @@ func (d *Doc) Splice(edits []AplEdit) ([]TextEdit, error) {
 		if len(misread) == 0 {
 			if d.ix.comparedJSON(got.ProtoReflect()) != d.ix.comparedJSON(m.json().ProtoReflect()) {
 				break
+			}
+			// A with list reads its values in this file, so the variables used files bring can change with this file's.
+			if d.ix.comparedJSON(back.settings.GetPlayer().GetRotation().ProtoReflect()) != d.ix.comparedJSON(m.merged().ProtoReflect()) {
+				return nil, errors.New("a use line's with list reads a variable the edits rename or remove; change the with list first")
 			}
 			changes := out.edits()
 			edits := make([]TextEdit, len(changes))
@@ -542,6 +547,7 @@ type rotationModel struct {
 	dropped  map[*whenStmt]bool // The blocks edits take apart.
 	newDefs  []*spliceDef       // The def lines edits add, in their order.
 	gone     map[*defStmt]bool  // The def lines edits remove.
+	used     []declaredVariable // The variables used files bring, which the panel's JSON lists after the file's own.
 }
 
 func unitOf(s stmt, header *headerStmt, lines *lineMap) *spliceUnit {
@@ -597,12 +603,14 @@ func newRotationModel(ix *schemaIndex, f *typedFile) *rotationModel {
 			headers[h.body] = h
 		}
 	}
-	// A list's elements in the text, each with its statement, and the indent its statements have.
+	// A list's elements in the text, each with its statement, and the indent its statements have. The def calls are
+	// read from what the statement writes, whose values the defs know, as the rotation of a file with a use line is a
+	// copy.
 	fill := func(list *spliceList, holder protoreflect.Message, path ...any) {
 		for i, msg := range elements(holder, list.key) {
 			s := statements[pathKey(slices.Concat(path, []any{list.key, i}))]
 			v := ix.jsonValue(msg)
-			list.old = append(list.old, &spliceSlot{json: v, msg: msg, unit: unitOf(s, headers[s], lines), blocks: blocksOf(s), calls: m.callsIn(msg)})
+			list.old = append(list.old, &spliceSlot{json: v, msg: msg, unit: unitOf(s, headers[s], lines), blocks: blocksOf(s), calls: m.callsIn(f.written[s])})
 		}
 		list.slots = slices.Clone(list.old)
 		if k := slices.IndexFunc(list.old, func(s *spliceSlot) bool { return s.unit.header == nil }); k >= 0 {
@@ -640,6 +648,19 @@ func newRotationModel(ix *schemaIndex, f *typedFile) *rotationModel {
 	}
 	for _, list := range m.own {
 		fill(list, rotation)
+	}
+	var declarers []declaredVariable
+	for _, s := range f.tree.top {
+		if use, ok := s.(*useStmt); ok {
+			declarers = append(declarers, variablesOf(declaredByFile(f.used[use], f.usedPaths[use]))...)
+		}
+	}
+	for _, v := range f.settings.GetPlayer().GetRotation().GetValueVariables()[len(m.rotation.ValueVariables):] {
+		file := "a used file"
+		if k := slices.IndexFunc(declarers, func(x declaredVariable) bool { return x.name == v.Name }); k >= 0 {
+			file = filepath.Base(declarers[k].file)
+		}
+		m.used = append(m.used, declaredVariable{name: v.Name, file: file})
 	}
 	for _, s := range f.tree.sections {
 		if s.name != sectionGroup || s.group == nil {
@@ -918,6 +939,14 @@ func (m *rotationModel) json() *proto.APLRotation {
 	return r
 }
 
+// The rotation the slots hold with the variables used files bring after the file's own, as the panel reads it.
+func (m *rotationModel) merged() *proto.APLRotation {
+	r := m.json()
+	all := m.f.settings.GetPlayer().GetRotation().GetValueVariables()
+	r.ValueVariables = append(r.ValueVariables, all[len(m.rotation.ValueVariables):]...)
+	return r
+}
+
 func slotMessages[T googleProto.Message](list *spliceList) []T {
 	var out []T
 	for _, s := range list.slots {
@@ -944,7 +973,7 @@ func (m *rotationModel) locate(path []any) (spliceTarget, string) {
 		if at < len(path) {
 			i, ok := pathIndex(path[at], len(list.slots))
 			if !ok {
-				return t, describePath(path[:at+1]) + " does not exist"
+				return t, cmp.Or(m.usedVariable(list, path[at]), describePath(path[:at+1])+" does not exist")
 			}
 			t.index, t.rest = i, path[at+1:]
 		}
@@ -979,6 +1008,17 @@ func (m *rotationModel) locate(path []any) (spliceTarget, string) {
 		}
 	}
 	return t, describePath(path) + " is not in a row, var line or group, which are what the panel edits"
+}
+
+// Why no edit changes element k of list when it is a variable a used file brings, which the panel's JSON lists after
+// the file's own; "" for any other element.
+func (m *rotationModel) usedVariable(list *spliceList, k any) string {
+	i, ok := pathIndex(k, len(list.slots)+len(m.used))
+	if list != m.own[0] || !ok || i < len(list.slots) {
+		return ""
+	}
+	v := m.used[i-len(list.slots)]
+	return fmt.Sprintf("%s is declared in %s; edit it there", v.name, v.file)
 }
 
 // Applies one edit; gives why not when its path leads nowhere, or to something other than rows, var lines and groups.
@@ -1073,7 +1113,15 @@ func (m *rotationModel) apply(e AplEdit) string {
 	case t.groups:
 		return moveIn(m.groups, e.From, e.To, path)
 	case insert:
-		return insertAt(&t.list.slots, e.Index, newSlot(value), path)
+		// A variable put among those used files bring goes after the file's own.
+		index := e.Index
+		if t.list == m.own[0] && index > len(t.list.slots) && index <= len(t.list.slots)+len(m.used) {
+			index = len(t.list.slots)
+		}
+		return insertAt(&t.list.slots, index, newSlot(value), path)
+	}
+	if problem := cmp.Or(m.usedVariable(t.list, e.From), m.usedVariable(t.list, e.To)); problem != "" {
+		return problem
 	}
 	return moveIn(t.list.slots, e.From, e.To, path)
 }
@@ -1304,7 +1352,7 @@ func newSpliceWriter(d *Doc, m *rotationModel) *spliceWriter {
 		lines:   f.tree.lines,
 		model:   m,
 		out:     newLineEdits(d.src, f.tree),
-		printer: &printer{ix: d.ix, names: d.names, class: f.typer.class, declarations: declaredBy(m.json()).variables},
+		printer: &printer{ix: d.ix, names: d.names, class: f.typer.class, declarations: append(declaredBy(m.json()).variables, f.usedDeclared...)},
 	}
 }
 

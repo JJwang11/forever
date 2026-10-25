@@ -1556,6 +1556,9 @@ JSON does:
 - A row printed again stays in its `when` blocks while its condition still starts with theirs, and splits them
   otherwise (§6.9).
 - A def call in a row printed again stays while the edits leave its value as it was (§6.10).
+- The JSON lists the variables that used files bring after the file's own (§9). An edit of one of them is refused, as
+  the used file writes it, and a variable put among them goes after the file's own.
+- An edit is refused when it removes or renames a variable that a `with` list of this file reads.
 - The new text is read back, and a statement that does not read as its JSON is printed again, or as raw JSON,
   until each one does.
 
@@ -1660,6 +1663,7 @@ sim/siml/testdata/
   splice/<case>.apl.siml            input of the rotation panel's edits (`splice_test.go`)
   splice/<case>.edits.json          AplEdit list (splice.go); a set with no value removes what its path names
   splice/<case>.apl.siml.want       expected text after the splice
+  splice/<dir>/main.apl.siml        multi-file cases (use), with main.edits.json and main.apl.siml.want beside it
   builds/<class>_<spec>_<build>.json each committed ui/specs build loaded over its defaults (`build_db_test.go`)
 ```
 
