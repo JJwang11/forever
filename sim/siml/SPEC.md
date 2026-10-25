@@ -1978,15 +1978,15 @@ Some notes on this file:
 
 ### 16.4 The hunter defaults as one full `.siml`
 
-This is the proto-backed part of `defaults` in `ui/specs/hunter/dps/spec.ts`, written as one self-contained
-file. The committed `ui/specs/hunter/dps/defaults.siml` is the same file, except that
-`use "gear_sets/p1.gear.siml"` replaces the `gear:` section. A site export of the same
-setup differs in three ways:
+This is `ui/specs/hunter/dps/defaults.siml`, which `ui/specs/hunter/dps/spec.ts` takes its `defaults` from, as one
+self-contained file: the committed file has `use "gear_sets/p1.gear.siml"` under its talents line in place of the
+`gear:` section. A site export of the same setup is its printed form (§12), with the sections and entries in the
+printer's order (`resource_pot` after the elixirs, `encounter:` before `sim:`, `pull_range` last), and also:
 
 - it adds the empty `cooldowns:` section, because the site writes `Player.cooldowns` with every rotation
-  (`ui/sim/player/player.ts:1456-1462`);
+  (`Player.toProto` in `ui/sim/player/player.ts`);
 - it writes `simple.cooldowns` as the entry `cooldowns()`;
-- it adds `encounter:`, and the UI settings in `sim:`, when those categories are selected.
+- it adds the UI settings in `sim:` when that category is selected.
 
 ```
 siml 1
@@ -1998,7 +1998,7 @@ settings:
   profession1 engineering
   profession2 blacksmithing
   reaction_time_ms 100
-  distance_from_target 11
+  distance_from_target 12
   quiver_bonus ancient_sinew_wrapped_lamina
   ammo thorium_headed_arrow
   pet_uptime 1
@@ -2025,7 +2025,7 @@ gear:
   ranged     fahrads_reloading_repeater + saf_t_ultra_precision_scope
 
 consumables:
-  offensive_pot major_frenzy_potion
+  resource_pot major_mana_potion
   food swiftstrike_steak
   conjured demonic_rune
   explosive ez_thro_dynamite_ii
@@ -2035,10 +2035,8 @@ consumables:
 buffs: greater_blessing_of_kings
 
 raid_buffs:
-  arcane_brilliance, prayer_of_spirit, gift_of_the_wild, prayer_of_fortitude
-  strength_of_earth_totem
-  grace_of_air_totem, battle_shout, leader_of_the_pack
-  prayer_of_shadow_protection
+  arcane_brilliance, prayer_of_spirit, gift_of_the_wild, strength_of_earth_totem, grace_of_air_totem
+  battle_shout, leader_of_the_pack
 
 debuffs:
   judgement_of_light, judgement_of_wisdom, curse_of_elements, curse_of_recklessness, faerie_fire
@@ -2047,16 +2045,34 @@ debuffs:
 sim: iterations 25000
 
 simple:
-  time_to_weave 400
+  time_to_weave 200
+  pull_range 25
   use_multi, use_arcane
   playstyle weave
+
+encounter:
+  duration 180
+  duration_variation 5
+  execute_proportion_20 0.2
+  execute_proportion_35 0.35
+  targets(id=31146,
+      name="Raid Target",
+      level=63,
+      mob_type=mechanical,
+      stats(attack_power=320, block_value=54, armor=3731, health=1428900),
+      min_base_damage=2601,
+      damage_spread=0.5,
+      swing_speed=2,
+      parry_haste,
+      can_crush)
 ```
 
 Some notes on this file:
 
-- **Size.** It is 60 lines and 1.8 KB. The site's JSON export of a comparable setup is about 5.4 KB.
+- **Size.** It is 76 lines and 2.2 KB.
 - **The rotation** is `TypeSimple`, inferred from `simple:`. The section encodes
-  `{"timeToWeave":400,"useMulti":true,"useArcane":true,"playstyle":"Weave"}` into `spec_rotation_json` (§5.4).
+  `{"timeToWeave":200,"useMulti":true,"useArcane":true,"playstyle":"Weave","pullRange":25}` into
+  `spec_rotation_json` (§5.4).
 - **Left-out fields.** `pet_type pet_none` is the zero value and is not printed. `class` comes from
   `spec hunter`.
 - **Buff order.** The fields of `raid_buffs` follow declaration order in `proto/buffs.proto`. `battle_shout` is
