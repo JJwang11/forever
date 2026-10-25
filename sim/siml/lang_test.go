@@ -323,6 +323,9 @@ func TestDefCompletion(t *testing.T) {
 	if _, ok := find(value, "y"); !ok {
 		t.Errorf("the def's value does not offer its parameter: %v", labelsOf(value))
 	}
+	if own := completionsIn(t, names, nil, hunterPath, strings.Replace(defsText, "< y or", "< |y or", 1)); slices.Contains(labelsOf(own), "fits") {
+		t.Errorf("the def's value offers the def itself, which reference-cycle refuses: %v", labelsOf(own))
+	}
 	ref := completionsIn(t, names, nil, hunterPath, strings.Replace(defsText, "spell(x)", "spell(|)", 1))
 	if _, ok := find(ref, "x"); !ok {
 		t.Errorf("a ref in the def's value does not offer the parameter: %v", labelsOf(ref))

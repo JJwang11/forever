@@ -385,7 +385,7 @@ func (b *completer) values() {
 }
 
 // The file's defs and those of the files it uses, each with its parameters, and the parameters of the def whose value
-// the cursor is in.
+// the cursor is in. That def itself is left out, which calling would make reference-cycle (SPEC.md §6.10).
 func (b *completer) defs() {
 	for _, p := range b.ctx.params {
 		b.add(p, CompletionTypeParameter, ranked(0).with("", "parameter"))
@@ -396,8 +396,9 @@ func (b *completer) defs() {
 			params[o.scope.group] = append(params[o.scope.group], o.name)
 		}
 	}
+	in := b.d.defHolding(b.ctx.start)
 	for _, o := range b.definitions() {
-		if o.kind != "def" || !o.definition {
+		if o.kind != "def" || !o.definition || in != nil && in.name.text == o.name {
 			continue
 		}
 		signature, insert := o.name, o.name
