@@ -9,6 +9,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import readline from 'node:readline';
 import { fileURLToPath } from 'node:url';
+import { isDeepStrictEqual } from 'node:util';
 
 import { normalizePath, type Plugin } from 'vite';
 
@@ -94,6 +95,40 @@ const read = (file: string, text: string): Promise<Response> => {
 	});
 };
 
+// The parts of a full file that a file it uses may give whole: the field of its player, and the kind of file.
+const SHARED_PARTS = [
+	['rotation', '.apl.siml'],
+	['equipment', '.gear.siml'],
+] as const;
+
+/**
+ * The module of `json`, read from `file`. A part of its player that one of the `uses` gives as it stands is that
+ * file's module, so a rotation or gear set several builds use ships once.
+ */
+const moduleCode = async (file: string, json: unknown, uses: string[]): Promise<string> => {
+	const player = (json as { player?: Record<string, unknown> } | undefined)?.player;
+	const shared: Array<[field: string, specifier: string]> = [];
+	for (const [field, kind] of SHARED_PARTS) {
+		if (player?.[field] === undefined) continue;
+		for (const used of uses.filter(used => used.endsWith(kind))) {
+			if (!isDeepStrictEqual((await read(used, fs.readFileSync(used, 'utf8'))).json, player[field])) continue;
+			const specifier = normalizePath(path.relative(path.dirname(file), used));
+			shared.push([field, specifier.startsWith('.') ? specifier : `./${specifier}`]);
+			break;
+		}
+	}
+	if (!shared.length) return `export default ${JSON.stringify(json)};\n`;
+
+	const own = { ...(json as object), player: Object.fromEntries(Object.entries(player!).filter(([key]) => !shared.some(([field]) => field === key))) };
+	return [
+		...shared.map(([, specifier], i) => `import shared${i} from ${JSON.stringify(specifier)};`),
+		`const settings = ${JSON.stringify(own)};`,
+		...shared.map(([field], i) => `settings.player.${field} = shared${i};`),
+		'export default settings;',
+		'',
+	].join('\n');
+};
+
 export function simlPlugin(): Plugin {
 	return {
 		name: 'siml',
@@ -114,7 +149,7 @@ export function simlPlugin(): Plugin {
 				});
 			}
 			for (const d of response.warnings) this.warn(`${where(d)}: ${d.code}: ${d.message}`);
-			return { code: `export default ${JSON.stringify(response.json)};\n`, map: { mappings: '' }, moduleType: 'js' };
+			return { code: await moduleCode(id, response.json, response.uses), map: { mappings: '' }, moduleType: 'js' };
 		},
 
 		closeBundle: stop,

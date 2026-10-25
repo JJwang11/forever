@@ -73,6 +73,12 @@ describe('a .siml import', () => {
 		});
 	});
 
+	it('takes the rotation a build uses from the rotation file, so the two imports share it', async () => {
+		const build = (await import('./testdata/build.siml')).default;
+		expect(build.player.talentsString).toBe('-0053');
+		expect(build.player.rotation).toBe((await import('./testdata/rotation.apl.siml')).default);
+	});
+
 	it('fails at the file, line and column of what does not read, with the did-you-mean', async () => {
 		await expect(import('./testdata/broken.apl.siml')).rejects.toThrow(
 			'ui/features/import-export/testdata/broken.apl.siml:5:8: error unknown-name: no spell is named hunters_mrak; did you mean hunters_mark?',
