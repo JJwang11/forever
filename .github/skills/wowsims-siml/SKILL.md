@@ -28,7 +28,7 @@ protos, so a change to `proto/apl.proto` shows up here once `make siml` runs. Ed
 
 ## CLI
 
-Build it with the database: `go build --tags=with_db -o bin/wowsimcli ./cmd/wowsimcli`.
+`make bin/wowsimcli` builds it with the database (`--tags=with_db`), which the siml commands need for the name table.
 
 - `siml parse [-json] <file>`: does it load; `-json` prints the proto it reads as.
 - `siml fmt -check|-w <paths>`: the canonical form; under `ui/specs` also warnings, raw refs and stale names.
@@ -41,7 +41,7 @@ Build it with the database: `go build --tags=with_db -o bin/wowsimcli ./cmd/wows
 
 ## Language server
 
-Start `bin/wowsimcli siml lsp` (built with `--tags=with_db`) with the repository root as its working folder, and
+Start `bin/wowsimcli siml lsp` (`make bin/wowsimcli`) with the repository root as its working folder, and
 send `.siml` documents (languageId `siml`). It answers completion, hover, definition, references, rename, document
 symbols, folding, semantic tokens, formatting, code actions (quick fixes) and document links, and publishes
 diagnostics. Names complete from `sim/siml/names.json`, items from the database. In VS Code, `tools/vscode-apl`

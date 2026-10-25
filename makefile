@@ -102,10 +102,11 @@ package-lock.json:
 node_modules: package-lock.json
 	npm ci
 
-# What tools/vite/siml.mts reads .siml imports with when $WOWSIMCLI is unset. It stays out of dist: the pull request
-# preview uploads all of dist to Cloudflare Pages, which refuses a file over 25 MiB.
-bin/wowsimcli$(BIN_EXT): sim/core/proto/api.pb.go sim/siml/forms.json sim/siml/llm_head.txt $(filter-out %_test.go,$(call rwildcard,sim,*.go) $(call rwildcard,cmd/wowsimcli,*.go) $(call rwildcard,tools/spelldata,*.go))
-	go build -o $@ ./cmd/wowsimcli
+# What tools/vite/siml.mts reads .siml imports with when $WOWSIMCLI is unset. It is built with the database and the name
+# table, so every siml command runs on it too. It stays out of dist: the pull request preview uploads all of dist to
+# Cloudflare Pages, which refuses a file over 25 MiB.
+bin/wowsimcli$(BIN_EXT): sim/core/proto/api.pb.go sim/siml/forms.json sim/siml/llm_head.txt sim/siml/names.json assets/database/db.bin assets/database/leftover_db.bin $(filter-out %_test.go,$(call rwildcard,sim,*.go) $(call rwildcard,cmd/wowsimcli,*.go) $(call rwildcard,tools/spelldata,*.go))
+	go build --tags=with_db -o $@ ./cmd/wowsimcli
 
 # Run before committing, and after a change to proto/apl.proto: refresh the SIML name table and the wowsims-siml
 # skill, then check the files under ui/specs read and are canonical.

@@ -20,8 +20,9 @@ build beside it, and reloads the Go binary through `air`. Use it unless you need
 starts `wowsimcli siml serve -names sim/siml/names.json`, one per vite or vitest process, which answers each file
 over stdin and stdout until the process ends. It runs the binary `$WOWSIMCLI` names, else `bin/wowsimcli` when that
 file exists, else `go run ./cmd/wowsimcli` from the repository root, so the dev server, `vitest`, Storybook and
-`vite build` all need Go on the PATH. `make` builds `bin/wowsimcli` and rebuilds it when a Go file under `sim`,
-`cmd/wowsimcli` or `tools/spelldata` changes, and skips it when `$WOWSIMCLI` is set (`make bin/wowsimcli` on its own); the plugin does not check its age, so after a Go change
+`vite build` all need Go on the PATH. `make` builds `bin/wowsimcli` with `--tags=with_db`, so every siml command runs
+on it too, and rebuilds it when `sim/siml/names.json`, the database or a Go file under `sim`, `cmd/wowsimcli` or
+`tools/spelldata` changes. It skips it when `$WOWSIMCLI` is set (`make bin/wowsimcli` on its own); the plugin does not check its age, so after a Go change
 outside `make`, rebuild it or delete it. It stays out of `dist`, which the pull request preview uploads whole to
 Cloudflare Pages, and Pages refuses a file over 25 MiB. `go run` costs about 0.3 s once the build cache holds the package, and a few
 seconds before; CI builds the binary once and exports `WOWSIMCLI`:
@@ -30,7 +31,7 @@ seconds before; CI builds the binary once and exports `WOWSIMCLI`:
 go build -o /tmp/wowsimcli ./cmd/wowsimcli && export WOWSIMCLI=/tmp/wowsimcli
 ```
 
-No `with_db` tag is needed: the server reads the name table from `sim/siml/names.json`, again when it changes. A
+The plugin needs no `with_db` tag: the server reads the name table from `sim/siml/names.json`, again when it changes. A
 change to the Go reader itself takes effect on the next vite start, once the binary it runs is rebuilt.
 
 ## Two things a plain vite dev server cannot do

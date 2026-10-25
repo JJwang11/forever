@@ -148,6 +148,7 @@ make siml-names
 # Before committing, and after a change to proto/apl.proto: the name table as above, the wowsims-siml skill, then siml
 # fmt -check over ui/specs
 make siml
-# The wowsimcli vite reads .siml imports with (tools/vite/siml.mts); make builds it, and rebuilds it after a Go change
+# The wowsimcli vite reads .siml imports with (tools/vite/siml.mts); make builds it with --tags=with_db, so the siml
+# commands above run on it too, and rebuilds it after a Go change
 make bin/wowsimcli
 ```
