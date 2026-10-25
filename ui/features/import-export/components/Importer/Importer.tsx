@@ -64,10 +64,10 @@ export const Importer = ({ open, onOpenChange, title, allowFileUpload = false, o
 			await onImport(host, textRef.current?.value || '', fileName.current, run.signal);
 			if (!run.signal.aborted) changeOpen(false);
 		} catch (error: any) {
-			// Problems point into the text, which a closed dialog has dropped.
-			if (error instanceof ImportProblems) {
-				if (!run.signal.aborted) setProblems(error);
-			} else toastManager.add({ variant: 'error', body: `${i18n.t('import.error')} ${error?.message || error}` });
+			// A closed dialog cancelled the import, and dropped the text its problems point into.
+			if (run.signal.aborted) return;
+			if (error instanceof ImportProblems) setProblems(error);
+			else toastManager.add({ variant: 'error', body: `${i18n.t('import.error')} ${error?.message || error}` });
 		} finally {
 			if (running.current === run) dropRunning();
 		}

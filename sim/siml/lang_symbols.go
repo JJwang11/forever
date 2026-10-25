@@ -696,7 +696,7 @@ func (d *Doc) renameRefusal(key occurrence, newName string, found []foundOccurre
 	}
 	for _, s := range d.tree().statements {
 		u, ok := s.(*useStmt)
-		if !ok || key.kind != "variable" {
+		if !ok || key.kind != "variable" || d.typed == nil {
 			continue
 		}
 		for _, x := range variablesOf(declaredByFile(d.typed.used[u], resolveUse(d.path, u.path.value))) {

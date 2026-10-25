@@ -78,7 +78,7 @@ func (t *typer) unknownName(name string, ns Namespace, position string, cast boo
 	thing, _ := strings.CutPrefix(namespaceThings[ns], "a ")
 	thing, _ = strings.CutPrefix(thing, "an ")
 	candidates := t.names.Visible(t.class, ns)
-	if cast {
+	if cast && t.spec != "" {
 		candidates = slices.DeleteFunc(candidates, func(c string) bool {
 			e, _ := t.names.spellEntry(t.class, ns, c)
 			return !e.castable(t.spec)

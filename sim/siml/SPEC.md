@@ -297,7 +297,8 @@ type `UUID`. `Player.class` comes from `spec`
 **Categories.** A category is **present** when any of its sections is present, including empty, or when its
 top-level line is present (`talents` for t). A present category's unwritten fields are zero in the file's
 proto. The site's importer loads exactly the present categories, over the page's settings: a field the file leaves
-out, or writes as zero, keeps the page's value, field by field in the setup, its player and its sim settings, while
+out, or writes as zero, keeps the page's value, field by field in the setup, its player, its sim settings and its
+cooldowns, while
 any other message the file writes (the consumables, the encounter) replaces the page's whole.
 
 **What a present section sets.** A present section sets its target message present, even when its body is

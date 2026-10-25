@@ -602,7 +602,11 @@ func defText(name string, params []string, value string) string {
 	if len(params) > 0 {
 		head += "(" + strings.Join(params, ", ") + ")"
 	}
-	return head + " = " + strings.TrimSpace(value)
+	lines := strings.Split(value, "\n")
+	for i := range lines {
+		lines[i] = strings.TrimSpace(lines[i])
+	}
+	return head + " = " + strings.TrimSpace(strings.Join(lines, " "))
 }
 
 // Adds the def line e.Name(e.Params) = e.Text.
