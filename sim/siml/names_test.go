@@ -153,6 +153,29 @@ func TestNamesItemsEnchantsSuffixes(t *testing.T) {
 	}
 }
 
+// An effect a two-hand and a one-hand weapon row share prints with the one-hand row's name in either hand, since that
+// row fits the one-handed Assassination Blade and a two-hander alike.
+func TestEnchantNameFitsEitherWeapon(t *testing.T) {
+	names := &Names{
+		Items: map[string]int32{"assassination_blade": 13036, "heartseeker": 12783},
+		Enchants: map[string]EnchantName{
+			"enchant_2h_weapon_lesser_impact": {EffectID: 1897, Slots: []proto.ItemSlot{proto.ItemSlot_ItemSlotMainHand}},
+			"weapon_superior_striking": {EffectID: 1897,
+				Slots: []proto.ItemSlot{proto.ItemSlot_ItemSlotMainHand, proto.ItemSlot_ItemSlotOffHand}},
+		},
+	}
+	items := make([]*proto.ItemSpec, 17)
+	for i := range items {
+		items[i] = &proto.ItemSpec{}
+	}
+	items[proto.ItemSlot_ItemSlotMainHand] = &proto.ItemSpec{Id: 13036, Enchant: 1897}
+	items[proto.ItemSlot_ItemSlotOffHand] = &proto.ItemSpec{Id: 12783, Enchant: 1897}
+	want := "siml 1\n\nmain_hand  assassination_blade + weapon_superior_striking\noff_hand   heartseeker + weapon_superior_striking\n"
+	if got := string(printGear(&proto.EquipmentSpec{Items: items}, names)); got != want {
+		t.Errorf("the gear prints as\n%s\nwant\n%s", got, want)
+	}
+}
+
 func TestNamesVisibleAndHolding(t *testing.T) {
 	names := fixtureNames(t)
 	if got, want := names.Visible(proto.Class_ClassWarrior, NamespaceSpell), []string{"heroic_strike", "heroic_strike_tag0", "jom_gabbar", "overpower"}; !slices.Equal(got, want) {

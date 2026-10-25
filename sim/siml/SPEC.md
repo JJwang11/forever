@@ -949,8 +949,9 @@ meaning among the shared entries.
 - for an `ActionID` with an `itemId` and no tag or rank, `item.` and the item's name; with an `otherId`,
   `other.<short>`; with none of the three, `none`;
 - for an item id or a random suffix id, its name;
-- for an enchant effect id on an item in slot `s`, the first in byte order of the effect's names whose slots hold
-  `s`, else the effect's first name in byte order;
+- for an enchant effect id on an item in slot `s`, of the effect's names whose slots hold `s`, the one with the most
+  slots and the first in byte order of those, else the effect's first name in byte order. An effect that a one-hand
+  and a two-hand weapon row share prints with the one-hand row's name, which fits both kinds of weapon;
 - a raw ref (§7.3) for anything that has no name.
 
 The class is that of the `spec` line the printed file holds (§12.1). A file printed with none, which has no spec,

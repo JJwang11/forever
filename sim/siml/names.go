@@ -174,14 +174,20 @@ func (t *Names) Enchant(name string) (int32, bool) {
 	return e.EffectID, ok
 }
 
-// The name an enchant effect prints with on an item in slot: of the effect's names whose slots hold slot, the first
-// in byte order, else the effect's first name in byte order.
+// The name an enchant effect prints with on an item in slot: of the effect's names whose slots hold slot, the one
+// with the most slots and the first in byte order of those, else the effect's first name in byte order. An effect a
+// one-hand and a two-hand weapon row share thus prints with the one-hand row's name (main and off hand), which fits a
+// two-hander too, where the two-hand row's (main hand) fits no one-hander.
 func (t *Names) EnchantName(effectID int32, slot proto.ItemSlot) (string, bool) {
 	names := t.indexed().enchants[effectID]
+	best := ""
 	for _, name := range names {
-		if slices.Contains(t.Enchants[name].Slots, slot) {
-			return name, true
+		if slots := t.Enchants[name].Slots; slices.Contains(slots, slot) && (best == "" || len(slots) > len(t.Enchants[best].Slots)) {
+			best = name
 		}
+	}
+	if best != "" {
+		return best, true
 	}
 	if len(names) == 0 {
 		return "", false
