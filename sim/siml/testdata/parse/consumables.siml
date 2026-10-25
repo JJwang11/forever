@@ -9,6 +9,5 @@ consumables:
   explosive ez_thro_dynamite_ii
   mh_imbue elemental_sharpening_stone
   potions major_frenzy_potion, major_mana_potion
-  extra goblin_sapper_charge
-  extra scroll_of_strength_iv
+  extra goblin_sapper_charge, scroll_of_strength_iv
   elixir_ids elixir_of_the_mongoose, greater_mageblood_elixir

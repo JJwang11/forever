@@ -358,8 +358,9 @@ An entry line sets fields of the section's message. How each field type is writt
   `_id` or `_ids` drops that suffix when the shorter name names no other field of the message
   (`offensive_pot_id` → `offensive_pot`, `extra_ids` → `extra`). Both the short name and the full name are accepted, and the
   printer writes the short one.
-- **Errors.** Unknown names are `unknown-field`. A field set twice is `duplicate-field`. A value that does not
-  fit is `wrong-type`. An unknown enum value is `unknown-enum`. A number with a unit is `bad-literal`.
+- **Errors.** Unknown names are `unknown-field`. A field set twice is `duplicate-field`: a list of messages takes
+  a line per message, and any other list one line of all its values. A value that does not fit is `wrong-type`.
+  An unknown enum value is `unknown-enum`. A number with a unit is `bad-literal`.
 
 ### 5.3 Slot rows (`gear:`, `item_swap:`, `x.gear.siml`)
 

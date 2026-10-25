@@ -12,7 +12,8 @@
 17:17 error unknown-name
 18:8 error unknown-name
 19:9 error wrong-type
-21:8 error unknown-field
-24:26 error unknown-enum
-25:26 error duplicate-field
-25:54 error duplicate-field
+21:3 error duplicate-field
+23:8 error unknown-field
+26:26 error unknown-enum
+27:26 error duplicate-field
+27:54 error duplicate-field

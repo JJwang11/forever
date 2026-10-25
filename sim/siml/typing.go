@@ -1572,7 +1572,8 @@ func (t *typer) entry(s stmt, fields []*placed, holder func(*placed) protoreflec
 				names[i] = x.Siml
 			}
 			t.report("unknown-field", "no field here is named "+name+didYouMean(name, names), at)
-		case set[p.field] && !p.isList():
+		case set[p.field] && !(p.isList() && p.Printed == "message"):
+			// A list of messages takes one line per message, any other list one line of all its values.
 			t.report("duplicate-field", p.Siml+" is written twice", at)
 			return nil
 		default:

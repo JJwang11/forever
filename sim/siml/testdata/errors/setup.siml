@@ -17,6 +17,8 @@ consumables:
   offensive_pot falcons_call
   food steak
   extra=[falcons_call]
+  elixir elixir_of_the_mongoose
+  elixir greater_mageblood_elixir
 
 buffs: battle_shout
 
