@@ -130,6 +130,33 @@ func TestCompletionOffersWhatThePositionTakes(t *testing.T) {
 	}
 }
 
+// A document with CRLF line endings, as Git for Windows checks a file out, formats with no edit when only its line
+// endings differ from format's, and keeps them when it formats.
+func TestFormattingKeepsCRLF(t *testing.T) {
+	c := started(t)
+	crlf := strings.ReplaceAll(lines("siml 1", "spec hunter", "", "priority:", "  cast hunters_mark", ""), "\n", "\r\n")
+	format := func(text string, version int) string {
+		t.Helper()
+		if version == 1 {
+			c.open(smokeURI, text)
+		} else {
+			c.change(smokeURI, version, text)
+		}
+		var edits []TextEdit
+		c.request("textDocument/formatting", map[string]any{"textDocument": textDocument(smokeURI), "options": map[string]any{"tabSize": 2, "insertSpaces": true}}, &edits)
+		if version == 1 && len(edits) > 0 {
+			t.Errorf("a formatted document gets edits: %+v", edits)
+		}
+		return applied(text, edits)
+	}
+	if got := format(crlf, 1); got != crlf {
+		t.Errorf("formatted: %q, want %q", got, crlf)
+	}
+	if got := format(strings.Replace(crlf, "cast hunters_mark", "cast  hunters_mark", 1), 2); got != crlf {
+		t.Errorf("formatted: %q, want %q", got, crlf)
+	}
+}
+
 func TestHoverNamesASpellOfTheTable(t *testing.T) {
 	c := started(t)
 	c.open(smokeURI, lines("siml 1", "spec hunter", "", "priority:", "  cast hunters_mrk", ""))

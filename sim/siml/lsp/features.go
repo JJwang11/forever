@@ -208,8 +208,8 @@ func semanticTokens(d *siml.Doc) SemanticTokens {
 }
 
 // The file as format writes it (SPEC.md §12.1), as the one smallest edit that turns the text into it, so the editor
-// keeps the cursor and folding outside it and undo restores it in one step; none while the text has an error. The
-// files its use lines name are read through open.
+// keeps the cursor and folding outside it and undo restores it in one step; none while the text has an error. Format
+// writes LF, and a text with CRLF line endings keeps them. The files its use lines name are read through open.
 func formatting(a *analysis, open siml.Opener) []TextEdit {
 	text := a.doc.Text()
 	formatted, err := siml.Format(a.doc.Path(), []byte(text), a.names, open)
@@ -217,8 +217,11 @@ func formatting(a *analysis, open siml.Opener) []TextEdit {
 		return []TextEdit{}
 	}
 	after := string(formatted)
-	if after == text {
+	if strings.ReplaceAll(text, "\r\n", "\n") == after {
 		return []TextEdit{}
+	}
+	if strings.Contains(text, "\r\n") {
+		after = strings.ReplaceAll(after, "\n", "\r\n")
 	}
 	start := 0
 	for start < len(text) && start < len(after) && text[start] == after[start] {
