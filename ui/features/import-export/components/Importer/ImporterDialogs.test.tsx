@@ -73,7 +73,8 @@ describe('importer dialog links', () => {
 describe('the SIML rotation importer dialog', () => {
 	const importText = (text: string) => {
 		const fromProto = vi.fn();
-		renderWithHost(<SimlRotationImporterDialog open onOpenChange={() => {}} />, { player: { getSpec: () => Spec.SpecHunter }, fromProto });
+		const toProto = () => IndividualSimSettings.create({ player: Player.create() });
+		renderWithHost(<SimlRotationImporterDialog open onOpenChange={() => {}} />, { player: { getSpec: () => Spec.SpecHunter }, toProto, fromProto });
 		screen.getByTestId<HTMLTextAreaElement>('importer-textarea').value = text;
 		fireEvent.click(screen.getByTestId('import-button'));
 		return fromProto;

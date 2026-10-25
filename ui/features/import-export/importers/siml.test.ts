@@ -33,7 +33,9 @@ vi.mock('@ui-kit/Toast', async importOriginal => ({
 }));
 
 const fromProto = vi.fn<(settings: IndividualSimSettings, categories: Array<SimSettingCategories>) => void>();
-const hostFor = (spec: Spec) => fakeHost({ player: { getSpec: () => spec }, fromProto });
+// A page with nothing of its own, so what the importer loads is what the text holds.
+const toProto = () => IndividualSimSettings.create({ player: Player.create() });
+const hostFor = (spec: Spec) => fakeHost({ player: { getSpec: () => spec }, toProto, fromProto });
 const hunter = hostFor(Spec.SpecHunter);
 
 const loaded = () => {
@@ -144,9 +146,51 @@ describe('a file a browser renamed on download', () => {
 	});
 });
 
+// Pasted, the same text reads as a full setup, and so does the file.
+describe('a file whose name has a dot that names no section', () => {
+	it.each([
+		['hunter.sv.siml', 'wowsims.siml'],
+		['build.v2.siml', 'wowsims.siml'],
+		['rotation.apl - Copy.siml', 'wowsims.siml'],
+		['bm.siml', 'bm.siml'],
+		['raid.encounter.siml', 'raid.encounter.siml'],
+		['wowsims.group.siml', 'wowsims.group.siml'],
+	])('reads %s as %s', async (name, path) => {
+		readsRotation();
+		await SIML_IMPORTER.onImport(hunter, 'the text', name);
+		expect(pathRead()).toBe(path);
+	});
+});
+
+describe('an import the dialog dropped', () => {
+	it('loads nothing when the read ends after the dialog closed', async () => {
+		let answer: (result: SimlParseResult) => void = () => {};
+		parseSiml.mockReturnValue(new Promise(resolve => (answer = resolve)));
+		const dialog = new AbortController();
+		const imported = SIML_ROTATION_IMPORTER.onImport(hunter, 'the text', undefined, dialog.signal);
+
+		dialog.abort();
+		answer(SimlParseResult.create({ settings: IndividualSimSettings.create({ player: Player.create({ rotation }) }), categories: ['r'] }));
+		await imported;
+
+		expect(fromProto).not.toHaveBeenCalled();
+	});
+
+	it('refuses nothing when the read ends after the dialog closed', async () => {
+		const dialog = new AbortController();
+		parseSiml.mockImplementation(async () => {
+			dialog.abort();
+			return SimlParseResult.create({ categories: [] });
+		});
+
+		await expect(SIML_IMPORTER.onImport(hunter, 'the text', undefined, dialog.signal)).resolves.toBeUndefined();
+		expect(toasts).toEqual([]);
+	});
+});
+
 describe('a gear planner', () => {
 	const readsEncounter = (...more: string[]) => reads({}, [...more, 'e'], Spec.SpecUnknown);
-	const planner = fakeHost({ player: { getSpec: () => Spec.SpecHolyPaladin }, simDisabled: true, fromProto });
+	const planner = fakeHost({ player: { getSpec: () => Spec.SpecHolyPaladin }, simDisabled: true, toProto, fromProto });
 
 	it('refuses a file holding only the encounter, which it does not import', async () => {
 		readsEncounter();
