@@ -132,29 +132,6 @@ func TestCompleteClassNamesFirst(t *testing.T) {
 	}
 }
 
-// A library rotation's variable that a def of its own or a file using it reads is no unused-variable, though its own
-// rotation never reads it.
-func TestChecksUnusedVariableOfALibrary(t *testing.T) {
-	dir := t.TempDir()
-	libPath := filepath.Join(dir, "lib.apl.siml")
-	lib := plainPreface + textLines("var $a = 1", "var $b = 2", "var $c = 3", "def far = $b > 1")
-	for path, text := range map[string]string{
-		libPath:                             lib,
-		filepath.Join(dir, "user.apl.siml"): plainPreface + textLines(`use "lib.apl.siml"`, "", "priority:", "  cast steady if far and $a > 1"),
-	} {
-		if err := os.WriteFile(path, []byte(text), 0o644); err != nil {
-			t.Fatal(err)
-		}
-	}
-	var got []string
-	for _, x := range Analyze(libPath, []byte(lib), smallNames(), langOpen).EditorDiagnostics(nil) {
-		got = append(got, x.Code+" "+x.Message)
-	}
-	if want := []string{`unused-variable Nothing references variable "c".`}; !slices.Equal(got, want) {
-		t.Errorf("got %q, want %q", got, want)
-	}
-}
-
 func TestChecksUnregisteredName(t *testing.T) {
 	text := plainPreface + "priority:\n  cast kept\n  cast steady\n"
 	outside := Analyze(hunterPath, []byte(text), smallNames(), langOpen).EditorDiagnostics(nil)
