@@ -295,8 +295,10 @@ type `UUID`. `Player.class` comes from `spec`
 (§8.4).
 
 **Categories.** A category is **present** when any of its sections is present, including empty, or when its
-top-level line is present (`talents` for t). An importer loads exactly the present categories, and a present
-category's unwritten fields are zero.
+top-level line is present (`talents` for t). A present category's unwritten fields are zero in the file's
+proto. The site's importer loads exactly the present categories, over the page's settings: a field the file leaves
+out, or writes as zero, keeps the page's value, field by field in the setup, its player and its sim settings, while
+any other message the file writes (the consumables, the encounter) replaces the page's whole.
 
 **What a present section sets.** A present section sets its target message present, even when its body is
 empty:
@@ -1443,7 +1445,7 @@ otherwise get no section at all: no `simple`, `prepull`, `priority` or group.
 - each section with at least one row.
 
 When a given category gets no section this way, its first section in §5.1 order is written with an empty body,
-so an import still resets that category. A section whose category is not given is never written. With no
+so the file still holds that category. A section whose category is not given is never written. With no
 categories given, every section that the three rules above find is written. A section file writes its own
 section only, with no header but a group's; an `x.gear.siml` writes its slot rows and no entry.
 
