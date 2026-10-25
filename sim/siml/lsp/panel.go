@@ -265,7 +265,7 @@ func (s *server) registeredFor(a *analysis, info siml.SpecInfo, c *siml.Database
 		for _, n := range a.names.Registered(info.Class, spec, ns) {
 			out = append(out, registeredName{
 				Name: n.Name, ID: actionID{SpellID: n.Entry.SpellID, Tag: n.Entry.Tag, Rank: n.Entry.Rank},
-				ICDOnly: slices.Contains(n.Entry.ICDOnlyBy, spec), Uncastable: slices.Contains(n.Entry.UncastableBy, spec),
+				ICDOnly: slices.Contains(n.Entry.ICDOnlyBy, spec), Uncastable: n.Entry.Uncastable,
 			})
 		}
 		return out

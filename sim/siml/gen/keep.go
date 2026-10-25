@@ -15,14 +15,13 @@ import (
 	"github.com/wowsims/forever/sim/siml"
 )
 
-// The repin record, relative to the repository's root: a line for each name a run gave another meaning, by a -repin
-// or by moving a plain spell name to the castable spell of its game name.
+// The repin record, relative to the repository's root: a line for each name a -repin gave another meaning.
 const RecordPath = "sim/siml/gen/repinned.txt"
 
 // The lines that open a repin record.
-const recordHeader = `# The names simlnames -w gave another meaning, one line each, as the run reports them (sim/siml/SPEC.md §7.4): by a
-# -repin, or by moving a plain spell name to the castable spell of its game name. The check against a pull request's
-# base branch accepts a name of its table that means something else, or nothing, only with its line here. Keep them.
+const recordHeader = `# The names simlnames -repin gave another meaning, one line each, as the run reports them (sim/siml/SPEC.md §7.4).
+# The check against a pull request's base branch accepts a name of the base's table that means something else, or
+# nothing, only when the pull request adds the name's line here. simlnames -w -repin writes the lines; keep them.
 `
 
 // The line a repin record holds for r.
@@ -171,17 +170,7 @@ func prune(old, head *siml.Names, c *Collection) []string {
 
 // Whether a build registers id in ns: a build of one of class's specs, or of any spec for ClassUnknown.
 func (c *Collection) registers(class proto.Class, ns siml.Namespace, id Identity) bool {
-	return c.ofScope(class, c.Registered[ns][id].Specs)
-}
-
-// Whether such a build registers id castable in ns.
-func (c *Collection) castable(class proto.Class, ns siml.Namespace, id Identity) bool {
-	return c.ofScope(class, c.Registered[ns][id].CastableBy)
-}
-
-// Whether specs holds a spec of class, or any spec for ClassUnknown.
-func (c *Collection) ofScope(class proto.Class, specs []string) bool {
-	return slices.ContainsFunc(specs, func(s string) bool {
+	return slices.ContainsFunc(c.Registered[ns][id].Specs, func(s string) bool {
 		return class == proto.Class_ClassUnknown || slices.Contains(c.Specs[class], s)
 	})
 }

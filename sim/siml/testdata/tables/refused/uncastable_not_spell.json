@@ -1,1 +1,1 @@
-{ "classes": { "hunter": { "aura": { "a": { "spellId": 1, "registeredBy": ["hunter"], "uncastableBy": ["hunter"] } } } } }
+{ "classes": { "hunter": { "aura": { "a": { "spellId": 1, "registeredBy": ["hunter"], "uncastable": true } } } } }

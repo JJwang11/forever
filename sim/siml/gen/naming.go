@@ -64,23 +64,15 @@ type Repin struct {
 // The table old grows into with c: every entry of old keeps its name and meaning, the registered-by lists are
 // regenerated, and each spell, aura, item, enchant and random suffix of c that old does not name gets a new entry.
 // With a pin, the entries of that name's namespace whose game names give the same name are dropped first, so the
-// new-name rules decide what each of their names means again. So are those of every plain spell name whose spell
-// the builds register only uncastable while they register a castable one of its game name.
+// new-name rules decide what each of their names means again.
 func Update(old *siml.Names, c *Collection, pin *Pin) (*siml.Names, *Report, error) {
 	u := newUpdater(old, c)
-	before := map[Pin]string{}
+	var before map[Pin]string
 	if pin != nil {
 		var err error
 		if before, err = u.unpin(*pin); err != nil {
 			return nil, nil, err
 		}
-	}
-	for _, p := range u.uncastablePlainNames() {
-		dropped, err := u.unpin(p)
-		if err != nil {
-			return nil, nil, err
-		}
-		maps.Copy(before, dropped)
 	}
 	u.registeredBy()
 	// The classes first, so what a class casts takes its game name's name before what gear adds.
@@ -209,33 +201,6 @@ func (u *updater) unpin(p Pin) (map[Pin]string, error) {
 	return before, nil
 }
 
-// The plain names of spell, those its game name gives its entry, whose spell the builds of its scope register only
-// uncastable while they register a castable spell of the same game name: a cast of such a name casts what a rotation
-// cannot pick, so the run hands each back to the new-name rules, which give it to the castable spell.
-func (u *updater) uncastablePlainNames() []Pin {
-	var pins []Pin
-	check := func(class proto.Class, entries map[string]siml.SpellName, registered map[Identity]bool) {
-		for _, name := range slices.Sorted(maps.Keys(entries)) {
-			e, ns := entries[name], siml.NamespaceSpell
-			id := Identity{e.SpellID, e.Tag}
-			if !u.c.registers(class, ns, id) || u.c.castable(class, ns, id) || u.base(Pin{class, ns, name}) != name {
-				continue
-			}
-			for other := range registered {
-				if other != id && u.c.castable(class, ns, other) && baseName(u.c.SpellNames[other.SpellID], "spell", other.SpellID) == name {
-					pins = append(pins, Pin{class, ns, name})
-					break
-				}
-			}
-		}
-	}
-	for _, class := range slices.Sorted(maps.Keys(u.t.Classes)) {
-		check(class, u.t.Classes[class][siml.NamespaceSpell], u.c.Classes[class][siml.NamespaceSpell])
-	}
-	check(proto.Class_ClassUnknown, u.t.Shared[siml.NamespaceSpell], u.c.Shared[siml.NamespaceSpell])
-	return pins
-}
-
 // The name the game name of what p names gives it; "" when the database no longer holds it.
 func (u *updater) base(p Pin) string {
 	switch p.Namespace {
@@ -347,18 +312,16 @@ func (u *updater) registeredBy() {
 }
 
 // e with its spec lists written from what the builds register: registeredBy, and of its specs those whose builds
-// list the aura only as an internal cooldown trigger (icdOnlyBy) and those whose builds never register the spell
-// castable (uncastableBy).
+// list the aura only as an internal cooldown trigger (icdOnlyBy); and for a spell no build registers castable,
+// uncastable.
 func (u *updater) withSpecs(class proto.Class, ns siml.Namespace, e siml.SpellName) siml.SpellName {
 	id := Identity{e.SpellID, e.Tag}
 	reg := u.c.Registered[ns][id]
-	e.RegisteredBy, e.ICDOnlyBy, e.UncastableBy = u.specs(class, ns, id), nil, nil
+	e.RegisteredBy, e.ICDOnlyBy = u.specs(class, ns, id), nil
+	e.Uncastable = ns == siml.NamespaceSpell && len(e.RegisteredBy) > 0 && !reg.Castable
 	for _, s := range e.RegisteredBy {
 		if slices.Contains(reg.ICDSpecs, s) {
 			e.ICDOnlyBy = append(e.ICDOnlyBy, s)
-		}
-		if ns == siml.NamespaceSpell && !slices.Contains(reg.CastableBy, s) {
-			e.UncastableBy = append(e.UncastableBy, s)
 		}
 	}
 	return e
@@ -496,14 +459,14 @@ func (u *updater) spellCandidate(id Identity, rank int32) candidate {
 	}
 }
 
-// Preference among new spell-like entries of class's scope for one name: castable in the scope first in the spell
-// namespace, then tag 0, the highest rank and the lowest spell id; the lowest tag last, so the order is total.
-func (u *updater) preferSpells(class proto.Class, ns siml.Namespace, ids []Identity) {
+// Preference among new spell-like entries for one name: castable first in the spell namespace, then tag 0, the
+// highest rank and the lowest spell id; the lowest tag last, so the order is total.
+func (u *updater) preferSpells(ns siml.Namespace, ids []Identity) {
 	reg := u.c.Registered[ns]
 	slices.SortFunc(ids, func(a, b Identity) int {
 		ra, rb := reg[a], reg[b]
-		if ca, cb := u.c.castable(class, ns, a), u.c.castable(class, ns, b); ns == siml.NamespaceSpell && ca != cb {
-			if ca {
+		if ns == siml.NamespaceSpell && ra.Castable != rb.Castable {
+			if ra.Castable {
 				return -1
 			}
 			return 1
@@ -570,7 +533,7 @@ func (u *updater) addSpells(class proto.Class, ns siml.Namespace, need []Identit
 			holders = append(holders, u.spellCandidate(id, e.Rank))
 		}
 	}
-	u.preferSpells(class, ns, need)
+	u.preferSpells(ns, need)
 	entries := u.scope(class)
 	if entries[ns] == nil {
 		entries[ns] = map[string]siml.SpellName{}

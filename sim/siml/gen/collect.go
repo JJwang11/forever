@@ -202,10 +202,6 @@ func (c *Collection) add(b *build) {
 			}
 			reg.Rank = max(reg.Rank, r.Rank)
 			reg.Castable = reg.Castable || r.Castable
-			if r.Castable && !slices.Contains(reg.CastableBy, spec) {
-				reg.CastableBy = append(reg.CastableBy, spec)
-				slices.Sort(reg.CastableBy)
-			}
 			if !slices.Contains(reg.Specs, spec) {
 				reg.Specs = append(reg.Specs, spec)
 				slices.Sort(reg.Specs)

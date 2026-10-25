@@ -43,10 +43,6 @@ func (f *fixture) spell(class proto.Class, spec string, ns siml.Namespace, game 
 	}
 	r := f.c.Registered[ns][key]
 	r.Rank, r.Castable = max(r.Rank, rank), r.Castable || castable
-	if castable && !slices.Contains(r.CastableBy, spec) {
-		r.CastableBy = append(r.CastableBy, spec)
-		slices.Sort(r.CastableBy)
-	}
 	if !slices.Contains(r.Specs, spec) {
 		r.Specs = append(r.Specs, spec)
 		slices.Sort(r.Specs)
@@ -191,22 +187,22 @@ func TestSharedAndClassNamesNeverClash(t *testing.T) {
 func TestPinnedNamesKeepTheirMeaning(t *testing.T) {
 	f := newFixture().
 		spell(warrior, "dps_warrior", siml.NamespaceSpell, "Eye for an Eye", 9799, 0, 0, true).
-		spell(warrior, "dps_warrior", siml.NamespaceSpell, "Heroic Strike", 25286, 1, 9, true)
+		spell(warrior, "dps_warrior", siml.NamespaceSpell, "Heroic Strike", 25286, 0, 9, false)
 	old, _ := update(t, nil, f.c, nil)
 
-	// The sim stops registering 9799 and registers 25997, of the same game name, and a tag 0 Heroic Strike that the
-	// rules would now prefer.
+	// The sim stops registering 9799 and registers 25997, of the same game name, and a castable Heroic Strike that
+	// the rules would now prefer.
 	g := newFixture().
 		spell(warrior, "dps_warrior", siml.NamespaceSpell, "Eye for an Eye", 25997, 0, 0, true).
-		spell(warrior, "dps_warrior", siml.NamespaceSpell, "Heroic Strike", 25286, 1, 0, true).
-		spell(warrior, "dps_warrior", siml.NamespaceSpell, "Heroic Strike", 25286, 0, 9, true)
+		spell(warrior, "dps_warrior", siml.NamespaceSpell, "Heroic Strike", 25286, 0, 9, false).
+		spell(warrior, "dps_warrior", siml.NamespaceSpell, "Heroic Strike", 25286, 1, 0, true)
 	g.c.SpellNames[9799] = "Eye for an Eye"
 	names, report := update(t, old, g.c, nil)
 	want(t, "warrior spells", spellNames(names, warrior, siml.NamespaceSpell), []string{
 		"eye_for_an_eye=9799/0",
 		"eye_for_an_eye_25997=25997/0",
-		"heroic_strike=25286/1",
-		"heroic_strike_tag0=25286/0",
+		"heroic_strike=25286/0",
+		"heroic_strike_tag1=25286/1",
 	})
 	if got := names.Classes[warrior][siml.NamespaceSpell]["eye_for_an_eye"].RegisteredBy; len(got) != 0 {
 		t.Errorf("the unregistered eye_for_an_eye is registered by %v, want none", got)
@@ -227,8 +223,8 @@ func TestPinnedNamesKeepTheirMeaning(t *testing.T) {
 	repinned, report := update(t, names, g.c, &pin)
 	want(t, "repinned", spellNames(repinned, warrior, siml.NamespaceSpell), []string{
 		"eye_for_an_eye=25997/0",
-		"heroic_strike=25286/1",
-		"heroic_strike_tag0=25286/0",
+		"heroic_strike=25286/0",
+		"heroic_strike_tag1=25286/1",
 	})
 	var changed []string
 	for _, r := range report.Repinned {
@@ -240,62 +236,6 @@ func TestPinnedNamesKeepTheirMeaning(t *testing.T) {
 	})
 	if len(report.Repinned) != 2 {
 		t.Errorf("the repin hands back %v, want both names of eye_for_an_eye's game name", report.Repinned)
-	}
-}
-
-// A plain spell name whose spell the builds register only uncastable goes to the castable spell of its game name,
-// as a repin gives it, and the old meaning takes a qualified name. Auras, and a name whose spell no build registers,
-// keep theirs.
-func TestPlainSpellNamesFollowTheAPLFlag(t *testing.T) {
-	f := newFixture().
-		spell(hunter, "hunter", siml.NamespaceSpell, "Raptor Strike", 14266, 0, 8, true).
-		spell(hunter, "hunter", siml.NamespaceAura, "Raptor Strike", 14266, 1, 0, false).
-		spell(hunter, "hunter", siml.NamespaceSpell, "Immolation Trap", 14301, 0, 5, true).
-		spell(hunter, "hunter", siml.NamespaceSpell, "Immolation Trap", 14305, 0, 5, true).
-		spell(hunter, "hunter", siml.NamespaceSpell, "Aimed Shot", 20904, 0, 6, true)
-	old, _ := update(t, nil, f.c, nil)
-	want(t, "hunter spells before", spellNames(old, hunter, siml.NamespaceSpell), []string{
-		"aimed_shot=20904/0", "immolation_trap=14301/0", "immolation_trap_14305=14305/0", "raptor_strike=14266/0",
-	})
-
-	// The sim queues Raptor Strike through tag 1 and casts the trap's effect itself; Aimed Shot is registered no more.
-	g := newFixture().
-		spell(hunter, "hunter", siml.NamespaceSpell, "Raptor Strike", 14266, 0, 8, false).
-		spell(hunter, "hunter", siml.NamespaceSpell, "Raptor Strike", 14266, 1, 0, true).
-		spell(hunter, "hunter", siml.NamespaceAura, "Raptor Strike", 14266, 1, 0, false).
-		spell(hunter, "hunter", siml.NamespaceSpell, "Immolation Trap", 14301, 0, 5, false).
-		spell(hunter, "hunter", siml.NamespaceSpell, "Immolation Trap", 14305, 0, 5, true).
-		spell(hunter, "hunter", siml.NamespaceSpell, "Aimed Shot", 20903, 0, 5, true)
-	g.c.SpellNames[20904] = "Aimed Shot"
-	names, report := update(t, old, g.c, nil)
-	want(t, "hunter spells", spellNames(names, hunter, siml.NamespaceSpell), []string{
-		"aimed_shot=20904/0",
-		"aimed_shot_rank5=20903/0",
-		"immolation_trap=14305/0",
-		"immolation_trap_14301=14301/0",
-		"raptor_strike=14266/1",
-		"raptor_strike_tag0=14266/0",
-	})
-	want(t, "hunter auras", spellNames(names, hunter, siml.NamespaceAura), []string{"raptor_strike=14266/1"})
-	if got := names.Classes[hunter][siml.NamespaceSpell]["raptor_strike_tag0"].UncastableBy; !slices.Equal(got, []string{"hunter"}) {
-		t.Errorf("raptor_strike_tag0 is uncastable by %v, want [hunter]", got)
-	}
-	var changed []string
-	for _, r := range report.Repinned {
-		changed = append(changed, r.String())
-	}
-	want(t, "repinned", changed, []string{
-		"hunter.spell.immolation_trap: was spell 14301 rank 5, now spell 14305 rank 5",
-		"hunter.spell.immolation_trap_14305: was spell 14305 rank 5, now nothing",
-		"hunter.spell.raptor_strike: was spell 14266 rank 8, now spell 14266 tag 1",
-	})
-	// The run's record lines are what lets the check against the base branch pass the moves.
-	record := AppendRecord(nil, report.Repinned)
-	if got := RecordedNames(record, nil); len(got) != 3 || !got["hunter.spell.raptor_strike"] {
-		t.Errorf("the record names %v, want the three moved names", got)
-	}
-	if again, report := update(t, names, g.c, nil); !bytes.Equal(again.Encode(), names.Encode()) || len(report.Repinned) != 0 {
-		t.Errorf("a second run moved names again: %v", report.Repinned)
 	}
 }
 

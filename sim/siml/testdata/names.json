@@ -32,7 +32,7 @@
 				"pet1_spell": { "spellId": 990204, "registeredBy": ["hunter"] },
 				"rapid_fire": { "spellId": 3045, "registeredBy": ["hunter"] },
 				"raptor_strike": { "spellId": 14266, "tag": 1, "registeredBy": ["hunter"] },
-				"raptor_strike_tag0": { "spellId": 14266, "rank": 8, "registeredBy": ["hunter"], "uncastableBy": ["hunter"] },
+				"raptor_strike_tag0": { "spellId": 14266, "rank": 8, "registeredBy": ["hunter"], "uncastable": true },
 				"serpent_sting": { "spellId": 25295, "rank": 9, "registeredBy": ["hunter"] },
 				"spell_5_second_rule": { "spellId": 900004, "registeredBy": [] },
 				"steady_shot": { "spellId": 900001, "registeredBy": [] },

@@ -480,7 +480,7 @@ func (b *completer) refs(ns Namespace, cast bool) {
 		b.add(p, CompletionTypeParameter, ranked(0).with("", "parameter"))
 	}
 	for _, n := range b.d.names.Registered(b.d.class(), b.d.specName(), ns) {
-		if cast && !n.Entry.castable(b.d.specName()) {
+		if cast && n.Entry.Uncastable {
 			continue
 		}
 		game := ""

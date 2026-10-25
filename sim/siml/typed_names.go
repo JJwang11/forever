@@ -78,10 +78,10 @@ func (t *typer) unknownName(name string, ns Namespace, position string, cast boo
 	thing, _ := strings.CutPrefix(namespaceThings[ns], "a ")
 	thing, _ = strings.CutPrefix(thing, "an ")
 	candidates := t.names.Visible(t.class, ns)
-	if cast && t.spec != "" {
+	if cast {
 		candidates = slices.DeleteFunc(candidates, func(c string) bool {
 			e, _ := t.names.spellEntry(t.class, ns, c)
-			return !e.castable(t.spec)
+			return e.Uncastable
 		})
 	}
 	message := fmt.Sprintf("no %s is named %s%s", thing, name, didYouMean(name, candidates))
@@ -122,11 +122,11 @@ func (s kindScope) casts(f *field) bool {
 func (t *typer) notCastable(name string) string {
 	var near []string
 	for _, n := range t.names.Registered(t.class, t.spec, NamespaceSpell) {
-		if n.Entry.castable(t.spec) && (strings.HasPrefix(name, n.Name+"_") || strings.HasPrefix(n.Name, name+"_")) {
+		if !n.Entry.Uncastable && (strings.HasPrefix(name, n.Name+"_") || strings.HasPrefix(n.Name, name+"_")) {
 			near = append(near, n.Name)
 		}
 	}
-	message := fmt.Sprintf("%s is a spell no %s build lets a rotation cast", name, t.spec)
+	message := fmt.Sprintf("%s is a spell no build lets a rotation cast", name)
 	if len(near) > 0 {
 		message += "; did you mean " + strings.Join(near[:min(len(near), 3)], ", ") + "?"
 	}

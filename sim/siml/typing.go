@@ -1072,7 +1072,7 @@ func (t *typer) actionID(n node, ns Namespace, cast bool) *proto.ActionID {
 		if slices.Contains(e.ICDOnlyBy, t.spec) && !t.kind.readsICD() {
 			t.report("icd-trigger", fmt.Sprintf("%s is an internal cooldown trigger, which only icd_is_ready, internal_cooldown and trigger_icd find", n.name.text), n.name.span)
 		}
-		if cast && slices.Contains(e.UncastableBy, t.spec) {
+		if cast && e.Uncastable {
 			t.report("not-castable", t.notCastable(n.name.text), n.name.span)
 		}
 		t.refs = append(t.refs, r)
