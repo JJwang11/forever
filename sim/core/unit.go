@@ -1058,6 +1058,7 @@ func (unit *Unit) metadata(casters ...*Unit) *proto.UnitMetadata {
 			HasMissileSpeed:    spell.MissileSpeed > 0.0 || spell.MissileMinDuration > 0,
 			HasRanks:           spell.Rank > 0,
 			Category:           spell.category(),
+			MenuGroup:          spell.MenuGroup,
 		}
 	})
 
@@ -1068,6 +1069,7 @@ func (unit *Unit) metadata(casters ...*Unit) *proto.UnitMetadata {
 			HasIcd:             aura.Icd != nil,
 			HasExclusiveEffect: len(aura.ExclusiveEffects) > 0,
 			Category:           auraCategory(aura, casters),
+			MenuGroup:          aura.MenuGroup,
 		}
 	}
 	aplAuras := FilterSlice(unit.auras, func(aura *Aura) bool {
