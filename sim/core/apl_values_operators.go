@@ -189,7 +189,29 @@ func (value *APLValueCoerced) String() string {
 	return value.inner.String()
 }
 
-// Wraps a value so that it is converted into a Boolean.
+// Whether the wrapper reads a value of one type as the other: text reads only as text or yes/no, and a
+// yes/no value reads as neither a duration nor text. An unknown type, a placeholder's, reads as any type.
+func canCoerce(from proto.APLValueType, to proto.APLValueType) bool {
+	switch from {
+	case proto.APLValueType_ValueTypeString:
+		return to == proto.APLValueType_ValueTypeString || to == proto.APLValueType_ValueTypeBool
+	case proto.APLValueType_ValueTypeBool:
+		return to != proto.APLValueType_ValueTypeDuration && to != proto.APLValueType_ValueTypeString
+	}
+	return true
+}
+
+// What a value of each type is called in a warning.
+var aplValueTypeNames = map[proto.APLValueType]string{
+	proto.APLValueType_ValueTypeBool:     "a yes/no value",
+	proto.APLValueType_ValueTypeInt:      "a whole number",
+	proto.APLValueType_ValueTypeFloat:    "a number",
+	proto.APLValueType_ValueTypeDuration: "a duration",
+	proto.APLValueType_ValueTypeString:   "text",
+}
+
+// Wraps a value so that it is read as the new type. A value the wrapper cannot read so is left out with a
+// warning, since the wrapper's getters panic on it.
 func (rot *APLRotation) coerceTo(value APLValue, newType proto.APLValueType) APLValue {
 	if value == nil {
 		return nil
@@ -202,6 +224,9 @@ func (rot *APLRotation) coerceTo(value APLValue, newType proto.APLValueType) APL
 		*newVal = *constVal
 		newVal.valType = newType
 		return newVal
+	} else if !canCoerce(value.Type(), newType) {
+		rot.ValidationMessage(proto.LogLevel_Warning, "Cannot read %s as %s", aplValueTypeNames[value.Type()], aplValueTypeNames[newType])
+		return nil
 	} else {
 		return &APLValueCoerced{
 			valueType: newType,

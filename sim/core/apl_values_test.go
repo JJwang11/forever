@@ -46,6 +46,25 @@ func constValue(val string) *proto.APLValue {
 	return &proto.APLValue{Value: &proto.APLValue_Const{Const: &proto.APLValueConst{Val: val}}}
 }
 
+// A yes/no value no constant stands in for.
+func yesNoValue() *proto.APLValue {
+	return &proto.APLValue{Value: &proto.APLValue_Cmp{Cmp: &proto.APLValueCompare{
+		Op: proto.APLValueCompare_OpLt, Lhs: &proto.APLValue{Value: &proto.APLValue_CurrentTime{CurrentTime: &proto.APLValueCurrentTime{}}}, Rhs: constValue("1s"),
+	}}}
+}
+
+// The validations are one warning per wanted text, in order, each containing it.
+func wantWarnings(t *testing.T, label string, validations []*proto.APLValidation, want ...string) {
+	t.Helper()
+	ok := len(validations) == len(want)
+	for i := 0; ok && i < len(want); i++ {
+		ok = validations[i].LogLevel == proto.LogLevel_Warning && strings.Contains(validations[i].Validation, want[i])
+	}
+	if !ok {
+		t.Errorf("%s: validations = %v, want warnings %q", label, validations, want)
+	}
+}
+
 func wantNoValue(t *testing.T, values map[string]APLValue) {
 	t.Helper()
 	for name, value := range values {

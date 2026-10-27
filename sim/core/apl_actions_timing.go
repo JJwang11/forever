@@ -20,6 +20,7 @@ func (rot *APLRotation) newActionWait(config *proto.APLActionWait) APLActionImpl
 	unit := rot.unit
 	durationVal := rot.coerceTo(rot.newAPLValue(config.Duration), proto.APLValueType_ValueTypeDuration)
 	if durationVal == nil {
+		rot.ValidationMessage(proto.LogLevel_Warning, "Wait needs a duration, ignoring this action")
 		return nil
 	}
 
@@ -64,6 +65,7 @@ func (rot *APLRotation) newActionWaitUntil(config *proto.APLActionWaitUntil) APL
 	unit := rot.unit
 	conditionVal := rot.coerceTo(rot.newAPLValue(config.Condition), proto.APLValueType_ValueTypeBool)
 	if conditionVal == nil {
+		rot.ValidationMessage(proto.LogLevel_Warning, "Wait Until needs a condition, ignoring this action")
 		return nil
 	}
 
