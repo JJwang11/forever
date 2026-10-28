@@ -22,7 +22,7 @@ const SpellPushbackDuration = time.Millisecond * 500
 // reaction time after the move ends, as the player starts it again by hand.
 const RangedAutoRetryInterval = time.Millisecond * 500
 
-// A ranged auto winds up for this long before it fires. Haste doesn't shorten it, only the rest of the swing.
+// A ranged auto's windup before ranged haste is applied.
 const RangedSwingWindup = time.Millisecond * 500
 
 const MaxMeleeRange = 5.0 // in yards

@@ -1,6 +1,7 @@
 package hunter
 
 import (
+	"fmt"
 	"maps"
 	"math"
 	"slices"
@@ -492,6 +493,58 @@ func TestSurvivalistsDisciplineShortensTheTrapCooldown(t *testing.T) {
 	}
 }
 
+func TestAutoShotWindupScalesWithRangedHaste(t *testing.T) {
+	for _, haste := range []float64{1, 1.5, 2} {
+		t.Run(fmt.Sprintf("haste_%g", haste), func(t *testing.T) {
+			player := &proto.Player{
+				Name: "Shot", Race: proto.Race_RaceOrc, Class: proto.Class_ClassHunter,
+				Equipment:     core.GetGearSet("../../ui/specs/hunter/dps/gear_sets", "p1").GearSet,
+				TalentsString: DefaultMMTalents, Spec: DefaultOptions,
+				Rotation: &proto.APLRotation{}, DistanceFromTarget: 20,
+			}
+			sim := core.NewSim(&proto.RaidSimRequest{
+				Raid:      core.SinglePlayerRaidProto(player, &proto.PartyBuffs{}, &proto.RaidBuffs{}, &proto.Debuffs{}),
+				Encounter: core.MakeSingleTargetEncounter(0), SimOptions: &proto.SimOptions{RandomSeed: 1},
+			}, simsignals.CreateSignals())
+			sim.Reset()
+			hunter := sim.Raid.Parties[0].Players[0].(*Hunter)
+			hunter.MultiplyRangedSpeed(sim, haste/hunter.TotalRangedHasteMultiplier())
+			multiShot := hunter.GetSpell(core.ActionID{SpellID: multiShotRank.ID})
+			want := multiShot.CastTime()
+			auto := core.ActionID{OtherID: proto.OtherAction_OtherActionShoot}.String()
+			var began, completed []time.Duration
+			sim.Log = func(format string, args ...interface{}) {
+				line := fmt.Sprintf(format, args...)
+				if strings.Contains(line, "Casting "+auto+" ") {
+					began = append(began, sim.CurrentTime)
+					if !strings.Contains(line, "Cast Time = "+want.String()+",") {
+						t.Errorf("Auto Shot logged an unexpected windup: %s", line)
+					}
+				}
+				if strings.Contains(line, "Completed cast "+auto) {
+					completed = append(completed, sim.CurrentTime)
+				}
+			}
+			sim.PrePull()
+			for i := 0; len(completed) < 2 && i < 10000; i++ {
+				sim.Step()
+			}
+			if len(began) < 2 || len(completed) < 2 {
+				t.Fatalf("observed %d windups and %d releases, want two of each", len(began), len(completed))
+			}
+			for i := range 2 {
+				if got := completed[i] - began[i]; got != want {
+					t.Errorf("Auto Shot windup = %v, Multi-Shot cast time = %v", got, want)
+				}
+			}
+			if got, want := completed[1]-completed[0], hunter.AutoAttacks.RangedSwingSpeed(); got != want {
+				t.Errorf("Auto Shot release interval = %v, ranged swing duration = %v", got, want)
+			}
+			t.Logf("ranged haste=%g, Auto Shot windup=%v, Multi-Shot cast time=%v", haste, completed[0]-began[0], want)
+		})
+	}
+}
+
 // An Auto Shot that comes due while the hunter moves winds up a reaction time after the move ends,
 // as the player starts it again by hand, not at the hidden retry timer's next check.
 func TestAutoShotWindsUpWhenTheMoveEnds(t *testing.T) {
@@ -525,7 +578,7 @@ func TestAutoShotWindsUpWhenTheMoveEnds(t *testing.T) {
 	for i := 0; sim.CurrentTime <= recast && i < 10000; i++ {
 		sim.Step()
 	}
-	if got, want := hunter.AutoAttacks.NextRangedAttackAt(), recast+core.RangedSwingWindup; got != want {
+	if got, want := hunter.AutoAttacks.NextRangedAttackAt(), recast+hunter.ApplyRangedSpeed(core.RangedSwingWindup); got != want {
 		t.Errorf("a shot due at %v during a move that ended at %v fires at %v, want %v", due, moveEnd, got, want)
 	}
 }
@@ -573,7 +626,7 @@ func TestAutoShotWaitsAReactionWhenTheWalkEndsOnTheMinimumRange(t *testing.T) {
 	for i := 0; sim.CurrentTime <= recast && i < 10000; i++ {
 		sim.Step()
 	}
-	if got, want := hunter.AutoAttacks.NextRangedAttackAt(), recast+core.RangedSwingWindup; (got - want).Abs() > time.Millisecond {
+	if got, want := hunter.AutoAttacks.NextRangedAttackAt(), recast+hunter.ApplyRangedSpeed(core.RangedSwingWindup); (got - want).Abs() > time.Millisecond {
 		t.Errorf("a walk out ending on the minimum range at %v fires its shot at %v, want %v", walkEnd, got, want)
 	}
 }
@@ -607,7 +660,7 @@ func TestMeleeSwingRestartsAutoShot(t *testing.T) {
 	for i := 0; hunter.AutoAttacks.MainhandPreviousSwing() < swing && i < 10000; i++ {
 		sim.Step()
 	}
-	want := swing + hunter.AutoAttacks.RangedSwingSpeed() - core.RangedSwingWindup
+	want := swing + hunter.AutoAttacks.RangedSwingSpeed() - hunter.ApplyRangedSpeed(core.RangedSwingWindup)
 	if got := hunter.AutoAttacks.NextRangedAttackAt(); got != want {
 		t.Errorf("after a melee swing at %v the next Auto Shot winds up at %v, want %v", swing, got, want)
 	}
