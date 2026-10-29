@@ -229,7 +229,7 @@ Written from `proto/apl.proto`, but for the accessors below.
 - `action_group_used(string)`
 - `active_item_swap_set(main|swap1)`
 - `multiple_cd_usages(name, target_spell_id: name, offset: value, align_cd_end: bool)`
-- `selected_potion(name)`
+- `selected_potion(name, slot: other_action_none|other_action_wait|mana_regen|energy_regen|focus_regen|mana_gain|rage_gain|attack|…)`
 - `selected_conjured(name)`
 
 ## Accessors
