@@ -15,8 +15,9 @@ const neverChanges = () => never;
 const ignore = () => {};
 
 /**
- * One APL line as the editor draws it, at full contrast, that nothing can change: `inert` keeps every picker shut,
- * and the pickers read a clone of the line and write nowhere, so the rotation it came from stays as it ran.
+ * One APL line as the editor draws it, at full contrast, that nothing can change. The pickers write to a clone of
+ * the line, and some of their paths still call `touchRotation` or write `valueVariables`; `inert`, with the
+ * tooltip's `pointer-events-none`, keeps every picker shut so the rotation it came from stays as it ran.
  * The height is capped, and a line cut off by the cap fades out at the bottom.
  */
 const AplLineViewImpl = ({ line }: { line: ResolvedAplLine }) => {

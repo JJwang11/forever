@@ -7,8 +7,7 @@ import i18n from '@i18n/config';
 import { usePlayer } from '@sim/context/SimHostContext';
 import { aplLineKey, type AplLinePath } from '@sim/proto/combat_log';
 import { TooltipButton } from '@ui-kit/TooltipButton';
-import { Tree, type TreeDensity, type TreeLayout, type TreeSortable } from '@ui-kit/Tree';
-import { useTreeItem } from '@ui-kit/Tree/hooks/useTreeItem';
+import { Tree, type TreeDensity, type TreeLayout, type TreeSortable, useTreeItem } from '@ui-kit/Tree';
 import { type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 export interface AplListRootProps {

@@ -15,7 +15,8 @@ import type { ReactNode } from 'react';
 
 const UNMARKED: ReadonlyArray<number> = [];
 
-// The step on the way to the one that fired hands the rest of the indexes down; every other step hands down an empty list, since `AplProvider` passes its parent's on for `undefined`.
+// The step on the way to the one that fired hands the rest of the indexes down; every other step hands down an
+// empty list, since `AplProvider` passes its parent's on for `undefined`.
 const markStep = (picker: ReactNode, markedSteps: ReadonlyArray<number>, index: number) => {
 	const onPath = markedSteps[0] === index;
 	return (

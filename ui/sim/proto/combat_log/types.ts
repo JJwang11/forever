@@ -174,7 +174,7 @@ export interface CastBeganLog extends BaseLog {
 	readonly castTime: number;
 	readonly gcd: number;
 	readonly effectiveTime: number;
-	// The rotation line that launched the cast; null for a cast outside the rotation.
+	// The rotation line that launched the cast; null when the Casting line names none.
 	readonly aplLine: AplLinePath | null;
 }
 

@@ -52,7 +52,7 @@
 	}
 
 	.ui-timeline-tooltip-apl {
-		@apply flex w-160 flex-col gap-1;
+		@apply flex w-[min(40rem,88vw)] flex-col gap-1;
 	}
 
 	.ui-timeline-tooltip-header {

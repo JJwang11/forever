@@ -2,7 +2,7 @@ import type { AplRun } from '@features/apl/model/apl_line';
 import { getAplReveal } from '@features/apl/model/reveal';
 import { TabActivationContext } from '@features/hooks/useActivateTab';
 import type { RowItem } from '@features/results/model/timeline/rotation';
-import { APLRotation } from '@generated/proto/apl';
+import { APLListItem, APLRotation } from '@generated/proto/apl';
 import { SimHostProvider } from '@sim/context/SimHostContext';
 import type { AplLinePath } from '@sim/proto/combat_log';
 import { fakeHost } from '@testing/sim/fake_host';
@@ -175,8 +175,10 @@ describe('RotationTrack', () => {
 			const item = castItem(start, end) as Extract<RowItem, { kind: 'cast' }>;
 			return { ...item, log: { ...item.log, aplLine } } as RowItem;
 		};
-		const LINED = rotationModel([castRow('cast:a', 'Alpha', [lined(0, 1, LINE), lined(2, 3, null)])]);
-		const run = (changed: boolean): AplRun => ({ rotation: APLRotation.create(), changed });
+		const UNPLACED: AplLinePath = [{ kind: 'priority', index: 7 }];
+		const LINED = rotationModel([castRow('cast:a', 'Alpha', [lined(0, 1, LINE), lined(2, 3, null), lined(4, 5, UNPLACED)])]);
+		const ROTATION = APLRotation.create({ priorityList: [APLListItem.create(), APLListItem.create(), APLListItem.create()] });
+		const run = (changed: boolean): AplRun => ({ rotation: ROTATION, changed });
 		const casts = (container: HTMLElement) => container.querySelectorAll('[data-row-key="cast:a"] [data-testid="rotation-item-cast"]');
 
 		beforeEach(() => activateTab.mockClear());
@@ -205,6 +207,16 @@ describe('RotationTrack', () => {
 
 			const changed = await mount(LINED, run(true));
 			fireEvent.click(casts(changed.container)[0]);
+
+			expect(activateTab).not.toHaveBeenCalled();
+			expect(getAplReveal()).toBe(before);
+		});
+
+		it('does nothing for a cast whose line the run rotation cannot place, as its tooltip shows none', async () => {
+			const { container } = await mount(LINED, run(false));
+			const before = getAplReveal();
+
+			fireEvent.click(casts(container)[2]);
 
 			expect(activateTab).not.toHaveBeenCalled();
 			expect(getAplReveal()).toBe(before);

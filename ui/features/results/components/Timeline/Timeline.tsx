@@ -45,11 +45,13 @@ export const Timeline = ({ active }: TimelineProps) => {
 	// The editor changes the rotation in place, so its counter in the store is the only sign of an edit.
 	const simPlayer = usePlayer();
 	const rotationVersion = useStore(simPlayer.sim.store, s => s.players[simPlayer.storeKey]?.v.rotation);
-	const aplRun = useMemo((): AplRun | null => {
-		const rotation = shown && player ? runRotation(shown.result, player) : null;
-		return rotation && { rotation, changed: !APLRotation.equals(rotation, simPlayer.getResolvedAplRotation(true)) };
+	const rotation = useMemo(() => (shown && player ? runRotation(shown.result, player) : null), [shown, player]);
+	const changed = useMemo(
+		() => rotation !== null && !APLRotation.equals(rotation, simPlayer.getResolvedAplRotation(true)),
 		// eslint-disable-next-line react-hooks/exhaustive-deps -- `rotationVersion` is the invalidation key, not an input to the computation.
-	}, [shown, player, simPlayer, rotationVersion]);
+		[rotation, simPlayer, rotationVersion],
+	);
+	const aplRun = useMemo((): AplRun | null => rotation && { rotation, changed }, [rotation, changed]);
 
 	// The unit walk is inside the guard, not beside it: a result the model cannot be built from
 	// leaves the rotation empty rather than taking the whole Results tab down with it.

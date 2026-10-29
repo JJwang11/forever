@@ -1,4 +1,4 @@
-import type { AplRun } from '@features/apl/model/apl_line';
+import { type AplRun, resolveAplLine } from '@features/apl/model/apl_line';
 import { requestAplReveal } from '@features/apl/model/reveal';
 import { ROTATION_TAB_ID, useActivateTab } from '@features/hooks/useActivateTab';
 import { observeElementRect, useVirtualizer } from '@tanstack/react-virtual';
@@ -9,7 +9,7 @@ import type { RectObserver } from '@ui-kit/VirtualList';
 import { WINDOW_SCROLLER } from '@ui-kit/VirtualList';
 import clsx from 'clsx';
 import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react';
-import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import { useHoverTooltip } from '../../../hooks/useHoverTooltip';
@@ -65,7 +65,7 @@ const padScrollport =
 const PADDED_ELEMENT_RECT = padScrollport(observeElementRect);
 const PADDED_WINDOW_RECT = padScrollport(WINDOW_SCROLLER.observeElementRect!);
 
-export const RotationTrack = ({ model, active, aplRun }: RotationTrackProps) => {
+export const RotationTrack = memo(({ model, active, aplRun }: RotationTrackProps) => {
 	const rootRef = useRef<HTMLDivElement>(null);
 	const cornerRef = useRef<HTMLDivElement>(null);
 	const rulerViewportRef = useRef<HTMLDivElement>(null);
@@ -383,8 +383,8 @@ export const RotationTrack = ({ model, active, aplRun }: RotationTrackProps) => 
 		else moveTip(event.clientX, bottom);
 	};
 
-	// Opens the line that launched the cast, as long as the rotation is still the one that ran. A pan's
-	// click never arrives: `onClickCapture` stops it first.
+	// Opens the line that launched the cast, as long as the rotation is still the one that ran and the tooltip
+	// can place the line in it. A pan's click never arrives: `onClickCapture` stops it first.
 	const activateTab = useActivateTab();
 	const onItemClick = (event: ReactMouseEvent<HTMLDivElement>) => {
 		if (!aplRun || aplRun.changed) return;
@@ -392,7 +392,7 @@ export const RotationTrack = ({ model, active, aplRun }: RotationTrackProps) => 
 		const rowKey = element?.closest<HTMLElement>('[data-row-key]')?.dataset.rowKey;
 		const row = element && rowKey && model?.byKey.has(rowKey) ? rowFor(rowKey) : null;
 		const item = row && row.kind !== 'header' && row.kind !== 'separator' ? row.items[Number(element!.dataset.itemIndex)] : null;
-		if (item?.kind !== 'cast' || !item.log.aplLine) return;
+		if (item?.kind !== 'cast' || !item.log.aplLine || !resolveAplLine(aplRun.rotation, item.log.aplLine)) return;
 		activateTab(ROTATION_TAB_ID);
 		requestAplReveal(item.log.aplLine);
 	};
@@ -492,4 +492,4 @@ export const RotationTrack = ({ model, active, aplRun }: RotationTrackProps) => 
 			<Tooltip id={hideTooltipId} />
 		</div>
 	);
-};
+});
