@@ -8,9 +8,10 @@ import (
 )
 
 // Gives every action of an APL rotation the path of its config line, counted from 1 with hidden lines
-// included. Auto and Simple rotations and the custom rotation of pets and targets get no lines.
+// included. Auto and Simple runs and the custom rotation of pets and targets get no lines; a rotation
+// with no type runs as an APL and gets them.
 func (rot *APLRotation) assignLines(config *proto.APLRotation) {
-	if config.Type != proto.APLRotation_TypeAPL {
+	if config.Type == proto.APLRotation_TypeAuto || config.Type == proto.APLRotation_TypeSimple {
 		return
 	}
 	if len(rot.priorityList) == 1 {

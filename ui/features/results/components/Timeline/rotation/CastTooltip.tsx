@@ -62,7 +62,7 @@ export const CastTooltip = ({ log, stack = [log], aplRun }: CastTooltipProps) =>
 				{travelTime.length > 0 && travelTime}
 			</span>
 			{line && (
-				<div className="flex flex-col gap-1">
+				<div className="ui-timeline-tooltip-apl">
 					<span>{line.crumbs.map(crumbText).join(' › ')}</span>
 					<AplLineView line={line} />
 					<span className="text-muted">

@@ -104,3 +104,20 @@ export const AplSequenceStep: Story = {
 
 /** A pre-pull line, with the time it happens at. */
 export const AplPrepull: Story = { args: ranLine([{ kind: 'prepull', index: 0 }]) };
+
+/** Sixty hits under a sequence line: the tooltip stops at 80% of the window's height and cuts off the last hits. */
+export const AplLineManyHits: Story = {
+	args: {
+		...ranLine([
+			{ kind: 'priority', index: 1 },
+			{ kind: 'step', index: 1 },
+		]),
+		log: castLog(12, {
+			aplLine: [
+				{ kind: 'priority', index: 1 },
+				{ kind: 'step', index: 1 },
+			],
+			damageDealtLogs: Array.from({ length: 60 }, (_, i) => chainHit(i % 3, 300 + i)),
+		}),
+	},
+};

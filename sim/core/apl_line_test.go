@@ -92,11 +92,17 @@ func TestAPLLinesFollowConfigPositions(t *testing.T) {
 
 	want(fw.newCustomRotation().priorityList[0], "")
 
-	auto := fw.newAPLRotation(config(proto.APLRotation_TypeAuto))
-	actions := append(auto.allAPLActions(), auto.allPrepullActions()...)
-	actions = append(actions, auto.priorityList[4].impl.(*APLActionStrictMultidot).actions...)
-	for _, action := range actions {
-		want(action, "")
+	untyped := fw.newAPLRotation(config(proto.APLRotation_TypeUnknown))
+	want(untyped.priorityList[0], "priority 2")
+	want(untyped.prepullActions[0], "prepull 2")
+
+	for _, rotationType := range []proto.APLRotation_Type{proto.APLRotation_TypeAuto, proto.APLRotation_TypeSimple} {
+		generated := fw.newAPLRotation(config(rotationType))
+		actions := append(generated.allAPLActions(), generated.allPrepullActions()...)
+		actions = append(actions, generated.priorityList[4].impl.(*APLActionStrictMultidot).actions...)
+		for _, action := range actions {
+			want(action, "")
+		}
 	}
 }
 
