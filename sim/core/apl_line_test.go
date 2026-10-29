@@ -299,6 +299,42 @@ func TestAutocastCooldownLogsTheAutocastLine(t *testing.T) {
 	wantLines(t, "the cooldown", lt.casting(cooldown), ") APL: priority 2")
 }
 
+// A press that queues an attack for the next swing credits it, and the swing's cast of the attack names the
+// press's line. A later swing that casts it again, with no new press, names none.
+func TestNextSwingAttackCarriesTheQueuingLine(t *testing.T) {
+	var press, attack *Spell
+	armed := false
+	lt := newLineTest(func(char *Character) {
+		attack = char.RegisterSpell(SpellConfig{ActionID: ActionID{SpellID: 910131}, ApplyEffects: func(*Simulation, *Unit, *Spell) {}})
+		press = char.RegisterSpell(SpellConfig{
+			ActionID: ActionID{SpellID: 910130},
+			Flags:    SpellFlagAPL,
+			ExtraCastCondition: func(*Simulation, *Unit) bool {
+				return !armed
+			},
+			ApplyEffects: func(_ *Simulation, target *Unit, _ *Spell) {
+				attack.CountManualCast(target)
+				armed = true
+			},
+		})
+	}, &proto.APLRotation{PriorityList: aplItems(aplCast(910130))})
+	lt.fw.AutoAttacks.SetReplaceMHSwing(func(_ *Simulation, swing *Spell) *Spell {
+		if armed {
+			return attack
+		}
+		return swing
+	})
+	lt.fw.AutoAttacks.EnableAutoSwing(lt.sim)
+
+	lt.runUntil(6 * time.Second)
+	wantLines(t, "the press", lt.casting(press), ") APL: priority 1")
+	got := lt.casting(attack)
+	wantLines(t, "the queued attack", got, ") APL: priority 1")
+	if len(got) < 2 || strings.Contains(got[1], " APL: ") {
+		t.Fatalf("the attack's Casting lines are %q, want a second that names no line", got)
+	}
+}
+
 // With logging off the rotation keeps no running line, so a cast reads none while its line runs.
 func TestUnloggedRunTracksNothing(t *testing.T) {
 	run := func(logged bool) []string {
