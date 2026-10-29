@@ -1,6 +1,7 @@
 package hunter
 
 import (
+	"cmp"
 	"fmt"
 	"maps"
 	"math"
@@ -505,6 +506,7 @@ func TestAutoShotRangedHasteTiming(t *testing.T) {
 		held       bool
 		early      bool
 		overlap    bool
+		swap       bool
 	}{
 		{name: "haste_1", haste: 1},
 		{name: "haste_1.5", haste: 1.5},
@@ -521,6 +523,8 @@ func TestAutoShotRangedHasteTiming(t *testing.T) {
 		{name: "early_hold_loss", changes: []float64{0.5}, held: true, early: true},
 		{name: "held_loss", changes: []float64{0.5}, held: true},
 		{name: "overlapping_holds", changes: []float64{0.5}, held: true, early: true, overlap: true},
+		{name: "weapon_swap", haste: 1, swap: true},
+		{name: "weapon_swap_hasted", haste: 2, swap: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			player := &proto.Player{
@@ -529,16 +533,19 @@ func TestAutoShotRangedHasteTiming(t *testing.T) {
 				TalentsString: DefaultMMTalents, Spec: DefaultOptions,
 				Rotation: &proto.APLRotation{}, DistanceFromTarget: 20,
 			}
+			if tc.swap {
+				items := make([]*proto.ItemSpec, int(proto.ItemSlot_ItemSlotRanged)+1)
+				items[proto.ItemSlot_ItemSlotRanged] = &proto.ItemSpec{Id: 2904}
+				player.EnableItemSwap = true
+				player.ItemSwap = &proto.ItemSwap{Items: items}
+			}
 			sim := core.NewSim(&proto.RaidSimRequest{
 				Raid:      core.SinglePlayerRaidProto(player, &proto.PartyBuffs{}, &proto.RaidBuffs{}, &proto.Debuffs{}),
 				Encounter: core.MakeSingleTargetEncounter(0), SimOptions: &proto.SimOptions{RandomSeed: 1},
 			}, simsignals.CreateSignals())
 			sim.Reset()
 			hunter := sim.Raid.Parties[0].Players[0].(*Hunter)
-			initialHaste := tc.haste
-			if initialHaste == 0 {
-				initialHaste = 1
-			}
+			initialHaste := cmp.Or(tc.haste, 1)
 			if tc.prepull {
 				sim.CurrentTime = -time.Second
 			}
@@ -573,6 +580,18 @@ func TestAutoShotRangedHasteTiming(t *testing.T) {
 					return
 				}
 				scheduledRelease = sim.CurrentTime + hunter.AutoAttacks.RangedSwingSpeed()
+				if tc.swap {
+					sim.AddPendingAction(&core.PendingAction{
+						NextActionAt: sim.CurrentTime + 100*time.Millisecond,
+						OnAction: func(sim *core.Simulation) {
+							hunter.ItemSwap.SwapItems(sim, proto.APLActionItemSwap_Swap1, false)
+							if hunter.Equipment[proto.ItemSlot_ItemSlotRanged].ID != 2904 {
+								t.Fatal("the ranged weapon swap did not apply")
+							}
+							scheduledRelease = sim.CurrentTime + hunter.AutoAttacks.RangedSwingSpeed()
+						},
+					})
+				}
 				if tc.held {
 					holdEnd = scheduledRelease + 100*time.Millisecond
 					resume := hunter.AutoAttacks.DelayRangedUntil(sim, holdEnd)
@@ -639,7 +658,8 @@ func TestAutoShotRangedHasteTiming(t *testing.T) {
 				wantStart = max(wantStart, hasteChangeAt)
 				wantRelease = wantStart + windup
 			}
-			if tc.held && (!tc.early || tc.overlap) {
+			heldPastRelease := tc.held && (!tc.early || tc.overlap)
+			if heldPastRelease {
 				wantStart = max(wantStart, holdEnd)
 				wantRelease = wantStart + windup
 			}
@@ -649,7 +669,7 @@ func TestAutoShotRangedHasteTiming(t *testing.T) {
 			if completed[1] != wantRelease {
 				t.Errorf("shot released at %v, want %v", completed[1], wantRelease)
 			}
-			if tc.held && (!tc.early || tc.overlap) {
+			if heldPastRelease {
 				if len(delays) != 1 {
 					t.Errorf("held shot logged %d delays, want one: %v", len(delays), delays)
 				}
@@ -664,8 +684,7 @@ func TestAutoShotRangedHasteTiming(t *testing.T) {
 	}
 }
 
-// An Auto Shot that comes due while the hunter moves winds up a reaction time after the move ends,
-// as the player starts it again by hand, not at the hidden retry timer's next check.
+// An Auto Shot that comes due while the hunter moves winds up a reaction time after the move ends.
 func TestAutoShotWindsUpWhenTheMoveEnds(t *testing.T) {
 	player := &proto.Player{
 		Name:               "Shot",

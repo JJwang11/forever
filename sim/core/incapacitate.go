@@ -71,7 +71,7 @@ func (kind *incapacitateKind) registerAura(unit *Unit, label string, actionID Ac
 			aura.Unit.refreshIncapacitateState()
 
 			// The swing timer keeps running while incapacitated
-			mhAt, ohAt, _ = aura.Unit.AutoAttacks.SwingAt()
+			mhAt, ohAt = aura.Unit.AutoAttacks.SwingAt()
 			pausedUntil = sim.CurrentTime + aura.Duration
 			aura.Unit.AutoAttacks.PauseMeleeBy(sim, aura.Duration)
 			resumeRanged = aura.Unit.AutoAttacks.DelayRangedUntil(sim, pausedUntil)

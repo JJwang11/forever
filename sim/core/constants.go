@@ -18,10 +18,6 @@ const SpellBatchWindow = time.Millisecond * 10
 const PetUpdateInterval = time.Millisecond * 5250
 const SpellPushbackDuration = time.Millisecond * 500
 
-// How often a held ranged auto checks again whether it can fire. One held by movement also fires a
-// reaction time after the move ends, as the player starts it again by hand.
-const RangedAutoRetryInterval = time.Millisecond * 500
-
 // A ranged auto's windup before ranged haste is applied.
 const RangedSwingWindup = time.Millisecond * 500
 
