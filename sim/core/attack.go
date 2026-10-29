@@ -371,21 +371,6 @@ func (wa *WeaponAttack) swing(sim *Simulation) time.Duration {
 		return wa.swingAt
 	}
 
-	// A ready ranged auto first winds up, which runs through casts. Moving
-	// cancels it (see initMovement).
-	if isRanged && wa.windupEnd == 0 {
-		wa.unit.AutoAttacks.meleeAttackOn = false // starting a ranged auto turns the melee attack off
-		wa.windupDuration = wa.unit.ApplyRangedSpeed(RangedSwingWindup)
-		wa.windupEnd = sim.CurrentTime + wa.windupDuration
-		wa.naturalReadyAt += wa.windupDuration
-		wa.swingAt = wa.windupEnd
-		if sim.Log != nil {
-			wa.unit.Log(sim, "Casting %s (Cost = 0.000, Cast Time = %s, GCD = 0s, Effective Time = %s)", attackSpell.ActionID, wa.windupDuration, wa.windupDuration)
-		}
-		return wa.swingAt
-	}
-	wa.windupEnd = 0
-
 	// A melee swing waits out a cast that resets it, one due at the cast's last instant included. The
 	// completed cast sets the real swing time; this one only has to land past the cast's end,
 	// wherever pushback moves it.
@@ -406,13 +391,33 @@ func (wa *WeaponAttack) swing(sim *Simulation) time.Duration {
 		}
 	}
 
+	var windupDuration time.Duration
+	if wa.unit.AutoAttacks.AutoSwingRanged {
+		windupDuration = wa.unit.ApplyRangedSpeed(RangedSwingWindup)
+	}
+
+	// A ready ranged auto first winds up, which runs through casts. Moving
+	// cancels it (see initMovement).
+	if isRanged && wa.windupEnd == 0 {
+		wa.unit.AutoAttacks.meleeAttackOn = false // starting a ranged auto turns the melee attack off
+		wa.windupDuration = windupDuration
+		wa.windupEnd = sim.CurrentTime + wa.windupDuration
+		wa.naturalReadyAt += wa.windupDuration
+		wa.swingAt = wa.windupEnd
+		if sim.Log != nil {
+			wa.unit.Log(sim, "Casting %s (Cost = 0.000, Cast Time = %s, GCD = 0s, Effective Time = %s)", attackSpell.ActionID, wa.windupDuration, wa.windupDuration)
+		}
+		return wa.swingAt
+	}
+	wa.windupEnd = 0
+
 	// Update swing timer BEFORE the cast, so that APL checks for TimeToNextAuto behave correctly
 	// if the attack causes APL evaluations (e.g. from rage gain).
 	wa.previousSwing = wa.swingAt
 	wa.swingAt = sim.CurrentTime + wa.curSwingDuration
 	if isRanged {
 		// The windup is part of the swing, so the next one starts early.
-		wa.swingAt -= wa.unit.ApplyRangedSpeed(RangedSwingWindup)
+		wa.swingAt -= windupDuration
 	}
 
 	// Capture how late this swing is vs. when it would have been ready in an
@@ -428,7 +433,7 @@ func (wa *WeaponAttack) swing(sim *Simulation) time.Duration {
 	if !isRanged && wa.unit.AutoAttacks.AutoSwingRanged {
 		ranged := &wa.unit.AutoAttacks.ranged
 		ranged.updateSwingDuration(wa.unit.TotalRangedHasteMultiplier())
-		ranged.swingAt = sim.CurrentTime + ranged.curSwingDuration - wa.unit.ApplyRangedSpeed(RangedSwingWindup)
+		ranged.swingAt = sim.CurrentTime + ranged.curSwingDuration - windupDuration
 		ranged.naturalReadyAt = ranged.swingAt
 		sim.rescheduleWeaponAttack(ranged.swingAt)
 	}
