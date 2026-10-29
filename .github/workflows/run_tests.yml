@@ -95,7 +95,8 @@ jobs:
 
             # `check` builds the SIML extension afresh and fails when the committed build in .vscode/extensions
             # differs. The tests build the SIML server (`go build --tags=with_db ./cmd/wowsimcli`) as the extension
-            # does, and run the panel and the sims against it.
+            # does, and run the panel and the sims against it. They run one file at a time: a panel build runs npm ci in
+            # tools/vscode-apl, which takes node_modules from under any other file running beside it.
             - name: Test the SIML extension
               run: |
                   cd tools/vscode-apl
