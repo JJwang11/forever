@@ -493,70 +493,34 @@ func TestSurvivalistsDisciplineShortensTheTrapCooldown(t *testing.T) {
 	}
 }
 
-func TestAutoShotWindupScalesWithRangedHaste(t *testing.T) {
-	for _, haste := range []float64{1, 1.5, 2} {
-		t.Run(fmt.Sprintf("haste_%g", haste), func(t *testing.T) {
-			player := &proto.Player{
-				Name: "Shot", Race: proto.Race_RaceOrc, Class: proto.Class_ClassHunter,
-				Equipment:     core.GetGearSet("../../ui/specs/hunter/dps/gear_sets", "p1").GearSet,
-				TalentsString: DefaultMMTalents, Spec: DefaultOptions,
-				Rotation: &proto.APLRotation{}, DistanceFromTarget: 20,
-			}
-			sim := core.NewSim(&proto.RaidSimRequest{
-				Raid:      core.SinglePlayerRaidProto(player, &proto.PartyBuffs{}, &proto.RaidBuffs{}, &proto.Debuffs{}),
-				Encounter: core.MakeSingleTargetEncounter(0), SimOptions: &proto.SimOptions{RandomSeed: 1},
-			}, simsignals.CreateSignals())
-			sim.Reset()
-			hunter := sim.Raid.Parties[0].Players[0].(*Hunter)
-			hunter.MultiplyRangedSpeed(sim, haste/hunter.TotalRangedHasteMultiplier())
-			multiShot := hunter.GetSpell(core.ActionID{SpellID: multiShotRank.ID})
-			want := multiShot.CastTime()
-			auto := core.ActionID{OtherID: proto.OtherAction_OtherActionShoot}.String()
-			var began, completed []time.Duration
-			sim.Log = func(format string, args ...interface{}) {
-				line := fmt.Sprintf(format, args...)
-				if strings.Contains(line, "Casting "+auto+" ") {
-					began = append(began, sim.CurrentTime)
-					if !strings.Contains(line, "Cast Time = "+want.String()+",") {
-						t.Errorf("Auto Shot logged an unexpected windup: %s", line)
-					}
-				}
-				if strings.Contains(line, "Completed cast "+auto) {
-					completed = append(completed, sim.CurrentTime)
-				}
-			}
-			sim.PrePull()
-			for i := 0; len(completed) < 2 && i < 10000; i++ {
-				sim.Step()
-			}
-			if len(began) < 2 || len(completed) < 2 {
-				t.Fatalf("observed %d windups and %d releases, want two of each", len(began), len(completed))
-			}
-			for i := range 2 {
-				if got := completed[i] - began[i]; got != want {
-					t.Errorf("Auto Shot windup = %v, Multi-Shot cast time = %v", got, want)
-				}
-			}
-			if got, want := completed[1]-completed[0], hunter.AutoAttacks.RangedSwingSpeed(); got != want {
-				t.Errorf("Auto Shot release interval = %v, ranged swing duration = %v", got, want)
-			}
-			t.Logf("ranged haste=%g, Auto Shot windup=%v, Multi-Shot cast time=%v", haste, completed[0]-began[0], want)
-		})
-	}
-}
-
-func TestAutoShotHasteChangesKeepScheduledRelease(t *testing.T) {
+func TestAutoShotRangedHasteTiming(t *testing.T) {
 	for _, tc := range []struct {
 		name       string
+		haste      float64
+		prepull    bool
 		changes    []float64
 		disabled   bool
 		duringCast bool
+		lateLoss   bool
+		held       bool
+		early      bool
+		overlap    bool
 	}{
+		{name: "haste_1", haste: 1},
+		{name: "haste_1.5", haste: 1.5},
+		{name: "haste_2", haste: 2},
+		{name: "prepull_gain", haste: 2, prepull: true},
+		{name: "prepull_loss", haste: 0.5, prepull: true},
 		{name: "gain", changes: []float64{2}},
 		{name: "loss", changes: []float64{0.5}},
 		{name: "gain_then_fade", changes: []float64{2, 0.5}},
 		{name: "out_of_range_gain", changes: []float64{2}, disabled: true},
 		{name: "during_windup", changes: []float64{2}, duringCast: true},
+		{name: "late_loss", haste: 2, changes: []float64{0.5}, lateLoss: true},
+		{name: "early_hold_gain", changes: []float64{2}, held: true, early: true},
+		{name: "early_hold_loss", changes: []float64{0.5}, held: true, early: true},
+		{name: "held_loss", changes: []float64{0.5}, held: true},
+		{name: "overlapping_holds", changes: []float64{0.5}, held: true, early: true, overlap: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			player := &proto.Player{
@@ -571,14 +535,35 @@ func TestAutoShotHasteChangesKeepScheduledRelease(t *testing.T) {
 			}, simsignals.CreateSignals())
 			sim.Reset()
 			hunter := sim.Raid.Parties[0].Players[0].(*Hunter)
-			hunter.MultiplyRangedSpeed(sim, 1/hunter.TotalRangedHasteMultiplier())
+			initialHaste := tc.haste
+			if initialHaste == 0 {
+				initialHaste = 1
+			}
+			if tc.prepull {
+				sim.CurrentTime = -time.Second
+			}
+			hunter.MultiplyRangedSpeed(sim, initialHaste/hunter.TotalRangedHasteMultiplier())
+			if tc.prepull && hunter.AutoAttacks.NextRangedAttackAt() != 0 {
+				t.Fatalf("prepull haste moved the opening windup to %v, want 0s", hunter.AutoAttacks.NextRangedAttackAt())
+			}
+			openingWindup := hunter.ApplyRangedSpeed(core.RangedSwingWindup)
 			auto := core.ActionID{OtherID: proto.OtherAction_OtherActionShoot}.String()
 			var began, completed []time.Duration
 			var scheduledRelease time.Duration
+			var hasteChangeAt time.Duration
+			var delays []string
+			var holdEnd time.Duration
 			sim.Log = func(format string, args ...interface{}) {
 				line := fmt.Sprintf(format, args...)
+				if strings.Contains(line, auto+" delayed by ") {
+					delays = append(delays, line)
+				}
 				if strings.Contains(line, "Casting "+auto+" ") {
 					began = append(began, sim.CurrentTime)
+					want := hunter.ApplyRangedSpeed(core.RangedSwingWindup)
+					if !strings.Contains(line, "Cast Time = "+want.String()+",") {
+						t.Errorf("Auto Shot logged an unexpected windup: %s", line)
+					}
 				}
 				if !strings.Contains(line, "Completed cast "+auto) {
 					return
@@ -588,14 +573,32 @@ func TestAutoShotHasteChangesKeepScheduledRelease(t *testing.T) {
 					return
 				}
 				scheduledRelease = sim.CurrentTime + hunter.AutoAttacks.RangedSwingSpeed()
+				if tc.held {
+					holdEnd = scheduledRelease + 100*time.Millisecond
+					resume := hunter.AutoAttacks.DelayRangedUntil(sim, holdEnd)
+					if tc.overlap {
+						holdEnd += 200 * time.Millisecond
+						hunter.AutoAttacks.DelayRangedUntil(sim, holdEnd)
+					}
+					if tc.early {
+						sim.AddPendingAction(&core.PendingAction{
+							NextActionAt: sim.CurrentTime + 200*time.Millisecond,
+							OnAction:     resume,
+						})
+					}
+				}
 				changeAt := sim.CurrentTime
 				if tc.duringCast {
 					changeAt = hunter.AutoAttacks.NextRangedAttackAt()
+				}
+				if tc.lateLoss {
+					changeAt = hunter.AutoAttacks.NextRangedAttackAt() - 200*time.Millisecond
 				}
 				for i, multiplier := range tc.changes {
 					sim.AddPendingAction(&core.PendingAction{
 						NextActionAt: changeAt + time.Duration(i+1)*100*time.Millisecond,
 						OnAction: func(sim *core.Simulation) {
+							hasteChangeAt = sim.CurrentTime
 							if tc.disabled {
 								hunter.AutoAttacks.CancelRangedSwing(sim)
 							}
@@ -614,15 +617,44 @@ func TestAutoShotHasteChangesKeepScheduledRelease(t *testing.T) {
 			if len(began) < 3 || len(completed) < 3 {
 				t.Fatalf("observed %d windups and %d releases, want three of each", len(began), len(completed))
 			}
+			if began[0] != 0 {
+				t.Errorf("opening windup started at %v, want 0s", began[0])
+			}
+			if got := completed[0] - began[0]; got != openingWindup {
+				t.Errorf("opening windup = %v, want %v", got, openingWindup)
+			}
 			windup := hunter.ApplyRangedSpeed(core.RangedSwingWindup)
 			if tc.duringCast {
-				windup = core.RangedSwingWindup
+				windup = openingWindup
 			}
-			if got, want := began[1], scheduledRelease-windup; got != want {
+			if got := completed[1] - began[1]; got != windup {
+				t.Errorf("second windup = %v, want %v", got, windup)
+			}
+			if got, want := completed[2]-began[2], hunter.ApplyRangedSpeed(core.RangedSwingWindup); got != want {
+				t.Errorf("third windup = %v, want %v", got, want)
+			}
+			wantStart := scheduledRelease - windup
+			wantRelease := scheduledRelease
+			if tc.lateLoss {
+				wantStart = max(wantStart, hasteChangeAt)
+				wantRelease = wantStart + windup
+			}
+			if tc.held && (!tc.early || tc.overlap) {
+				wantStart = max(wantStart, holdEnd)
+				wantRelease = wantStart + windup
+			}
+			if got, want := began[1], wantStart; got != want {
 				t.Errorf("windup starts at %v, want %v", got, want)
 			}
-			if completed[1] != scheduledRelease {
-				t.Errorf("shot released at %v, want the scheduled time %v", completed[1], scheduledRelease)
+			if completed[1] != wantRelease {
+				t.Errorf("shot released at %v, want %v", completed[1], wantRelease)
+			}
+			if tc.held && (!tc.early || tc.overlap) {
+				if len(delays) != 1 {
+					t.Errorf("held shot logged %d delays, want one: %v", len(delays), delays)
+				}
+			} else if len(delays) != 0 {
+				t.Errorf("haste changes logged delays without a held shot: %v", delays)
 			}
 			if got, want := completed[2]-completed[1], hunter.AutoAttacks.RangedSwingSpeed(); got != want {
 				t.Errorf("next release interval = %v, want %v", got, want)

@@ -51,7 +51,8 @@ func (kind *incapacitateKind) refreshImmunity(unit *Unit) {
 
 func (kind *incapacitateKind) registerAura(unit *Unit, label string, actionID ActionID, baseDuration time.Duration) *Aura {
 	// Cache swing from just before the pause.
-	var mhAt, ohAt, rangedAt time.Duration
+	var mhAt, ohAt time.Duration
+	var resumeRanged func(*Simulation)
 	var pausedUntil time.Duration
 
 	return unit.RegisterAura(Aura{
@@ -70,19 +71,19 @@ func (kind *incapacitateKind) registerAura(unit *Unit, label string, actionID Ac
 			aura.Unit.refreshIncapacitateState()
 
 			// The swing timer keeps running while incapacitated
-			mhAt, ohAt, rangedAt = aura.Unit.AutoAttacks.SwingAt()
+			mhAt, ohAt, _ = aura.Unit.AutoAttacks.SwingAt()
 			pausedUntil = sim.CurrentTime + aura.Duration
 			aura.Unit.AutoAttacks.PauseMeleeBy(sim, aura.Duration)
-			aura.Unit.AutoAttacks.DelayRangedUntil(sim, pausedUntil)
+			resumeRanged = aura.Unit.AutoAttacks.DelayRangedUntil(sim, pausedUntil)
 		},
 
 		OnExpire: func(aura *Aura, sim *Simulation) {
 			aura.Unit.refreshIncapacitateState()
+			resumeRanged(sim)
 
 			// Restore swing timer early
 			if sim.CurrentTime < pausedUntil && !aura.Unit.PseudoStats.Incapacitated {
 				aura.Unit.AutoAttacks.ResumeMeleeAt(sim, mhAt, ohAt)
-				aura.Unit.AutoAttacks.ResumeRangedAt(sim, rangedAt)
 			}
 		},
 	})
