@@ -13,3 +13,11 @@ paladin.target_aura.lights_vigil: was spell 1310909, now spell 1310910
 paladin.target_aura.lights_vigil_1311593: was spell 1311593, now nothing
 paladin.target_aura.lights_vigil_1311597: was spell 1311597, now nothing
 shared.spell.shadow_bolt_1293421: was spell 1293421, now nothing
+shared.aura.holy_strength: was spell 20007 tag 1, now spell 20007 tag 14
+shared.aura.holy_strength_tag2: was spell 20007 tag 2, now nothing
+warrior.spell.whirlwind: was spell 1680 tag 1, now spell 1680 tag 14
+warrior.spell.whirlwind_tag2: was spell 1680 tag 2, now nothing
+rogue.spell.mutilate_tag1: was spell 1241584 tag 1 rank 4, now nothing
+rogue.spell.mutilate_tag2: was spell 1241584 tag 2 rank 4, now nothing
+warlock.aura.decimation: was spell 440870, now spell 440873
+warlock.aura.decimation_440873: was spell 440873, now nothing
