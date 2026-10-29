@@ -1,4 +1,6 @@
 import type { AplRun } from '@features/apl/model/apl_line';
+import { requestAplReveal } from '@features/apl/model/reveal';
+import { ROTATION_TAB_ID, useActivateTab } from '@features/hooks/useActivateTab';
 import { observeElementRect, useVirtualizer } from '@tanstack/react-virtual';
 import { Tooltip } from '@ui-kit/Tooltip';
 import { cssVars } from '@ui-kit/utils/css';
@@ -381,6 +383,20 @@ export const RotationTrack = ({ model, active, aplRun }: RotationTrackProps) => 
 		else moveTip(event.clientX, bottom);
 	};
 
+	// Opens the line that launched the cast, as long as the rotation is still the one that ran. A pan's
+	// click never arrives: `onClickCapture` stops it first.
+	const activateTab = useActivateTab();
+	const onItemClick = (event: ReactMouseEvent<HTMLDivElement>) => {
+		if (!aplRun || aplRun.changed) return;
+		const element = (event.target as Element).closest<HTMLElement>('[data-item-index]');
+		const rowKey = element?.closest<HTMLElement>('[data-row-key]')?.dataset.rowKey;
+		const row = element && rowKey && model?.byKey.has(rowKey) ? rowFor(rowKey) : null;
+		const item = row && row.kind !== 'header' && row.kind !== 'separator' ? row.items[Number(element!.dataset.itemIndex)] : null;
+		if (item?.kind !== 'cast' || !item.log.aplLine) return;
+		activateTab(ROTATION_TAB_ID);
+		requestAplReveal(item.log.aplLine);
+	};
+
 	// Horizontal cursor follow: a bar can be wider than the viewport, so its centre is no anchor.
 	const onItemMove = (event: ReactMouseEvent<HTMLDivElement>) => {
 		if (hover) moveTip(event.clientX);
@@ -430,6 +446,7 @@ export const RotationTrack = ({ model, active, aplRun }: RotationTrackProps) => 
 				onPointerUp={endPan}
 				onPointerCancel={endPan}
 				onClickCapture={onClickCapture}
+				onClick={onItemClick}
 				onMouseOver={onItemOver}
 				onMouseMove={onItemMove}
 				onMouseLeave={hideTip}>

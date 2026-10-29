@@ -1,5 +1,5 @@
 import { ActionPicker } from '@features/apl/components/ActionPicker';
-import { AplItemActions } from '@features/apl/components/AplList';
+import { AplItemActions, AplRevealTarget } from '@features/apl/components/AplList';
 import { AplProvider, useApl } from '@features/apl/context/AplContext';
 import { useOwnListSortable } from '@features/apl/hooks/useOwnListSortable';
 import { freshUuids } from '@features/apl/model/fresh_uuids';
@@ -46,7 +46,7 @@ export const ActionFieldList = ({ player, config }: ActionFieldListProps) => {
 		// Called through, not passed: `clone` reads `this`, so the bare method copies nothing.
 		copyItem: (oldItem: APLAction) => freshUuids(APLAction.clone(oldItem)),
 	};
-	const { listGroup, markedSteps } = useApl();
+	const { listGroup, markedSteps, linePath } = useApl();
 	const group = listGroup ?? 'apl-actions';
 	const { items, itemConfig, create, remove, copy, move, hidden, disabled } = useListItems(player, listConfig);
 	const sortable = useOwnListSortable(move, group);
@@ -66,6 +66,7 @@ export const ActionFieldList = ({ player, config }: ActionFieldListProps) => {
 				{items.map((action, index) => {
 					const key = String(keyFor(action, index));
 					const picker = <ActionPicker player={player} config={itemConfig(action, index)} />;
+					const body = markedSteps.length ? markStep(picker, markedSteps, index) : picker;
 					return (
 						<Tree.Item key={key} id={key} testId="apl-action-list-item">
 							<Tree.Item.Header>
@@ -79,7 +80,9 @@ export const ActionFieldList = ({ player, config }: ActionFieldListProps) => {
 									/>
 								</Tree.Item.Actions>
 							</Tree.Item.Header>
-							<Tree.Item.Body>{markedSteps.length ? markStep(picker, markedSteps, index) : picker}</Tree.Item.Body>
+							<Tree.Item.Body>
+								{linePath ? <AplRevealTarget own={[...linePath, { kind: 'step', index }]}>{body}</AplRevealTarget> : body}
+							</Tree.Item.Body>
 						</Tree.Item>
 					);
 				})}

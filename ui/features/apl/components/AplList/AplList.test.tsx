@@ -1,6 +1,7 @@
 import { GroupList } from '@features/apl/components/GroupList';
 import { PriorityPane } from '@features/apl/components/PriorityPane';
 import { aplClipToText } from '@features/apl/model/clipboard';
+import { requestAplReveal } from '@features/apl/model/reveal';
 import { APLAction, APLGroup, APLListItem, APLPrepullAction, APLRotation, APLValue } from '@generated/proto/apl';
 import { SimHostProvider } from '@sim/context/SimHostContext';
 import { dragEvent, FakeIntersectionObserver, place } from '@testing/apl/dom';
@@ -561,5 +562,97 @@ describe('AplList on the action groups pane', () => {
 		expect(first.actions).toEqual([]);
 		expect(sequenceNames(second.actions)).toEqual(['x']);
 		expect(notifications).toBe(1);
+	});
+});
+
+describe('AplList opening the line a cast was clicked for', () => {
+	const toggle = (element: HTMLElement) =>
+		act(() => {
+			fireEvent.click(within(element).getAllByRole('button', { name: TOGGLE })[0]);
+		});
+	const flashed = () => Array.from(document.querySelectorAll<HTMLElement>('[data-flash]'));
+	let scrolled: Array<Element>;
+
+	beforeEach(() => {
+		vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'requestAnimationFrame', 'cancelAnimationFrame'] });
+		scrolled = [];
+		vi.spyOn(Element.prototype, 'scrollIntoView').mockImplementation(function (this: Element) {
+			scrolled.push(this);
+		});
+	});
+
+	afterEach(() => vi.useRealTimers());
+
+	it('opens the collapsed section and row on the way to a sequence step, then scrolls to it and flashes it for a moment', () => {
+		const sequence = APLListItem.create({ action: { action: { oneofKind: 'sequence', sequence: { name: 'opener', actions: [reset('a'), reset('b')] } } } });
+		setup({ priorityList: [row('x'), sequence] });
+		mount();
+		toggle(priorityRows()[1]);
+		toggle(section('apl-priority-list-picker-root'));
+
+		act(() =>
+			requestAplReveal([
+				{ kind: 'priority', index: 1 },
+				{ kind: 'step', index: 1 },
+			]),
+		);
+
+		expect(section('apl-priority-list-picker-root').hasAttribute('data-open')).toBe(true);
+		expect(priorityRows()[1].hasAttribute('data-open')).toBe(true);
+		expect(flashed()).toEqual([]);
+
+		act(() => vi.advanceTimersByTime(20));
+		const steps = Array.from(document.querySelectorAll<HTMLElement>('[data-testid="apl-action-list-item"]'));
+		expect(flashed()).toHaveLength(1);
+		expect(steps[1].contains(flashed()[0])).toBe(true);
+		expect(scrolled).toEqual(flashed());
+
+		act(() => vi.advanceTimersByTime(1500));
+		expect(flashed()).toEqual([]);
+	});
+
+	it('opens the group a group row sits in, and leaves the priority row that referenced the group alone', () => {
+		setup({ groups: [APLGroup.create({ name: 'one', actions: [row('x')] }), APLGroup.create({ name: 'two', actions: [row('y'), row('z')] })] });
+		mount(<GroupList />);
+		const groups = () => Array.from(document.querySelectorAll<HTMLElement>('[data-testid="apl-group-editor-root"]'));
+		toggle(groups()[0]);
+		toggle(groups()[1]);
+
+		act(() =>
+			requestAplReveal([
+				{ kind: 'priority', index: 0 },
+				{ kind: 'group', group: 1, index: 1 },
+			]),
+		);
+		act(() => vi.advanceTimersByTime(20));
+
+		expect(groups().map(group => group.hasAttribute('data-open'))).toEqual([false, true]);
+		expect(flashed()).toHaveLength(1);
+		expect(within(groups()[1]).getAllByTestId('tree-item')[1].contains(flashed()[0])).toBe(true);
+	});
+
+	it('opens only the pre-pull section for a pre-pull row, and flashes that row', () => {
+		setup({ prepullActions: [prepull('p')], priorityList: [row('x')] });
+		mount();
+		toggle(section('apl-prepull-list-root'));
+		toggle(section('apl-priority-list-picker-root'));
+
+		act(() => requestAplReveal([{ kind: 'prepull', index: 0 }]));
+		act(() => vi.advanceTimersByTime(20));
+
+		expect(section('apl-prepull-list-root').hasAttribute('data-open')).toBe(true);
+		expect(section('apl-priority-list-picker-root').hasAttribute('data-open')).toBe(false);
+		expect(flashed()).toHaveLength(1);
+		expect(prepullRows()[0].contains(flashed()[0])).toBe(true);
+	});
+
+	it('leaves the rotation as it is for a request made before it mounted', () => {
+		setup({ priorityList: [row('x')] });
+		act(() => requestAplReveal([{ kind: 'priority', index: 0 }]));
+		mount();
+		act(() => vi.advanceTimersByTime(20));
+
+		expect(flashed()).toEqual([]);
+		expect(scrolled).toEqual([]);
 	});
 });

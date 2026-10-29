@@ -1,4 +1,4 @@
-import { AplItemActions, AplList, AplSectionTitle } from '@features/apl/components/AplList';
+import { AplItemActions, AplList, AplRevealTarget, AplSectionTitle } from '@features/apl/components/AplList';
 import { AplListItem } from '@features/apl/components/AplListItem';
 import { AplNameDialog } from '@features/apl/components/AplNameDialog';
 import { AplPasteDialog } from '@features/apl/components/AplPasteDialog';
@@ -74,6 +74,7 @@ export const GroupEditor = ({ id, player, config, groupIndex, onCopy, onDelete }
 				/>
 			}
 			disabled={disabled}
+			revealOn={line => line[0]?.kind === 'group' && line[0].group === groupIndex}
 			testId="apl-group-editor-root">
 			<Tree.Item.Children testId="apl-group-actions">
 				<span className="flex items-center gap-2">
@@ -114,7 +115,9 @@ export const GroupEditor = ({ id, player, config, groupIndex, onCopy, onDelete }
 										/>
 									}>
 									<Tree.Item.Body>
-										<AplListItem player={player} config={itemConfig} actionFullWidth />
+										<AplRevealTarget own={[{ kind: 'group', group: groupIndex, index }]}>
+											<AplListItem player={player} config={itemConfig} actionFullWidth />
+										</AplRevealTarget>
 									</Tree.Item.Body>
 								</AplList.Item>
 							);

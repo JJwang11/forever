@@ -1,4 +1,4 @@
-import { AplItemActions, AplList, AplSectionTitle } from '@features/apl/components/AplList';
+import { AplItemActions, AplList, AplRevealTarget, AplSectionTitle } from '@features/apl/components/AplList';
 import { AplListItem } from '@features/apl/components/AplListItem';
 import { ListItemHeader } from '@features/apl/components/ListItemHeader';
 import { ValuePicker } from '@features/apl/components/ValuePicker';
@@ -11,10 +11,12 @@ import { APLPrepullAction, APLValue } from '@generated/proto/apl';
 import i18n from '@i18n/config';
 import { usePlayer } from '@sim/context/SimHostContext';
 import type { Player } from '@sim/player/player';
+import type { AplLinePath } from '@sim/proto/combat_log';
 import { randomUUID } from '@sim/utils/misc';
 import { Tree } from '@ui-kit/Tree';
 
 const AT_PULL = () => APLValue.create({ value: { oneofKind: 'const', const: { val: '-1s' } }, uuid: { value: randomUUID() } });
+const inPrepullList = (line: AplLinePath) => line[0]?.kind === 'prepull';
 
 /** The actions taken before the pull, each with the time it happens at: a section of the priority pane's tree. */
 export const PrePullList = () => {
@@ -40,6 +42,7 @@ export const PrePullList = () => {
 				title={<AplSectionTitle text={header} tooltip={i18n.t('rotation_tab.apl.prePullActions.tooltips.overview')} />}
 				titleAs="h6"
 				movable={false}
+				revealOn={inPrepullList}
 				testId="apl-prepull-list-root">
 				<Tree.Item.Children>
 					{rows.items.length > 0 && (
@@ -62,28 +65,30 @@ export const PrePullList = () => {
 										}
 										actions={<AplItemActions label={label} onCopy={() => rows.copy(index)} onDelete={() => rows.remove(index)} />}>
 										<Tree.Item.Body>
-											<AplListItem
-												player={player}
-												config={config}
-												leading={
-													<ValuePicker
-														player={player}
-														config={{
-															label: i18n.t('rotation_tab.apl.prepull_actions.do_at.label'),
-															labelTooltip: i18n.t('rotation_tab.apl.prepull_actions.do_at.tooltip'),
-															extraClassNames: ['w-auto'],
-															layout: 'inline',
-															getValue: () => config.getValue(player)?.doAtValue,
-															setValue: (subject: Player<any>, newValue: APLValue | undefined) => {
-																const current = config.getValue(subject);
-																if (!current) return;
-																current.doAtValue = newValue || AT_PULL();
-																subject.touchRotation();
-															},
-														}}
-													/>
-												}
-											/>
+											<AplRevealTarget own={[{ kind: 'prepull', index }]}>
+												<AplListItem
+													player={player}
+													config={config}
+													leading={
+														<ValuePicker
+															player={player}
+															config={{
+																label: i18n.t('rotation_tab.apl.prepull_actions.do_at.label'),
+																labelTooltip: i18n.t('rotation_tab.apl.prepull_actions.do_at.tooltip'),
+																extraClassNames: ['w-auto'],
+																layout: 'inline',
+																getValue: () => config.getValue(player)?.doAtValue,
+																setValue: (subject: Player<any>, newValue: APLValue | undefined) => {
+																	const current = config.getValue(subject);
+																	if (!current) return;
+																	current.doAtValue = newValue || AT_PULL();
+																	subject.touchRotation();
+																},
+															}}
+														/>
+													}
+												/>
+											</AplRevealTarget>
 										</Tree.Item.Body>
 									</AplList.Item>
 								);

@@ -1,4 +1,10 @@
+import type { AplRun } from '@features/apl/model/apl_line';
+import { getAplReveal } from '@features/apl/model/reveal';
+import { TabActivationContext } from '@features/hooks/useActivateTab';
+import type { RowItem } from '@features/results/model/timeline/rotation';
+import { APLRotation } from '@generated/proto/apl';
 import { SimHostProvider } from '@sim/context/SimHostContext';
+import type { AplLinePath } from '@sim/proto/combat_log';
 import { fakeHost } from '@testing/sim/fake_host';
 import { mockSubscriptions } from '@testing/sim/subscriptions';
 import { castItem, castRow, rotationModel } from '@testing/timeline_rotation';
@@ -58,20 +64,24 @@ const settle = async () => {
 	}
 };
 
+const activateTab = vi.fn();
+
 const Wrapper = ({ children }: { children: ReactNode }) => {
 	const [slot, setSlot] = useState<HTMLDivElement | null>(null);
 	return (
 		<SimHostProvider host={host}>
-			<div data-testid="dr-sticky-slot" ref={setSlot} />
-			<DrStickySlotContext.Provider value={slot}>{children}</DrStickySlotContext.Provider>
+			<TabActivationContext.Provider value={activateTab}>
+				<div data-testid="dr-sticky-slot" ref={setSlot} />
+				<DrStickySlotContext.Provider value={slot}>{children}</DrStickySlotContext.Provider>
+			</TabActivationContext.Provider>
 		</SimHostProvider>
 	);
 };
 
-const mount = async (model = MODEL) => {
+const mount = async (model = MODEL, aplRun: AplRun | null = null) => {
 	const view = render(
 		<Wrapper>
-			<RotationTrack model={model} active aplRun={null} />
+			<RotationTrack model={model} active aplRun={aplRun} />
 		</Wrapper>,
 	);
 	const scroller = view.container.querySelector<HTMLElement>('[data-testid="rotation-scroller"]')!;
@@ -157,6 +167,48 @@ describe('RotationTrack', () => {
 		fireEvent.mouseOver(container.querySelector('[data-testid="rotation-content"]')!);
 		await settle();
 		expect(container.querySelector('[data-testid="timeline-hover-tooltip"]')).toBeNull();
+	});
+
+	describe('clicking a cast', () => {
+		const LINE: AplLinePath = [{ kind: 'priority', index: 2 }];
+		const lined = (start: number, end: number, aplLine: AplLinePath | null): RowItem => {
+			const item = castItem(start, end) as Extract<RowItem, { kind: 'cast' }>;
+			return { ...item, log: { ...item.log, aplLine } } as RowItem;
+		};
+		const LINED = rotationModel([castRow('cast:a', 'Alpha', [lined(0, 1, LINE), lined(2, 3, null)])]);
+		const run = (changed: boolean): AplRun => ({ rotation: APLRotation.create(), changed });
+		const casts = (container: HTMLElement) => container.querySelectorAll('[data-row-key="cast:a"] [data-testid="rotation-item-cast"]');
+
+		beforeEach(() => activateTab.mockClear());
+
+		it('opens the Rotation tab on the line that cast it', async () => {
+			const { container } = await mount(LINED, run(false));
+			const before = getAplReveal()?.nonce ?? 0;
+
+			fireEvent.click(casts(container)[0]);
+
+			expect(activateTab).toHaveBeenCalledWith('rotation-tab');
+			expect(getAplReveal()).toEqual({ path: LINE, nonce: before + 1 });
+		});
+
+		it('does nothing for a cast no line launched, a rotation changed since the run, or the end of a pan', async () => {
+			const unchanged = await mount(LINED, run(false));
+			const before = getAplReveal();
+			fireEvent.click(casts(unchanged.container)[1]);
+
+			const cast = casts(unchanged.container)[0];
+			fireEvent.pointerDown(cast, { button: 0, pointerId: 1, pointerType: 'mouse', clientX: 10, clientY: 10 });
+			fireEvent.pointerMove(cast, { pointerId: 1, clientX: 40, clientY: 10 });
+			fireEvent.pointerUp(cast, { pointerId: 1, clientX: 40, clientY: 10 });
+			fireEvent.click(cast);
+			unchanged.unmount();
+
+			const changed = await mount(LINED, run(true));
+			fireEvent.click(casts(changed.container)[0]);
+
+			expect(activateTab).not.toHaveBeenCalled();
+			expect(getAplReveal()).toBe(before);
+		});
 	});
 
 	it('gives the portalled ruler row the pane timeline variables, and keeps its zoom in step', async () => {
