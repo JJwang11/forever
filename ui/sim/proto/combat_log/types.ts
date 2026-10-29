@@ -2,6 +2,7 @@ import type { SpellSchool } from '@generated/proto/common';
 import type { ResourceType } from '@generated/proto/spell';
 
 import type { ActionId } from '../action_id';
+import type { AplLinePath } from './apl_line';
 
 export class Entity {
 	readonly name: string;
@@ -173,6 +174,8 @@ export interface CastBeganLog extends BaseLog {
 	readonly castTime: number;
 	readonly gcd: number;
 	readonly effectiveTime: number;
+	// The rotation line that launched the cast; null for a cast outside the rotation.
+	readonly aplLine: AplLinePath | null;
 }
 
 export interface CastCancelledLog extends BaseLog {
@@ -271,6 +274,7 @@ export interface CastLog extends BaseLog {
 	readonly effectiveTime: number;
 	readonly travelTime: number;
 	readonly cancelTime: number;
+	readonly aplLine: AplLinePath | null;
 	readonly castBeganLog: CastBeganLog;
 	readonly castCancelledLog: CastCancelledLog | null;
 	readonly castCompletedLog: CastCompletedLog | null;

@@ -395,6 +395,7 @@ function buildCastLog(
 		effectiveTime,
 		travelTime,
 		cancelTime,
+		aplLine: castBeganLog.aplLine,
 		castBeganLog,
 		castCancelledLog,
 		castCompletedLog,

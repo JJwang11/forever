@@ -227,7 +227,7 @@ export const auraUptimeLog = (gainedAt: number, fadedAt: number, actionId: Actio
 });
 
 export const castLog = (timestamp: number, overrides: Partial<CastLog> = {}): CastLog => {
-	const began = { ...baseLog(timestamp, MORTAL_STRIKE), kind: 'cast-began', manaCost: 0, castTime: 0, gcd: 1.5, effectiveTime: 1.5 } as const;
+	const began = { ...baseLog(timestamp, MORTAL_STRIKE), kind: 'cast-began', manaCost: 0, castTime: 0, gcd: 1.5, effectiveTime: 1.5, aplLine: null } as const;
 	return {
 		...baseLog(timestamp, MORTAL_STRIKE),
 		kind: 'cast',
@@ -236,6 +236,7 @@ export const castLog = (timestamp: number, overrides: Partial<CastLog> = {}): Ca
 		effectiveTime: 1.5,
 		travelTime: 0,
 		cancelTime: 0,
+		aplLine: null,
 		castBeganLog: began,
 		castCancelledLog: null,
 		castCompletedLog: null,
