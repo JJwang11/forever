@@ -20,7 +20,7 @@ const meta = {
 	title: 'Features/Results/Timeline/Components/RotationTrack',
 	component: RotationTrack,
 	tags: ['autodocs'],
-	args: { model: warriorRotationModel(), active: true },
+	args: { model: warriorRotationModel(), active: true, aplRun: null },
 	argTypes: { model: { control: false } },
 	decorators: [
 		Story => (

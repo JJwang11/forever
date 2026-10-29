@@ -1,7 +1,10 @@
+import { AplLineView } from '@features/apl/components/AplLineView';
+import { type AplRun, resolveAplLine, type ResolvedAplLine } from '@features/apl/model/apl_line';
 import i18n from '@i18n/config';
 import { useSim } from '@sim/context/SimHostContext';
 import { useDisplayMetrics } from '@sim/hooks/useDisplayMetrics';
 import type { CastLog } from '@sim/proto/combat_log';
+import { useMemo } from 'react';
 
 import { DamageResult } from '../../DamageResult';
 
@@ -9,10 +12,28 @@ export interface CastTooltipProps {
 	log: CastLog;
 	/** The casts drawn under this one's icon, ending with `log`; their damage is listed together. */
 	stack?: ReadonlyArray<CastLog>;
+	/** Absent for a run whose rotation was Auto or Simple. */
+	aplRun?: AplRun;
 }
 
-export const CastTooltip = ({ log, stack = [log] }: CastTooltipProps) => {
+const crumbText = (crumb: ResolvedAplLine['crumbs'][number]) => {
+	const position = crumb.index + 1;
+	switch (crumb.kind) {
+		case 'prepull':
+			return i18n.t('results_tab.details.timeline.cast_tooltip.apl_line.prepull', { position });
+		case 'priority':
+			return i18n.t('results_tab.details.timeline.cast_tooltip.apl_line.priority', { position });
+		case 'group':
+			return i18n.t('results_tab.details.timeline.cast_tooltip.apl_line.group', { group: crumb.groupName, position });
+		case 'step':
+			return i18n.t('results_tab.details.timeline.cast_tooltip.apl_line.step', { position });
+	}
+};
+
+export const CastTooltip = ({ log, stack = [log], aplRun }: CastTooltipProps) => {
 	const { threat: showThreatMetrics } = useDisplayMetrics(useSim());
+	const rotation = aplRun?.rotation;
+	const line = useMemo(() => (rotation && log.aplLine ? resolveAplLine(rotation, log.aplLine) : null), [rotation, log.aplLine]);
 	const travelTime = log.travelTime == 0 ? '' : ` ${i18n.t('results_tab.details.timeline.cast_tooltip.travel_time', { time: log.travelTime.toFixed(2) })}`;
 	// Two casts at the same timestamp can hand all of their damage to the later one, so the stack's
 	// damage is one list rather than one per cast.
@@ -40,6 +61,17 @@ export const CastTooltip = ({ log, stack = [log] }: CastTooltipProps) => {
 				{` ${timing}`}
 				{travelTime.length > 0 && travelTime}
 			</span>
+			{line && (
+				<div className="flex flex-col gap-1">
+					<span>{line.crumbs.map(crumbText).join(' › ')}</span>
+					<AplLineView line={line} />
+					<span className="text-muted">
+						{aplRun?.changed
+							? i18n.t('results_tab.details.timeline.cast_tooltip.apl_line.changed_hint')
+							: i18n.t('results_tab.details.timeline.cast_tooltip.apl_line.open_hint')}
+					</span>
+				</div>
+			)}
 			{stack.length > 1 && (
 				<span>
 					{first.timestamp === log.timestamp

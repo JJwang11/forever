@@ -1,8 +1,10 @@
-import { APLAction, APLListItem, APLRotation } from '@generated/proto/apl';
+import { RaidSimRequest } from '@generated/proto/api';
+import { APLAction, APLListItem, APLRotation, APLRotation_Type } from '@generated/proto/apl';
 import { parseAplLine } from '@sim/proto/combat_log';
+import type { SimResult, UnitMetrics } from '@sim/proto/sim_result';
 import { describe, expect, it } from 'vitest';
 
-import { resolveAplLine } from './apl_line';
+import { resolveAplLine, runRotation } from './apl_line';
 
 const item = (notes: string, action?: APLAction) => APLListItem.create({ notes, action });
 const sequence = (count: number, nested?: APLAction): APLAction =>
@@ -95,5 +97,33 @@ describe('resolveAplLine', () => {
 		'priority 3 > step 3 > group 1.1',
 	])('gives null for %s, out of range', text => {
 		expect(resolve(text)).toBeNull();
+	});
+});
+
+describe('runRotation', () => {
+	const ran = (type: APLRotation_Type, notes: string) => APLRotation.create({ type, priorityList: [{ notes }] });
+	const result = (...players: Array<APLRotation>) =>
+		({
+			request: RaidSimRequest.create({
+				raid: { parties: [{ players: [] }, { players: players.map(rotation => ({ rotation })) }] },
+			}),
+		}) as unknown as SimResult;
+	const unit = (index: number) => ({ index }) as UnitMetrics;
+
+	it('takes the rotation of the request player at the unit’s raid index', () => {
+		const run = result(ran(APLRotation_Type.TypeAPL, 'first'), ran(APLRotation_Type.TypeAPL, 'second'));
+		expect(runRotation(run, unit(6))?.priorityList[0].notes).toBe('second');
+	});
+
+	it.each([APLRotation_Type.TypeAuto, APLRotation_Type.TypeSimple])('gives null for a run of type %s', type => {
+		expect(runRotation(result(ran(type, 'auto')), unit(5))).toBeNull();
+	});
+
+	it('takes a rotation with no type as an APL, as the Rotation tab does', () => {
+		expect(runRotation(result(ran(APLRotation_Type.TypeUnknown, 'untyped')), unit(5))?.priorityList[0].notes).toBe('untyped');
+	});
+
+	it('gives null for a unit the request holds no player for', () => {
+		expect(runRotation(result(ran(APLRotation_Type.TypeAPL, 'only')), unit(7))).toBeNull();
 	});
 });

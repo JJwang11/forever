@@ -1,5 +1,7 @@
-import { Entity } from '@sim/proto/combat_log';
+import { APLAction, APLRotation, APLValue, APLValueCompare_ComparisonOperator as Op } from '@generated/proto/apl';
+import { type AplLinePath, Entity } from '@sim/proto/combat_log';
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { makeAplStoryPlayer } from '@testing/storybook/fixtures/apl';
 import { withSimHost } from '@testing/storybook/fixtures/models';
 import { castLog, damageLog, resultsHostParts } from '@testing/storybook/fixtures/results-views';
 
@@ -10,14 +12,15 @@ const meta = {
 	component: CastTooltip,
 	tags: ['autodocs'],
 	args: { log: castLog(12) },
-	argTypes: { log: { control: false } },
+	argTypes: { log: { control: false }, aplRun: { control: false } },
 	decorators: [
 		Story => (
 			<div className="ui-timeline-hover-tooltip relative w-fit">
 				<Story />
 			</div>
 		),
-		withSimHost(resultsHostParts(null)),
+		// The APL player answers the reads the drawn line's pickers make.
+		withSimHost({ ...resultsHostParts(null), player: makeAplStoryPlayer() }),
 	],
 } satisfies Meta<typeof CastTooltip>;
 
@@ -51,3 +54,53 @@ const chainHit = (index: number, amount: number, overrides = {}) =>
 export const MultipleTargets: Story = {
 	args: { log: castLog(12, { damageDealtLogs: [chainHit(0, 612.4), chainHit(1, 428.68, { outcome: 'crit' }), chainHit(2, 300.08)] }) },
 };
+
+const constant = (val: string) => APLValue.create({ value: { oneofKind: 'const', const: { val } } });
+const after = (val: string) =>
+	APLValue.create({ value: { oneofKind: 'cmp', cmp: { op: Op.OpGt, lhs: { value: { oneofKind: 'currentTime', currentTime: {} } }, rhs: constant(val) } } });
+const waitFor = (val: string, condition?: APLValue) => APLAction.create({ condition, action: { oneofKind: 'wait', wait: { duration: constant(val) } } });
+
+const rotation = APLRotation.create({
+	prepullActions: [{ action: waitFor('1s'), doAtValue: constant('-2s') }],
+	priorityList: [
+		{ action: APLAction.create({ action: { oneofKind: 'groupReference', groupReference: { groupName: 'execute', variables: [] } } }) },
+		{
+			action: APLAction.create({
+				action: { oneofKind: 'sequence', sequence: { name: 'opener', actions: [waitFor('1s'), waitFor('2s'), waitFor('3s')] } },
+			}),
+		},
+	],
+	groups: [{ name: 'execute', actions: [{ action: waitFor('1s') }, { action: waitFor('2s', after('20s')) }], variables: [] }],
+});
+
+const ranLine = (aplLine: AplLinePath, changed = false) => ({ log: castLog(12, { aplLine }), aplRun: { rotation, changed } });
+
+/** A cast from the second line of a group, with the path that reached it and the click hint. */
+export const AplLine: Story = {
+	args: ranLine([
+		{ kind: 'priority', index: 0 },
+		{ kind: 'group', group: 0, index: 1 },
+	]),
+};
+
+/** The rotation was edited after the run: the line is drawn as it ran, and the hint says it changed. */
+export const AplLineChanged: Story = {
+	args: ranLine(
+		[
+			{ kind: 'priority', index: 0 },
+			{ kind: 'group', group: 0, index: 1 },
+		],
+		true,
+	),
+};
+
+/** The second step of a sequence fired, so the whole sequence is drawn with that step marked. */
+export const AplSequenceStep: Story = {
+	args: ranLine([
+		{ kind: 'priority', index: 1 },
+		{ kind: 'step', index: 1 },
+	]),
+};
+
+/** A pre-pull line, with the time it happens at. */
+export const AplPrepull: Story = { args: ranLine([{ kind: 'prepull', index: 0 }]) };

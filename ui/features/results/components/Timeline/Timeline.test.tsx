@@ -1,4 +1,6 @@
-import { fireEvent, render, within } from '@testing-library/react';
+import { createSimStore } from '@sim/state/sim_store';
+import { renderWithHost } from '@testing/react';
+import { fireEvent, within } from '@testing-library/react';
 import { act } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -67,7 +69,7 @@ beforeEach(() => {
 });
 
 const mount = (active: boolean) => {
-	const view = render(<Timeline active={active} />);
+	const view = renderWithHost(<Timeline active={active} />, { player: { sim: { store: createSimStore() }, storeKey: 0 } });
 	return { ...view, again: (next = active) => view.rerender(<Timeline active={next} />) };
 };
 

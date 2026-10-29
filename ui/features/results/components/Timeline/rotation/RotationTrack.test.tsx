@@ -71,7 +71,7 @@ const Wrapper = ({ children }: { children: ReactNode }) => {
 const mount = async (model = MODEL) => {
 	const view = render(
 		<Wrapper>
-			<RotationTrack model={model} active />
+			<RotationTrack model={model} active aplRun={null} />
 		</Wrapper>,
 	);
 	const scroller = view.container.querySelector<HTMLElement>('[data-testid="rotation-scroller"]')!;
