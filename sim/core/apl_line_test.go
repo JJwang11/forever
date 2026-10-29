@@ -10,8 +10,9 @@ import (
 )
 
 // Every action of an APL rotation names the line it was built from by the config's own positions: hidden
-// rows count, a group segment names the group's place in the config rather than the sim's copy of it, and
-// a step keeps its place when an earlier step fails to build. Auto and custom rotations name no line.
+// rows count, a group segment names the group's place in the config rather than the sim's copy of it, a
+// group another group references adds a segment of its own, and a step keeps its place when an earlier
+// step fails to build. Auto and custom rotations name no line.
 func TestAPLLinesFollowConfigPositions(t *testing.T) {
 	const dotID, unknownID = 910105, 910106
 	spellID := func(id int32) *proto.ActionID { return ActionID{SpellID: id}.ToProto() }
@@ -19,7 +20,10 @@ func TestAPLLinesFollowConfigPositions(t *testing.T) {
 		return &proto.APLAction{Action: &proto.APLAction_CastSpell{CastSpell: &proto.APLActionCastSpell{SpellId: spellID(id)}}}
 	}
 	item := func(action *proto.APLAction) *proto.APLListItem { return &proto.APLListItem{Action: action} }
-	groupRef := item(&proto.APLAction{Action: &proto.APLAction_GroupReference{GroupReference: &proto.APLActionGroupReference{GroupName: "b"}}})
+	refTo := func(name string) *proto.APLListItem {
+		return item(&proto.APLAction{Action: &proto.APLAction_GroupReference{GroupReference: &proto.APLActionGroupReference{GroupName: name}}})
+	}
+	groupRef := refTo("b")
 	config := func(rotationType proto.APLRotation_Type) *proto.APLRotation {
 		return &proto.APLRotation{
 			Type: rotationType,
@@ -34,9 +38,10 @@ func TestAPLLinesFollowConfigPositions(t *testing.T) {
 				groupRef,
 				item(&proto.APLAction{Action: &proto.APLAction_Schedule{Schedule: &proto.APLActionSchedule{Schedule: "0s", InnerAction: cast(dotID)}}}),
 				item(&proto.APLAction{Action: &proto.APLAction_StrictMultidot{StrictMultidot: &proto.APLActionStrictMultidot{SpellId: spellID(dotID), MaxDots: 2}}}),
+				refTo("a"),
 			},
 			Groups: []*proto.APLGroup{
-				{Name: "a", Actions: []*proto.APLListItem{item(cast(dotID))}},
+				{Name: "a", Actions: []*proto.APLListItem{{Action: cast(dotID), Hide: true}, refTo("b")}},
 				{Name: "b", Actions: []*proto.APLListItem{
 					{Action: cast(dotID), Hide: true},
 					item(&proto.APLAction{Action: &proto.APLAction_Sequence{Sequence: &proto.APLActionSequence{
@@ -88,6 +93,15 @@ func TestAPLLinesFollowConfigPositions(t *testing.T) {
 	for _, action := range multidot.actions {
 		want(action, "priority 6")
 	}
+	nested := rot.priorityList[5].impl.(*APLActionGroupReference).group.actions[0]
+	want(nested, "priority 7 > group 1.2")
+	want(nested.impl.(*APLActionGroupReference).group.actions[0], "priority 7 > group 1.2 > group 2.2")
+	nestedSteps := sequenceOf(nested).subactions
+	if len(nestedSteps) != 2 {
+		t.Fatalf("nested sequence kept %d steps, want 2", len(nestedSteps))
+	}
+	want(nestedSteps[0], "priority 7 > group 1.2 > group 2.2 > step 2")
+	want(nestedSteps[1], "priority 7 > group 1.2 > group 2.2 > step 3")
 	want(rot.prepullActions[0], "prepull 2")
 
 	want(fw.newCustomRotation().priorityList[0], "")

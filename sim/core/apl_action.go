@@ -35,17 +35,25 @@ func (action *APLAction) heldByQueuedSpell(sim *Simulation) bool {
 	return action.spell != nil && action.spell.heldByQueuedSpell(sim)
 }
 
-// While the sim logs, the action's line is the rotation's running line until the action returns.
 func (action *APLAction) Execute(sim *Simulation) {
-	if sim.Log != nil && action.rot != nil {
-		rot := action.rot
-		outer := rot.runningLine
-		rot.runningLine = action.line
-		action.impl.Execute(sim)
-		rot.runningLine = outer
+	if sim.Log != nil {
+		action.executeLogged(sim)
 		return
 	}
 	action.impl.Execute(sim)
+}
+
+// While the sim logs, the action's line is the rotation's running line until the action returns.
+func (action *APLAction) executeLogged(sim *Simulation) {
+	rot := action.rot
+	if rot == nil {
+		action.impl.Execute(sim)
+		return
+	}
+	outer := rot.runningLine
+	rot.runningLine = action.line
+	action.impl.Execute(sim)
+	rot.runningLine = outer
 }
 
 // Returns this Action, along with all inner Actions.

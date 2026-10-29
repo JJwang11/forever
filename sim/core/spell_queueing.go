@@ -184,7 +184,10 @@ func (spell *Spell) CastOrQueue(sim *Simulation, target *Unit) {
 }
 
 func (spell *Spell) castOrQueue(sim *Simulation, target *Unit, channelAction *APLActionChannelSpell) {
-	line := spell.Unit.runningAPLLine()
+	var line string
+	if sim.Log != nil {
+		line = spell.Unit.runningAPLLine()
+	}
 	if spell.CanCast(sim, target) {
 		spell.castForRotation(sim, target, channelAction, line)
 	} else if spell.CanQueue(sim, target) {
@@ -222,7 +225,7 @@ func (unit *Unit) runningAPLLine() string {
 
 // The suffix a Casting log line ends with: the APL line of the rotation cast. Only the rotation cast itself
 // carries it, so a spell cast while it runs, such as one its effects cast, names no line. A spell a press
-// queued for the next swing names the press's line once, on the swing's cast.
+// queued for the next swing names the press's line once, on its next Casting line.
 func (spell *Spell) aplLineSuffix() string {
 	if cast := &spell.Unit.rotationCast; spell == cast.spell && cast.line != "" {
 		return " APL: " + cast.line
@@ -256,7 +259,7 @@ func (spell *Spell) castForRotation(sim *Simulation, target *Unit, channelAction
 func (spell *Spell) CountManualCast(target *Unit) {
 	spell.SpellMetrics[target.UnitIndex].ManualCasts++
 	// The press's line goes with its credit. The line is set only while the sim logs.
-	if cast := &spell.Unit.rotationCast; spell != cast.spell && cast.line != "" {
+	if cast := &spell.Unit.rotationCast; cast.line != "" && spell != cast.spell {
 		spell.swingLine = cast.line
 	}
 }
