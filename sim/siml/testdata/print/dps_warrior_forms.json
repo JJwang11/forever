@@ -10,7 +10,7 @@
 	},
 	"raidBuffs": {
 		"arcaneBrilliance": true,
-		"battleShout": "TristateEffectImproved",
+		"battleShout": 2,
 		"leaderOfThePack": true,
 		"moonkinAura": true,
 		"trueshotAura": true,
@@ -72,7 +72,7 @@
 		},
 		"bonusStats": {
 			"stats": [10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			"pseudoStats": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+			"pseudoStats": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 		},
 		"itemSwap": {
 			"prepullBonusStats": {

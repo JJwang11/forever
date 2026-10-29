@@ -214,7 +214,7 @@ unit          = ident | "none" | raw ;                            (* the unit wo
 slot_row      = ident , ( ident , [ ident ] , [ "+" , ident ] | raw ) ;    (* gear: and item_swap:, first ident a slot word *)
 entry         = flag_list | field_entry | message_entry | raw ;
 flag_list     = flag , { "," , flag } ;                           (* every item a field name *)
-flag          = ident , [ "=" , value ] ;                         (* battle_shout=improved *)
+flag          = ident , [ "=" , value ] ;                         (* mana_spring_totem=improved *)
 field_entry   = ident , value , { "," , value } ;                 (* one field; several values only when repeated *)
 message_entry = ident , args ;                                    (* a message value: targets(id=1, ...) *)
 value         = literal | int | [ "-" ] , int | string | "true" | "false" | ident | unit | raw
@@ -325,7 +325,7 @@ An entry line sets fields of the section's message. How each field type is writt
 | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ----------------------------------------------- |
 | `bool`                                                                      | the bare field name means true; `true` and `false` are also accepted                           | `cobra_reflexes`                                          | `"cobraReflexes": true`                         |
 | enum                                                                        | the value's short name (§8.2), or the proto value name                                         | `race orc`                                                | `"race": "RaceOrc"`                             |
-| an enum with a bare-flag value (`TristateEffect` → `TristateEffectRegular`) | bare means that value; otherwise its short name                                                | `battle_shout`, `battle_shout=improved`                   | `"battleShout": "TristateEffectRegular"`        |
+| an enum with a bare-flag value (`TristateEffect` → `TristateEffectRegular`) | bare means that value; otherwise its short name                                                | `mana_spring_totem`, `mana_spring_totem=improved`         | `"manaSpringTotem": "TristateEffectRegular"`    |
 | `int32`, `uint32`, `int64`, `double`, `float`                               | a number with no unit                                                                          | `distance_from_target 11`                                 | `"distanceFromTarget": 11`                      |
 | `string`                                                                    | a JSON string                                                                                  | `name "Pre-BiS - Arms"`                                   | `"name": "Pre-BiS - Arms"`                      |
 | item, enchant or suffix ref field (§8.1)                                    | a name of that namespace (§7.2)                                                                | `offensive_pot major_frenzy_potion`                       | `"offensivePotId": 250943`                      |
@@ -340,7 +340,7 @@ An entry line sets fields of the section's message. How each field type is writt
 | any                                                                         | raw JSON for the field's value                                                                 |                                                           | as written                                      |
 
 - **Flag lists.** A flag list (`use_multi, use_arcane`) sets each named bool field to true, or each bare-flag
-  enum to its flag value. A flag may carry a value (`battle_shout=improved`, `pet_uptime=1`), which sets its
+  enum to its flag value. A flag may carry a value (`mana_spring_totem=improved`, `pet_uptime=1`), which sets its
   field as an entry would.
 - **Numbers.** A `float` field holds the double nearest the number, rounded to a float32, as the site holds it.
   The printer writes the shortest decimal that reads back to that float32, the nearer of two, and of two as near
@@ -391,7 +391,7 @@ line whose first word is a slot word is a slot row, and any other line an entry.
 | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `settings`                                      | `race orc`, `profession1 engineering`, `distance_from_target 11`, the spec options flattened (`quiver_bonus ancient_sinew_wrapped_lamina`, `cobra_reflexes`), `tanks player1`         |
 | `consumables`                                   | `offensive_pot major_frenzy_potion`, `food swiftstrike_steak`, `extra goblin_sapper_charge, scroll_of_strength_iv`                                                                    |
-| `buffs`, `party_buffs`, `raid_buffs`, `debuffs` | flag lists of the buff fields, `battle_shout=improved` for a tristate, `target_dummies 2` in `raid_buffs`                                                                             |
+| `buffs`, `party_buffs`, `raid_buffs`, `debuffs` | flag lists of the buff fields, `mana_spring_totem=improved` for a tristate, `target_dummies 2` in `raid_buffs`                                                                        |
 | `encounter`                                     | `duration 180`, `duration_variation 5`, `execute_proportion_20 0.2`, one `targets(id=…, name="…", level=63, mob_type=mechanical, stats(…), …)` per target, written out field by field |
 | `sim`                                           | `iterations 25000`, `ep_weights_stats(stats(agility=2.1))`, `dps_ref_stat attack_power`                                                                                               |
 | `simple`                                        | the spec's `Rotation` fields (`time_to_weave 400`, `use_multi, use_arcane`, `playstyle weave`) and `cooldowns(hp_percent_for_defensives=0.4)`                                         |
@@ -1769,7 +1769,7 @@ spec hunter
 use "weave_common.apl.siml" with $wait_at_melee = max(input_delay, $time_to_weave)
 
 var ${Melee weave} = true
-var ${Time to weave} = 100ms
+var ${Time to weave} = 250ms
 var ${Use Aimed Shot} = false
 var ${Use Multi-Shot} = true
 var ${Use Arcane Shot} = true
@@ -1779,10 +1779,10 @@ priority:
   autocast_other_cooldowns if current_time >= 5s and at_range
   cast hunters_mark if not target.aura(hunters_mark).is_active
   cast raptor_strike
-  cast mongoose_bite
   cast strider_kick
+  cast mongoose_bite
   cast immolation_trap if in_melee
-  cast wing_clip
+  cast wing_clip if not spell(strider_kick).is_known or spell(strider_kick).time_to_ready > 1.5s
   cast serpent_sting if not dot(serpent_sting).is_active
   reset_sequence("HHA") if hawk_and_arcane and sequence("HHA").is_complete
   sequence "HHA" [cast summon_hawk, cast summon_hawk, cast arcane_shot] if hawk_and_arcane
@@ -1797,20 +1797,14 @@ priority:
   group "Weave" if $melee_weave
 
 group "Weave":
+  start_attack if in_melee
   wait gcd_time_to_ready if gcd_time_to_ready > 0s and gcd_time_to_ready <= 400ms
   wait kick_wait if kick_soon
-  wait min(400ms, max(input_delay, 0s))
-      if at_range
-      and gcd_is_ready
-      and ($use_arcane_shot and shot_soon(arcane_shot) or $use_multi_shot and shot_soon(multi_shot))
   wait min($wait_at_melee - auto_time_since_last(main_hand_auto), max(gcd_time_to_ready, input_delay))
   wait min(auto_time_to_next(main_hand_auto) + input_delay, max(gcd_time_to_ready, input_delay))
       if in_melee
-      and auto_time_to_next(main_hand_auto) <= min($time_to_range, auto_swing_time(main_hand) / 2)
-  when walk_in_now:
-    wait input_delay - auto_time_since_last(ranged_auto)
-    start_attack
-    move $melee_spot
+      and auto_time_since_last(main_hand_auto) > $time_to_range
+  move $melee_spot if walk_in_now
   move $shoot_spot
   wait min($time_to_walk_in, max(gcd_time_to_ready, input_delay))
       if $time_to_walk_in > 0s
@@ -1828,10 +1822,8 @@ Some notes on this file:
   follow this file's in the proto, and `with` sets `Wait at melee` from this file's `$time_to_weave`.
 - `$shoot_spot` folds to `Shoot spot`, which a used file declares, while the proto keeps the exact names that
   `ui/specs/hunter/dps/spec.ts` sets.
-- `shot_soon(arcane_shot)` reads as the used file's def with `arcane_shot` for `x` (§6.10), in parentheses within the
-  row's `and`.
-- The three rows under `when walk_in_now:` each read as `<row> if walk_in_now` (§6.9), so `print` writes the def's
-  four conditions on each of them.
+- `move $melee_spot if walk_in_now` reads the used file's def as its condition, so `print` writes the def's four
+  conditions on the row.
 
 The two variable presets are one-line files:
 
@@ -1988,30 +1980,30 @@ Some notes on this file:
 siml 1
 
 // The armor both playstyles share, with the two-hander to weave with.
-head       lieutenant_commanders_chain_helmet + falcons_call
-neck       fury_of_the_forgotten_swarm
-shoulder   spaulders_of_the_unseen
-back       earthweave_cloak + cloak_agility
-chest      primal_batskin_jerkin + chest_greater_stats
-wrist      primal_batskin_bracers + bracer_agility_7656
-hands      primal_batskin_gloves + gloves_greater_agility
-waist      belt_of_preserved_heads
-legs       leggings_of_the_plague_hunter + falcons_call
-feet       mongoose_boots + boots_agility
+head       beaststalkers_cap
+neck       maelstroms_tendril + necklace_agility
+shoulder   beaststalkers_mantle
+back       shifting_cloak + cloak_lesser_agility
+chest      beaststalkers_tunic + chest_greater_stats
+wrist      beaststalkers_bindings + bracer_agility_7656
+hands      beaststalkers_gloves + gloves_superior_agility
+waist      beaststalkers_belt
+legs       beaststalkers_pants + forceful_rugged_armor_kit
+feet       beaststalkers_boots + boots_greater_agility
 finger1    cutthroats_signet
-finger2    band_of_earthen_might
+finger2    selenium_loop of_agility
 trinket1   adaptive_combat_assistant
-trinket2   cleansed_vilebranch_icon
+trinket2   rune_of_the_guard_captain
 main_hand  legionite_glaive + enchant_2h_weapon_agility
-ranged     fahrads_reloading_repeater + saf_t_ultra_precision_scope
+ranged     fahrads_reloading_repeater + biznicks_247x128_accurascope
 ```
 
 Some notes on this file:
 
 - **The empty off hand** is left out, and the parse still yields 17 items.
 - **Effect 904** has three rows, which fit the neck, the wrist and the feet, so it has three names:
-  `necklace_agility`, `bracer_agility` and `boots_agility`. On the feet it prints as `boots_agility`, and each
-  of the three reads as 904.
+  `necklace_agility`, `bracer_agility` and `boots_agility`. On the neck it prints as `necklace_agility`, and
+  each of the three reads as 904.
 - **Effect 7656** has two rows that fit the wrist, which share one name, that of its first row. 904 is the lower
   effect id and took `bracer_agility`, so 7656 is `bracer_agility_7656`.
 
@@ -2036,7 +2028,7 @@ settings:
   race orc
   profession1 engineering
   profession2 blacksmithing
-  reaction_time_ms 100
+  reaction_time_ms 250
   distance_from_target 12
   quiver_bonus ancient_sinew_wrapped_lamina
   ammo thorium_headed_arrow
@@ -2046,36 +2038,45 @@ settings:
   pet_attack_speed faster_attack_ii
 
 gear:
-  head       lieutenant_commanders_chain_helmet + falcons_call
-  neck       fury_of_the_forgotten_swarm
-  shoulder   spaulders_of_the_unseen
-  back       earthweave_cloak + cloak_agility
-  chest      primal_batskin_jerkin + chest_greater_stats
-  wrist      primal_batskin_bracers + bracer_agility_7656
-  hands      primal_batskin_gloves + gloves_greater_agility
-  waist      belt_of_preserved_heads
-  legs       leggings_of_the_plague_hunter + falcons_call
-  feet       mongoose_boots + boots_agility
+  head       beaststalkers_cap
+  neck       maelstroms_tendril + necklace_agility
+  shoulder   beaststalkers_mantle
+  back       shifting_cloak + cloak_lesser_agility
+  chest      beaststalkers_tunic + chest_greater_stats
+  wrist      beaststalkers_bindings + bracer_agility_7656
+  hands      beaststalkers_gloves + gloves_superior_agility
+  waist      beaststalkers_belt
+  legs       beaststalkers_pants + forceful_rugged_armor_kit
+  feet       beaststalkers_boots + boots_greater_agility
   finger1    cutthroats_signet
-  finger2    band_of_earthen_might
+  finger2    selenium_loop of_agility
   trinket1   adaptive_combat_assistant
-  trinket2   cleansed_vilebranch_icon
+  trinket2   rune_of_the_guard_captain
   main_hand  legionite_glaive + enchant_2h_weapon_agility
-  ranged     fahrads_reloading_repeater + saf_t_ultra_precision_scope
+  ranged     fahrads_reloading_repeater + biznicks_247x128_accurascope
 
 consumables:
-  resource_pot major_mana_potion
+  flask flask_of_natural_aggression
   food swiftstrike_steak
   conjured demonic_rune
   explosive ez_thro_dynamite_ii
-  extra goblin_sapper_charge, scroll_of_strength_iv
+  mh_imbue elemental_sharpening_stone
+  extra goblin_sapper_charge,
+      scroll_of_strength_iv,
+      juju_might,
+      dragonbreath_chili,
+      ground_scorpok_assay
   elixir elixir_of_the_mongoose, greater_mageblood_elixir
+  resource_pot major_mana_potion
+  offensive_pot major_frenzy_potion
 
-buffs: greater_blessing_of_kings
+buffs: greater_blessing_of_kings, greater_blessing_of_might, greater_blessing_of_wisdom
 
 raid_buffs:
   arcane_brilliance, prayer_of_spirit, gift_of_the_wild, strength_of_earth_totem, grace_of_air_totem
-  battle_shout, leader_of_the_pack
+  windfury_totem
+  battle_shout 1
+  leader_of_the_pack
 
 debuffs:
   judgement_of_light, judgement_of_wisdom, curse_of_elements, curse_of_recklessness, faerie_fire
@@ -2084,7 +2085,7 @@ debuffs:
 sim: iterations 25000
 
 simple:
-  time_to_weave 200
+  time_to_weave 250
   pull_range 25
   use_multi, use_arcane
   playstyle weave
@@ -2108,11 +2109,11 @@ encounter:
 
 Some notes on this file:
 
-- **Size.** It is 76 lines and 2.2 KB.
+- **Size.** It is 85 lines and 2.4 KB.
 - **The rotation** is `TypeSimple`, inferred from `simple:`. The section encodes
-  `{"timeToWeave":200,"useMulti":true,"useArcane":true,"playstyle":"Weave","pullRange":25}` into
+  `{"timeToWeave":250,"useMulti":true,"useArcane":true,"playstyle":"Weave","pullRange":25}` into
   `spec_rotation_json` (§5.4).
 - **Left-out fields.** `pet_type pet_none` is the zero value and is not printed. `class` comes from
   `spec hunter`.
 - **Buff order.** The fields of `raid_buffs` follow declaration order in `proto/buffs.proto`. `battle_shout` is
-  the `TristateEffect` written bare, which means `regular`.
+  a number, the raid's rank (1 is Rank 6), so it takes a line of its own.

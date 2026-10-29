@@ -11,6 +11,8 @@ prepull:
   -19s group "Move to starting range"
 
 priority:
+  /// In melee range: turn on melee.
+  start_attack if self.unit_distance <= $melee_range
   autocast_other_cooldowns if current_time >= 5s
   cast raptor_strike
   cast hunters_mark if not target.aura(hunters_mark).is_active
@@ -30,8 +32,6 @@ group "Walk in":
   cast serpent_sting if not dot(serpent_sting).is_active
   cast arcane_shot
   cast multi_shot
-  /// Too close to shoot: turn on melee.
-  start_attack if not spell(arcane_shot).in_range
   /// Walk into melee, looking again every reaction time. Stop while my Auto Shot is due here, and react to each shot before walking on.
   move $melee_range recheck if not shot_due_here
   /// Standing for my Auto Shot.

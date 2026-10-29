@@ -2,7 +2,7 @@
 	"raidBuffs": {
 		"arcaneBrilliance": true,
 		"giftOfTheWild": true,
-		"battleShout": "TristateEffectImproved",
+		"battleShout": 2,
 		"leaderOfThePack": true
 	},
 	"debuffs": {

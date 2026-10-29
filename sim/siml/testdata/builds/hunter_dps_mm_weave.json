@@ -8,7 +8,8 @@
 		"giftOfTheWild": true,
 		"strengthOfEarthTotem": true,
 		"graceOfAirTotem": true,
-		"battleShout": "TristateEffectRegular",
+		"windfuryTotem": true,
+		"battleShout": 1,
 		"leaderOfThePack": true
 	},
 	"debuffs": {
@@ -28,53 +29,54 @@
 		"equipment": {
 			"items": [
 				{
-					"id": 16428,
-					"enchant": 2586
+					"id": 16677
 				},
 				{
-					"id": 21809
+					"id": 19620,
+					"enchant": 904
 				},
 				{
-					"id": 13116
+					"id": 16679
 				},
 				{
-					"id": 21187,
-					"enchant": 7667
+					"id": 18511,
+					"enchant": 849
 				},
 				{
-					"id": 19685,
+					"id": 16674,
 					"enchant": 1891
 				},
 				{
-					"id": 19687,
+					"id": 16681,
 					"enchant": 7656
 				},
 				{
-					"id": 19686,
-					"enchant": 8206
+					"id": 16676,
+					"enchant": 2564
 				},
 				{
-					"id": 20216
+					"id": 16680
 				},
 				{
-					"id": 22690,
-					"enchant": 2586
+					"id": 16678,
+					"enchant": 8491
 				},
 				{
-					"id": 18506,
-					"enchant": 904
+					"id": 16675,
+					"enchant": 1887
 				},
 				{
 					"id": 272408
 				},
 				{
-					"id": 21182
+					"id": 11990,
+					"randomSuffix": 12728
 				},
 				{
 					"id": 272437
 				},
 				{
-					"id": 270276
+					"id": 19120
 				},
 				{
 					"id": 250619,
@@ -83,20 +85,25 @@
 				{},
 				{
 					"id": 22347,
-					"enchant": 8720
+					"enchant": 2523
 				}
 			]
 		},
 		"consumables": {
+			"flaskId": 274274,
 			"foodId": 250072,
 			"conjuredId": 12662,
 			"explosiveId": 18588,
-			"extraIds": [10646, 10310],
+			"mhImbueId": 18262,
+			"extraIds": [10646, 10310, 12460, 12217, 8412],
 			"elixirIds": [13452, 250341],
-			"resourcePotId": 13444
+			"resourcePotId": 13444,
+			"offensivePotId": 250943
 		},
 		"buffs": {
-			"greaterBlessingOfKings": true
+			"greaterBlessingOfKings": true,
+			"greaterBlessingOfMight": true,
+			"greaterBlessingOfWisdom": true
 		},
 		"hunter": {
 			"options": {
@@ -243,8 +250,8 @@
 					"action": {
 						"castSpell": {
 							"spellId": {
-								"spellId": 14271,
-								"rank": 4
+								"spellId": 1317257,
+								"rank": 1
 							}
 						}
 					}
@@ -253,8 +260,8 @@
 					"action": {
 						"castSpell": {
 							"spellId": {
-								"spellId": 1317257,
-								"rank": 1
+								"spellId": 14271,
+								"rank": 4
 							}
 						}
 					}
@@ -288,6 +295,42 @@
 				},
 				{
 					"action": {
+						"condition": {
+							"or": {
+								"vals": [
+									{
+										"not": {
+											"val": {
+												"spellIsKnown": {
+													"spellId": {
+														"spellId": 1317257,
+														"rank": 1
+													}
+												}
+											}
+										}
+									},
+									{
+										"cmp": {
+											"op": "OpGt",
+											"lhs": {
+												"spellTimeToReady": {
+													"spellId": {
+														"spellId": 1317257,
+														"rank": 1
+													}
+												}
+											},
+											"rhs": {
+												"const": {
+													"val": "1.5s"
+												}
+											}
+										}
+									}
+								]
+							}
+						},
 						"castSpell": {
 							"spellId": {
 								"spellId": 14268,
@@ -595,6 +638,28 @@
 						{
 							"action": {
 								"condition": {
+									"cmp": {
+										"op": "OpLe",
+										"lhs": {
+											"unitDistance": {
+												"sourceUnit": {
+													"type": "Self"
+												}
+											}
+										},
+										"rhs": {
+											"const": {
+												"val": "5"
+											}
+										}
+									}
+								},
+								"startAttack": {}
+							}
+						},
+						{
+							"action": {
+								"condition": {
 									"and": {
 										"vals": [
 											{
@@ -759,219 +824,6 @@
 						},
 						{
 							"action": {
-								"condition": {
-									"and": {
-										"vals": [
-											{
-												"cmp": {
-													"op": "OpGt",
-													"lhs": {
-														"unitDistance": {
-															"sourceUnit": {
-																"type": "Self"
-															}
-														}
-													},
-													"rhs": {
-														"const": {
-															"val": "5"
-														}
-													}
-												}
-											},
-											{
-												"gcdIsReady": {}
-											},
-											{
-												"or": {
-													"vals": [
-														{
-															"and": {
-																"vals": [
-																	{
-																		"variableRef": {
-																			"name": "Use Arcane Shot"
-																		}
-																	},
-																	{
-																		"and": {
-																			"vals": [
-																				{
-																					"spellIsKnown": {
-																						"spellId": {
-																							"spellId": 14287,
-																							"rank": 8
-																						}
-																					}
-																				},
-																				{
-																					"cmp": {
-																						"op": "OpLe",
-																						"lhs": {
-																							"spellCurrentCost": {
-																								"spellId": {
-																									"spellId": 14287,
-																									"rank": 8
-																								}
-																							}
-																						},
-																						"rhs": {
-																							"currentMana": {}
-																						}
-																					}
-																				},
-																				{
-																					"cmp": {
-																						"op": "OpGt",
-																						"lhs": {
-																							"spellTimeToReady": {
-																								"spellId": {
-																									"spellId": 14287,
-																									"rank": 8
-																								}
-																							}
-																						},
-																						"rhs": {
-																							"const": {
-																								"val": "0s"
-																							}
-																						}
-																					}
-																				},
-																				{
-																					"cmp": {
-																						"op": "OpLe",
-																						"lhs": {
-																							"spellTimeToReady": {
-																								"spellId": {
-																									"spellId": 14287,
-																									"rank": 8
-																								}
-																							}
-																						},
-																						"rhs": {
-																							"const": {
-																								"val": "400ms"
-																							}
-																						}
-																					}
-																				}
-																			]
-																		}
-																	}
-																]
-															}
-														},
-														{
-															"and": {
-																"vals": [
-																	{
-																		"variableRef": {
-																			"name": "Use Multi-Shot"
-																		}
-																	},
-																	{
-																		"and": {
-																			"vals": [
-																				{
-																					"spellIsKnown": {
-																						"spellId": {
-																							"spellId": 2643
-																						}
-																					}
-																				},
-																				{
-																					"cmp": {
-																						"op": "OpLe",
-																						"lhs": {
-																							"spellCurrentCost": {
-																								"spellId": {
-																									"spellId": 2643
-																								}
-																							}
-																						},
-																						"rhs": {
-																							"currentMana": {}
-																						}
-																					}
-																				},
-																				{
-																					"cmp": {
-																						"op": "OpGt",
-																						"lhs": {
-																							"spellTimeToReady": {
-																								"spellId": {
-																									"spellId": 2643
-																								}
-																							}
-																						},
-																						"rhs": {
-																							"const": {
-																								"val": "0s"
-																							}
-																						}
-																					}
-																				},
-																				{
-																					"cmp": {
-																						"op": "OpLe",
-																						"lhs": {
-																							"spellTimeToReady": {
-																								"spellId": {
-																									"spellId": 2643
-																								}
-																							}
-																						},
-																						"rhs": {
-																							"const": {
-																								"val": "400ms"
-																							}
-																						}
-																					}
-																				}
-																			]
-																		}
-																	}
-																]
-															}
-														}
-													]
-												}
-											}
-										]
-									}
-								},
-								"wait": {
-									"duration": {
-										"min": {
-											"vals": [
-												{
-													"const": {
-														"val": "400ms"
-													}
-												},
-												{
-													"max": {
-														"vals": [
-															{
-																"inputDelay": {}
-															},
-															{
-																"const": {
-																	"val": "0s"
-																}
-															}
-														]
-													}
-												}
-											]
-										}
-									}
-								}
-							}
-						},
-						{
-							"action": {
 								"wait": {
 									"duration": {
 										"min": {
@@ -1033,36 +885,15 @@
 											},
 											{
 												"cmp": {
-													"op": "OpLe",
+													"op": "OpGt",
 													"lhs": {
-														"autoTimeToNext": {
+														"autoTimeSinceLast": {
 															"autoType": "MainHandAuto"
 														}
 													},
 													"rhs": {
-														"min": {
-															"vals": [
-																{
-																	"variableRef": {
-																		"name": "Time to range"
-																	}
-																},
-																{
-																	"math": {
-																		"op": "OpDiv",
-																		"lhs": {
-																			"autoSwingTime": {
-																				"autoType": "MainHand"
-																			}
-																		},
-																		"rhs": {
-																			"const": {
-																				"val": "2"
-																			}
-																		}
-																	}
-																}
-															]
+														"variableRef": {
+															"name": "Time to range"
 														}
 													}
 												}
@@ -1103,146 +934,6 @@
 										}
 									}
 								}
-							}
-						},
-						{
-							"action": {
-								"condition": {
-									"and": {
-										"vals": [
-											{
-												"cmp": {
-													"op": "OpLe",
-													"lhs": {
-														"variableRef": {
-															"name": "Time to walk in"
-														}
-													},
-													"rhs": {
-														"const": {
-															"val": "0s"
-														}
-													}
-												}
-											},
-											{
-												"variableRef": {
-													"name": "Weave fits"
-												}
-											},
-											{
-												"cmp": {
-													"op": "OpGt",
-													"lhs": {
-														"autoTimeToNext": {
-															"autoType": "RangedAuto"
-														}
-													},
-													"rhs": {
-														"const": {
-															"val": "500ms"
-														}
-													}
-												}
-											},
-											{
-												"cmp": {
-													"op": "OpGt",
-													"lhs": {
-														"unitDistance": {
-															"sourceUnit": {
-																"type": "Self"
-															}
-														}
-													},
-													"rhs": {
-														"const": {
-															"val": "5"
-														}
-													}
-												}
-											}
-										]
-									}
-								},
-								"wait": {
-									"duration": {
-										"math": {
-											"op": "OpSub",
-											"lhs": {
-												"inputDelay": {}
-											},
-											"rhs": {
-												"autoTimeSinceLast": {
-													"autoType": "RangedAuto"
-												}
-											}
-										}
-									}
-								}
-							}
-						},
-						{
-							"action": {
-								"condition": {
-									"and": {
-										"vals": [
-											{
-												"cmp": {
-													"op": "OpLe",
-													"lhs": {
-														"variableRef": {
-															"name": "Time to walk in"
-														}
-													},
-													"rhs": {
-														"const": {
-															"val": "0s"
-														}
-													}
-												}
-											},
-											{
-												"variableRef": {
-													"name": "Weave fits"
-												}
-											},
-											{
-												"cmp": {
-													"op": "OpGt",
-													"lhs": {
-														"autoTimeToNext": {
-															"autoType": "RangedAuto"
-														}
-													},
-													"rhs": {
-														"const": {
-															"val": "500ms"
-														}
-													}
-												}
-											},
-											{
-												"cmp": {
-													"op": "OpGt",
-													"lhs": {
-														"unitDistance": {
-															"sourceUnit": {
-																"type": "Self"
-															}
-														}
-													},
-													"rhs": {
-														"const": {
-															"val": "5"
-														}
-													}
-												}
-											}
-										]
-									}
-								},
-								"startAttack": {}
 							}
 						},
 						{
@@ -1458,7 +1149,7 @@
 					"name": "Time to weave",
 					"value": {
 						"const": {
-							"val": "100ms"
+							"val": "250ms"
 						}
 					}
 				},
@@ -1498,7 +1189,7 @@
 					"name": "Ranged range",
 					"value": {
 						"const": {
-							"val": "12"
+							"val": "13.19"
 						}
 					}
 				},
@@ -1531,7 +1222,7 @@
 					"name": "Max Auto Shot delay",
 					"value": {
 						"const": {
-							"val": "1.2s"
+							"val": "2.4s"
 						}
 					}
 				},
@@ -1898,7 +1589,7 @@
 				}
 			]
 		},
-		"reactionTimeMs": 100,
+		"reactionTimeMs": 250,
 		"distanceFromTarget": 12
 	},
 	"encounter": {

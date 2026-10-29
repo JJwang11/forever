@@ -10,7 +10,7 @@ party_buffs:
 
 raid_buffs:
   arcane_brilliance, gift_of_the_wild
-  battle_shout=improved, leader_of_the_pack
+  battle_shout=2, leader_of_the_pack
   target_dummies 3
 
 debuffs:

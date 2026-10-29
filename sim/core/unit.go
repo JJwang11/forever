@@ -1103,6 +1103,9 @@ func (unit *Unit) GetBlockFromRating() float64 {
 }
 
 func (unit *Unit) GetTotalDodgeChanceAsDefender(spell *Spell, atkTable *AttackTable) float64 {
+	if spell.Flags.Matches(SpellFlagNoActiveDefense) {
+		return 0
+	}
 	chance := unit.PseudoStats.BaseDodgeChance +
 		atkTable.Hand(spell).BaseDodgeChance +
 		unit.GetDodgeFromRating() -
@@ -1112,6 +1115,9 @@ func (unit *Unit) GetTotalDodgeChanceAsDefender(spell *Spell, atkTable *AttackTa
 }
 
 func (unit *Unit) GetTotalParryChanceAsDefender(spell *Spell, atkTable *AttackTable) float64 {
+	if spell.Flags.Matches(SpellFlagNoActiveDefense) {
+		return 0
+	}
 	chance := unit.PseudoStats.BaseParryChance +
 		atkTable.Hand(spell).BaseParryChance +
 		unit.GetParryFromRating() -
@@ -1129,6 +1135,9 @@ func (unit *Unit) GetTotalChanceToBeMissedAsDefender(spell *Spell, atkTable *Att
 }
 
 func (unit *Unit) GetTotalBlockChanceAsDefender(spell *Spell, atkTable *AttackTable) float64 {
+	if spell.Flags.Matches(SpellFlagNoActiveDefense) {
+		return 0
+	}
 	chance := unit.PseudoStats.BaseBlockChance +
 		atkTable.Hand(spell).BaseBlockChance +
 		unit.GetBlockFromRating()

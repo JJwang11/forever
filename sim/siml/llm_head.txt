@@ -64,7 +64,7 @@ diagnostics. Names complete from `sim/siml/names.json`, items from the database.
 An `x.siml` has these sections: `settings:` `consumables:` `buffs:` `party_buffs:` `raid_buffs:` `debuffs:`
 `encounter:` `sim:` `gear:` `item_swap:` `apl:` `simple:` `cooldowns:` `prepull:` `priority:` `group "<name>":`.
 
-Entries are `field value` lines or comma lists of flags (`raid_buffs:` `gift_of_the_wild, battle_shout`);
+Entries are `field value` lines or comma lists of flags (`raid_buffs:` `gift_of_the_wild, windfury_totem`);
 `sim: iterations 25000` fits one line. Gear rows are `<slot> <item> [<suffix>] [+ <enchant>]`, the slots `head`
 `neck` `shoulder` `back` `chest` `wrist` `hands` `waist` `legs` `feet` `finger1` `finger2` `trinket1` `trinket2`
 `main_hand` `off_hand` `ranged`.

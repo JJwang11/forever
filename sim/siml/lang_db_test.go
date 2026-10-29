@@ -183,7 +183,7 @@ func TestCompleteEntries(t *testing.T) {
 	hasAll(t, "race", complete(t, "siml 1\nspec hunter\n\nsettings:\n  race |\n", setupPath), "orc")
 	hasAll(t, "quiver", complete(t, "siml 1\nspec hunter\n\nsettings:\n  quiver_bonus |\n", setupPath), "ancient_sinew_wrapped_lamina")
 	hasAll(t, "buffs", complete(t, "siml 1\n\nbuffs: |\n", setupPath), "greater_blessing_of_kings")
-	hasAll(t, "flag value", complete(t, "siml 1\n\nraid_buffs: battle_shout=|\n", setupPath), "improved")
+	hasAll(t, "flag value", complete(t, "siml 1\n\nparty_buffs: mana_spring_totem=|\n", setupPath), "improved")
 }
 
 func TestCompleteConsumables(t *testing.T) {
@@ -203,7 +203,7 @@ func TestCompleteSlotRows(t *testing.T) {
 	offHand := complete(t, "siml 1\n\noff_hand |\n", gearPath)
 	hasAll(t, "off hand", offHand, "thunderfury_blessed_blade_of_the_windseeker")
 	hasNone(t, "a two-hander goes in the main hand only", offHand, "legionite_glaive")
-	hasAll(t, "suffixes", complete(t, "siml 1\n\nmain_hand notched_shortsword |\n", gearPath), "of_the_eagle", "+")
+	hasAll(t, "suffixes", complete(t, "siml 1\n\nmain_hand northern_shortsword |\n", gearPath), "of_the_eagle", "+")
 	enchants := complete(t, "siml 1\n\nhead lieutenant_commanders_chain_helmet + |\n", gearPath)
 	hasAll(t, "enchants", enchants, "falcons_call")
 	hasNone(t, "enchants", enchants, "cloak_agility")
@@ -259,7 +259,7 @@ func TestHoverWords(t *testing.T) {
 }
 
 func TestHoverGear(t *testing.T) {
-	gear := "siml 1\n\nhead lieutenant_commanders_chain_helmet + falcons_call\nmain_hand notched_shortsword of_the_eagle\n"
+	gear := "siml 1\n\nhead lieutenant_commanders_chain_helmet + falcons_call\nmain_hand northern_shortsword of_the_eagle\n"
 	d := analyzeText(t, gearPath, gear)
 	matchesText(t, "item", hoverText(t, d, positionOf(gear, "lieutenant", 2)), `Lieutenant Commander's Chain Helm.* · item \d+`)
 	falcons := langNames(t).Enchants["falcons_call"]

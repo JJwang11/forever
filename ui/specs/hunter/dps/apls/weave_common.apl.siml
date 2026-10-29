@@ -6,10 +6,10 @@ use "walk_in.apl.siml" with $shoot_spot = max($ranged_range, 11.67)
 // in for the next main-hand swing and is back before the Auto Shot it delays is more than Max Auto Shot delay late
 // (Max long weave delay when one walk in and out outlasts an Auto Shot cycle). A rotation sets Wait at melee with
 // use … with to stay longer at melee.
-var ${Ranged range} = 12
+var ${Ranged range} = 13.19
 var ${Walk-in range} = 4.99
 var ${Wait at melee} = input_delay
-var ${Max Auto Shot delay} = 1.2s
+var ${Max Auto Shot delay} = 2.4s
 var ${Max long weave delay} = 4s
 var ${Melee spot} = min($walk_in_range, 4.99)
 var ${Run speed} = self.unit_movement_speed
@@ -35,8 +35,3 @@ def kick_soon =
     and spell(strider_kick).current_cost <= current_mana
     and kick_wait > 0s
     and kick_wait <= 400ms
-def shot_soon(x) =
-    spell(x).is_known
-    and spell(x).current_cost <= current_mana
-    and spell(x).time_to_ready > 0s
-    and spell(x).time_to_ready <= 400ms

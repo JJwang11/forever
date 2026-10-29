@@ -48,13 +48,13 @@ func TestRepositoryCheck(t *testing.T) {
 		want       []string
 	}{
 		{"ui/specs/hunter/dps/apls/valid.apl.siml", rotation, nil},
-		{"ui/specs/hunter/dps/gear_sets/valid.gear.siml", "siml 1\n\nhead       lieutenant_commanders_chain_helmet + falcons_call\nmain_hand  notched_shortsword of_the_monkey + weapon_crusader\n", nil},
+		{"ui/specs/hunter/dps/gear_sets/valid.gear.siml", "siml 1\n\nhead       lieutenant_commanders_chain_helmet + falcons_call\nmain_hand  northern_shortsword of_the_monkey + weapon_crusader\n", nil},
 		{"ui/specs/hunter/dps/apls/foreign.apl.siml", foreign, []string{
 			"%s:5:27: cheat_death is an aura no hunter build registers",
 		}},
-		{"ui/specs/hunter/dps/gear_sets/wrong.gear.siml", "siml 1\n\nhead       lieutenant_commanders_chain_helmet + cloak_agility\nmain_hand  notched_shortsword of_agility_13019 + weapon_crusader\nranged     ghost_blade\n", []string{
+		{"ui/specs/hunter/dps/gear_sets/wrong.gear.siml", "siml 1\n\nhead       lieutenant_commanders_chain_helmet + cloak_agility\nmain_hand  northern_shortsword of_agility_13019 + weapon_crusader\nranged     ghost_blade\n", []string{
 			"%s:3:49: cloak_agility fits back, not head",
-			"%s:4:31: Notched Shortsword rolls no of_agility_13019",
+			"%s:4:32: Northern Shortsword rolls no of_agility_13019",
 			"%s:5:12: the database has no item 999999",
 		}},
 		{"ui/specs/hunter/dps/gear_sets/one_hand.gear.siml", "siml 1\n\nmain_hand  thunderfury_blessed_blade_of_the_windseeker + enchant_2h_weapon_agility\n", []string{

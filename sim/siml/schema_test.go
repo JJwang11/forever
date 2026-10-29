@@ -394,7 +394,7 @@ func TestSchemaDerivations(t *testing.T) {
 		{"proto.ItemSpec", "random_suffix", "random_suffix", "", "ref", "suffix"},
 		{"proto.APLActionCastAllStatBuffCooldowns", "stat_type2", "stat_type2", "", "stat", ""},
 		{"proto.Target", "id", "id", "", "number", ""},
-		{"proto.RaidBuffs", "battle_shout", "battle_shout", "", "flag_enum", ""},
+		{"proto.PartyBuffs", "mana_spring_totem", "mana_spring_totem", "", "flag_enum", ""},
 		{"proto.Player", "distance_from_target", "distance_from_target", "", "number", ""},
 		{"proto.Player", "race", "race", "", "enum", ""},
 		{"proto.Cooldown", "id", "id", "", "action_id", ""},

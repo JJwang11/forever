@@ -17,7 +17,7 @@ settings:
 gear:
   head       lieutenant_commanders_chain_helmet + falcons_call
   neck       fury_of_the_forgotten_swarm
-  shoulder   spaulders_of_the_unseen
+  shoulder   golden_mantle_of_the_dawn
   back       earthweave_cloak + cloak_agility
   chest      primal_batskin_jerkin + chest_greater_stats
   wrist      primal_batskin_bracers + bracer_agility_7656
@@ -45,7 +45,7 @@ buffs: greater_blessing_of_kings
 raid_buffs:
   arcane_brilliance, prayer_of_spirit, gift_of_the_wild, prayer_of_fortitude
   strength_of_earth_totem
-  grace_of_air_totem, battle_shout, leader_of_the_pack
+  grace_of_air_totem, battle_shout=1, leader_of_the_pack
   prayer_of_shadow_protection
 
 debuffs:

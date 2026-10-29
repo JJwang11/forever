@@ -155,15 +155,15 @@ func TestGenerateIsDeterministic(t *testing.T) {
 // name.
 func TestPinnedNamesSurviveTheSim(t *testing.T) {
 	old, _, c := committedTable(t)
-	heroic := old.Classes[proto.Class_ClassWarrior][siml.NamespaceSpell]["heroic_strike"]
-	if heroic.Tag == 0 || !slices.Contains(heroic.RegisteredBy, "dps_warrior") {
-		t.Fatalf("warrior.spell.heroic_strike is %+v, want a tagged spell dps_warrior registers", heroic)
+	cleave := old.Classes[proto.Class_ClassWarrior][siml.NamespaceSpell]["cleave"]
+	if cleave.Tag == 0 || !slices.Contains(cleave.RegisteredBy, "dps_warrior") {
+		t.Fatalf("warrior.spell.cleave is %+v, want a tagged spell dps_warrior registers", cleave)
 	}
 	const pinnedTag = 7
 	pinned := &siml.Names{Classes: maps.Clone(old.Classes), Shared: old.Shared, Items: old.Items, Enchants: old.Enchants, Suffixes: old.Suffixes}
 	pinned.Classes[proto.Class_ClassWarrior] = maps.Clone(old.Classes[proto.Class_ClassWarrior])
 	spells := maps.Clone(old.Classes[proto.Class_ClassWarrior][siml.NamespaceSpell])
-	spells["heroic_strike"] = siml.SpellName{SpellID: heroic.SpellID, Tag: pinnedTag}
+	spells["cleave"] = siml.SpellName{SpellID: cleave.SpellID, Tag: pinnedTag}
 	pinned.Classes[proto.Class_ClassWarrior][siml.NamespaceSpell] = spells
 
 	names, report, err := Update(pinned, c, nil)
@@ -171,16 +171,16 @@ func TestPinnedNamesSurviveTheSim(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := names.Classes[proto.Class_ClassWarrior][siml.NamespaceSpell]
-	if e := got["heroic_strike"]; e.SpellID != heroic.SpellID || e.Tag != pinnedTag || len(e.RegisteredBy) != 0 {
-		t.Errorf("heroic_strike is %+v, want the pinned spell %d tag %d with no registered-by", e, heroic.SpellID, pinnedTag)
+	if e := got["cleave"]; e.SpellID != cleave.SpellID || e.Tag != pinnedTag || len(e.RegisteredBy) != 0 {
+		t.Errorf("cleave is %+v, want the pinned spell %d tag %d with no registered-by", e, cleave.SpellID, pinnedTag)
 	}
-	tagged := fmt.Sprintf("heroic_strike_tag%d", heroic.Tag)
-	if e := got[tagged]; e.SpellID != heroic.SpellID || e.Tag != heroic.Tag || !slices.Contains(e.RegisteredBy, "dps_warrior") {
-		t.Errorf("%s is %+v, want the registered spell %d tag %d", tagged, e, heroic.SpellID, heroic.Tag)
+	tagged := fmt.Sprintf("cleave_tag%d", cleave.Tag)
+	if e := got[tagged]; e.SpellID != cleave.SpellID || e.Tag != cleave.Tag || !slices.Contains(e.RegisteredBy, "dps_warrior") {
+		t.Errorf("%s is %+v, want the registered spell %d tag %d", tagged, e, cleave.SpellID, cleave.Tag)
 	}
-	stale := fmt.Sprintf("warrior.spell.heroic_strike is pinned to spell %[1]d tag %[2]d; the sim registers spell %[1]d, spell %[1]d tag %[3]d", heroic.SpellID, pinnedTag, heroic.Tag)
+	stale := fmt.Sprintf("warrior.spell.cleave is pinned to spell %[1]d tag %[2]d; the sim registers spell %[1]d, spell %[1]d tag %[3]d", cleave.SpellID, pinnedTag, cleave.Tag)
 	if !slices.Contains(report.Stale, stale) {
-		t.Errorf("the report does not name the stale heroic_strike: %v", report.Stale)
+		t.Errorf("the report does not name the stale cleave: %v", report.Stale)
 	}
 	for name, e := range spells {
 		if g, ok := got[name]; !ok || g.SpellID != e.SpellID || g.Tag != e.Tag || g.Rank != e.Rank {
@@ -188,7 +188,7 @@ func TestPinnedNamesSurviveTheSim(t *testing.T) {
 		}
 	}
 	added := slices.DeleteFunc(slices.Clone(report.Added), func(line string) bool { return !strings.HasPrefix(line, "warrior.spell.") })
-	if want := []string{fmt.Sprintf("warrior.spell.%s = spell %d tag %d", tagged, heroic.SpellID, heroic.Tag)}; !reflect.DeepEqual(added, want) {
+	if want := []string{fmt.Sprintf("warrior.spell.%s = spell %d tag %d", tagged, cleave.SpellID, cleave.Tag)}; !reflect.DeepEqual(added, want) {
 		t.Errorf("the run added %v to warrior.spell, want %s alone", added, tagged)
 	}
 }
