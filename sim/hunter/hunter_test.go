@@ -545,6 +545,56 @@ func TestAutoShotWindupScalesWithRangedHaste(t *testing.T) {
 	}
 }
 
+func TestAutoShotCancellationKeepsItsStartingHaste(t *testing.T) {
+	player := &proto.Player{
+		Name: "Shot", Race: proto.Race_RaceOrc, Class: proto.Class_ClassHunter,
+		Equipment:     core.GetGearSet("../../ui/specs/hunter/dps/gear_sets", "p1").GearSet,
+		TalentsString: DefaultMMTalents, Spec: DefaultOptions,
+		Rotation: &proto.APLRotation{}, DistanceFromTarget: 20,
+	}
+	sim := core.NewSim(&proto.RaidSimRequest{
+		Raid:      core.SinglePlayerRaidProto(player, &proto.PartyBuffs{}, &proto.RaidBuffs{}, &proto.Debuffs{}),
+		Encounter: core.MakeSingleTargetEncounter(0), SimOptions: &proto.SimOptions{RandomSeed: 1},
+	}, simsignals.CreateSignals())
+	sim.Reset()
+	hunter := sim.Raid.Parties[0].Players[0].(*Hunter)
+	auto := core.ActionID{OtherID: proto.OtherAction_OtherActionShoot}.String()
+	var began time.Duration
+	var started bool
+	var cancellation string
+	sim.Log = func(format string, args ...interface{}) {
+		line := fmt.Sprintf(format, args...)
+		if strings.Contains(line, "Casting "+auto+" ") {
+			began, started = sim.CurrentTime, true
+		}
+		if strings.Contains(line, "Cancelled "+auto+" ") {
+			cancellation = line
+		}
+	}
+	sim.PrePull()
+	for i := 0; !started && i < 10000; i++ {
+		sim.Step()
+	}
+	if !started {
+		t.Fatal("Auto Shot did not start a windup")
+	}
+	const elapsed = 100 * time.Millisecond
+	sim.AddPendingAction(&core.PendingAction{
+		NextActionAt: began + elapsed,
+		OnAction: func(sim *core.Simulation) {
+			hunter.MultiplyRangedSpeed(sim, 2)
+			hunter.MoveDuration(time.Second, sim)
+		},
+	})
+	for i := 0; cancellation == "" && i < 10000; i++ {
+		sim.Step()
+	}
+	if !strings.Contains(cancellation, "after "+elapsed.String()) {
+		t.Fatalf("cancellation = %q, want an elapsed windup of %v", cancellation, elapsed)
+	}
+	t.Log(cancellation)
+}
+
 // An Auto Shot that comes due while the hunter moves winds up a reaction time after the move ends,
 // as the player starts it again by hand, not at the hidden retry timer's next check.
 func TestAutoShotWindsUpWhenTheMoveEnds(t *testing.T) {
