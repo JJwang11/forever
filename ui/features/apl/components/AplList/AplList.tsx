@@ -1,8 +1,7 @@
 import { AplProvider } from '@features/apl/context/AplContext';
-import { useAplReveal, useAplRevealTarget } from '@features/apl/hooks/useAplReveal';
+import { useAplRevealOpen, useAplRevealTarget } from '@features/apl/hooks/useAplReveal';
 import { actionKinds, type APLActionKind } from '@features/apl/model/action_kinds';
 import { type AplMove, applyMove, canApplyMove, type MoveSource, type OffersKind, resolveMoveSource } from '@features/apl/model/apply_move';
-import { aplRevealLine } from '@features/apl/model/reveal';
 import type { APLRotation } from '@generated/proto/apl';
 import i18n from '@i18n/config';
 import { usePlayer } from '@sim/context/SimHostContext';
@@ -92,12 +91,11 @@ export interface AplListEntryProps {
 }
 
 const RevealOpen = ({ on }: { on: (line: AplLinePath) => boolean }) => {
-	const request = useAplReveal();
+	const { onPath, nonce } = useAplRevealOpen(on);
 	const { setOpen } = useTreeItem();
-	const open = request !== null && on(aplRevealLine(request.path));
 	useLayoutEffect(() => {
-		if (open) setOpen(true);
-	}, [open, request, setOpen]);
+		if (onPath) setOpen(true);
+	}, [onPath, nonce, setOpen]);
 	return null;
 };
 

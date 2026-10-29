@@ -655,4 +655,50 @@ describe('AplList opening the line a cast was clicked for', () => {
 		expect(flashed()).toEqual([]);
 		expect(scrolled).toEqual([]);
 	});
+
+	it('does not reveal again when a row above the revealed one is deleted and the rows below shift up', () => {
+		setup({ priorityList: [row('a'), row('b'), row('c')] });
+		mount();
+		act(() => requestAplReveal([{ kind: 'priority', index: 1 }]));
+		act(() => vi.advanceTimersByTime(1600));
+		toggle(priorityRows()[2]);
+		scrolled.length = 0;
+
+		act(() => {
+			player.aplRotation.priorityList = player.aplRotation.priorityList.slice(1);
+			source.notify();
+		});
+		act(() => vi.advanceTimersByTime(20));
+
+		expect(namesShown()).toEqual(['b', 'c']);
+		expect(priorityRows()[1].hasAttribute('data-open')).toBe(false);
+		expect(flashed()).toEqual([]);
+		expect(scrolled).toEqual([]);
+	});
+
+	it('does not open another group when a group above the revealed one is deleted', () => {
+		setup({
+			groups: [
+				APLGroup.create({ name: 'one', actions: [row('x')] }),
+				APLGroup.create({ name: 'two', actions: [row('y')] }),
+				APLGroup.create({ name: 'three', actions: [row('z')] }),
+			],
+		});
+		mount(<GroupList />);
+		const groups = () => Array.from(document.querySelectorAll<HTMLElement>('[data-testid="apl-group-editor-root"]'));
+		act(() => requestAplReveal([{ kind: 'group', group: 1, index: 0 }]));
+		act(() => vi.advanceTimersByTime(1600));
+		groups().forEach(toggle);
+		scrolled.length = 0;
+
+		act(() => {
+			player.aplRotation.groups = player.aplRotation.groups.slice(1);
+			source.notify();
+		});
+		act(() => vi.advanceTimersByTime(20));
+
+		expect(groups().map(group => group.hasAttribute('data-open'))).toEqual([false, false]);
+		expect(flashed()).toEqual([]);
+		expect(scrolled).toEqual([]);
+	});
 });
