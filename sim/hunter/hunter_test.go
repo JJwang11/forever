@@ -545,6 +545,93 @@ func TestAutoShotWindupScalesWithRangedHaste(t *testing.T) {
 	}
 }
 
+func TestAutoShotHasteChangesKeepScheduledRelease(t *testing.T) {
+	for _, tc := range []struct {
+		name       string
+		changes    []float64
+		disabled   bool
+		duringCast bool
+	}{
+		{name: "gain", changes: []float64{2}},
+		{name: "loss", changes: []float64{0.5}},
+		{name: "gain_then_fade", changes: []float64{2, 0.5}},
+		{name: "out_of_range_gain", changes: []float64{2}, disabled: true},
+		{name: "during_windup", changes: []float64{2}, duringCast: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			player := &proto.Player{
+				Name: "Shot", Race: proto.Race_RaceOrc, Class: proto.Class_ClassHunter,
+				Equipment:     core.GetGearSet("../../ui/specs/hunter/dps/gear_sets", "p1").GearSet,
+				TalentsString: DefaultMMTalents, Spec: DefaultOptions,
+				Rotation: &proto.APLRotation{}, DistanceFromTarget: 20,
+			}
+			sim := core.NewSim(&proto.RaidSimRequest{
+				Raid:      core.SinglePlayerRaidProto(player, &proto.PartyBuffs{}, &proto.RaidBuffs{}, &proto.Debuffs{}),
+				Encounter: core.MakeSingleTargetEncounter(0), SimOptions: &proto.SimOptions{RandomSeed: 1},
+			}, simsignals.CreateSignals())
+			sim.Reset()
+			hunter := sim.Raid.Parties[0].Players[0].(*Hunter)
+			hunter.MultiplyRangedSpeed(sim, 1/hunter.TotalRangedHasteMultiplier())
+			auto := core.ActionID{OtherID: proto.OtherAction_OtherActionShoot}.String()
+			var began, completed []time.Duration
+			var scheduledRelease time.Duration
+			sim.Log = func(format string, args ...interface{}) {
+				line := fmt.Sprintf(format, args...)
+				if strings.Contains(line, "Casting "+auto+" ") {
+					began = append(began, sim.CurrentTime)
+				}
+				if !strings.Contains(line, "Completed cast "+auto) {
+					return
+				}
+				completed = append(completed, sim.CurrentTime)
+				if len(completed) != 1 {
+					return
+				}
+				scheduledRelease = sim.CurrentTime + hunter.AutoAttacks.RangedSwingSpeed()
+				changeAt := sim.CurrentTime
+				if tc.duringCast {
+					changeAt = hunter.AutoAttacks.NextRangedAttackAt()
+				}
+				for i, multiplier := range tc.changes {
+					sim.AddPendingAction(&core.PendingAction{
+						NextActionAt: changeAt + time.Duration(i+1)*100*time.Millisecond,
+						OnAction: func(sim *core.Simulation) {
+							if tc.disabled {
+								hunter.AutoAttacks.CancelRangedSwing(sim)
+							}
+							hunter.MultiplyRangedSpeed(sim, multiplier)
+							if tc.disabled {
+								hunter.AutoAttacks.EnableRangedSwing(sim)
+							}
+						},
+					})
+				}
+			}
+			sim.PrePull()
+			for i := 0; len(completed) < 3 && i < 10000; i++ {
+				sim.Step()
+			}
+			if len(began) < 3 || len(completed) < 3 {
+				t.Fatalf("observed %d windups and %d releases, want three of each", len(began), len(completed))
+			}
+			windup := hunter.ApplyRangedSpeed(core.RangedSwingWindup)
+			if tc.duringCast {
+				windup = core.RangedSwingWindup
+			}
+			if got, want := began[1], scheduledRelease-windup; got != want {
+				t.Errorf("windup starts at %v, want %v", got, want)
+			}
+			if completed[1] != scheduledRelease {
+				t.Errorf("shot released at %v, want the scheduled time %v", completed[1], scheduledRelease)
+			}
+			if got, want := completed[2]-completed[1], hunter.AutoAttacks.RangedSwingSpeed(); got != want {
+				t.Errorf("next release interval = %v, want %v", got, want)
+			}
+			t.Logf("windup starts at %v, takes %v, releases at %v (scheduled %v)", began[1], completed[1]-began[1], completed[1], scheduledRelease)
+		})
+	}
+}
+
 // An Auto Shot that comes due while the hunter moves winds up a reaction time after the move ends,
 // as the player starts it again by hand, not at the hidden retry timer's next check.
 func TestAutoShotWindsUpWhenTheMoveEnds(t *testing.T) {

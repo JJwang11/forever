@@ -998,13 +998,25 @@ func (aa *AutoAttacks) MaybeReplaceMHSwing(sim *Simulation, mhSwingSpell *Spell)
 }
 
 func (aa *AutoAttacks) UpdateSwingTimers(sim *Simulation) {
-	if !aa.anyEnabled() {
+	if !aa.anyEnabled() && !aa.AutoSwingRanged {
 		return
 	}
 
-	if aa.AutoSwingRanged && aa.ranged.enabled {
+	if aa.AutoSwingRanged {
+		var oldWindup time.Duration
+		if aa.ranged.curSwingSpeed > 0 {
+			oldWindup = time.Duration(float64(RangedSwingWindup) / aa.ranged.curSwingSpeed)
+		}
 		aa.ranged.updateSwingDuration(aa.ranged.unit.TotalRangedHasteMultiplier())
-		// ranged attack speed changes aren't applied mid-"swing"
+		// The next release stays fixed; haste moves the queued windup's start.
+		if aa.ranged.windupEnd == 0 && aa.ranged.swingAt == aa.ranged.naturalReadyAt && aa.ranged.swingAt > sim.CurrentTime && oldWindup > 0 {
+			offset := oldWindup - aa.ranged.unit.ApplyRangedSpeed(RangedSwingWindup)
+			aa.ranged.naturalReadyAt += offset
+			aa.ranged.swingAt = max(sim.CurrentTime, aa.ranged.swingAt+offset)
+			if aa.ranged.enabled {
+				sim.rescheduleWeaponAttack(aa.ranged.swingAt)
+			}
+		}
 	}
 
 	if aa.AutoSwingMelee && aa.mh.enabled {
