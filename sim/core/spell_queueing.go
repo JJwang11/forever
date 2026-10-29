@@ -12,6 +12,7 @@ type QueuedSpell struct {
 
 	channelAction *APLActionChannelSpell // The channel action that queued the spell, which its cast carries when it fires.
 	afterHardcast bool                   // Queued under a hardcast that holds the rotation, as the cast that follows it.
+	line          string                 // The path of the APL line that queued the spell, which its cast carries when it fires.
 
 	// Stores the time at which QueueSpell() was called to ensure that only one spell can be queued up per timestep
 	QueueInitiatedAt time.Duration
@@ -26,6 +27,7 @@ func (qs *QueuedSpell) Cancel(sim *Simulation) {
 	}
 
 	qs.channelAction = nil
+	qs.line = ""
 	qs.QueueInitiatedAt = -NeverExpires
 }
 
@@ -43,7 +45,7 @@ func (qs *QueuedSpell) InitiateQueue(sim *Simulation, spell *Spell, target *Unit
 	if qs.queueAction == nil {
 		if qs.castFn == nil {
 			qs.castFn = func(sim *Simulation) {
-				qs.spell.castForRotation(sim, qs.target, qs.channelAction)
+				qs.spell.castForRotation(sim, qs.target, qs.channelAction, qs.line)
 				// The rotation goes on from a queued instant at once, as it does after one it casts itself, so
 				// an action off the GCD, such as a move, does not wait for the next GCD.
 				if unit := qs.spell.Unit; unit.Hardcast.Expires <= sim.CurrentTime {
@@ -182,8 +184,9 @@ func (spell *Spell) CastOrQueue(sim *Simulation, target *Unit) {
 }
 
 func (spell *Spell) castOrQueue(sim *Simulation, target *Unit, channelAction *APLActionChannelSpell) {
+	line := spell.Unit.runningAPLLine()
 	if spell.CanCast(sim, target) {
-		spell.castForRotation(sim, target, channelAction)
+		spell.castForRotation(sim, target, channelAction, line)
 	} else if spell.CanQueue(sim, target) {
 		// Determine which timer the spell is waiting on
 		queueTime := max(spell.Unit.Hardcast.Expires, BothTimersReadyAt(spell.CD.Timer, spell.SharedCD.Timer))
@@ -195,16 +198,35 @@ func (spell *Spell) castOrQueue(sim *Simulation, target *Unit, channelAction *AP
 		// Schedule the cast to go off without delay
 		spell.Unit.QueueSpell(sim, spell, target, queueTime)
 		spell.Unit.QueuedSpell.channelAction = channelAction
+		spell.Unit.QueuedSpell.line = line
 		spell.Unit.QueuedSpell.afterHardcast = spell.Unit.hardcastHoldsRotation(sim)
 	} else {
 		// Fallback to make sure there is always log output
-		spell.castForRotation(sim, target, channelAction)
+		spell.castForRotation(sim, target, channelAction, line)
 	}
 }
 
 type rotationCast struct {
 	spell         *Spell                 // Until its effects apply or its hardcast ends, completed or not.
 	channelAction *APLActionChannelSpell // The channel action that cast it, whose interruptIf and allowRecast the channel it starts takes.
+	line          string                 // The path of the APL line that cast it, which its Casting log line ends with.
+}
+
+// The path of the APL line running now, kept only while the sim logs; empty outside one.
+func (unit *Unit) runningAPLLine() string {
+	if unit.Rotation == nil {
+		return ""
+	}
+	return unit.Rotation.runningLine
+}
+
+// The suffix a Casting log line ends with: the APL line of the rotation cast. Only the rotation cast itself
+// carries it, so a spell cast while it runs, such as one its effects cast, names no line.
+func (spell *Spell) aplLineSuffix() string {
+	if cast := &spell.Unit.rotationCast; spell == cast.spell && cast.line != "" {
+		return " APL: " + cast.line
+	}
+	return ""
 }
 
 // A cast by the rotation or a major cooldown: once it completes it restarts the wand's timer. The record
@@ -212,9 +234,9 @@ type rotationCast struct {
 // target; a cast that calls Cast directly (a proc, a swing, a spell another spell casts) counts none. A
 // press that queues another spell for the next swing, which the swing then casts directly, credits the
 // queued spell through CountManualCast.
-func (spell *Spell) castForRotation(sim *Simulation, target *Unit, channelAction *APLActionChannelSpell) {
+func (spell *Spell) castForRotation(sim *Simulation, target *Unit, channelAction *APLActionChannelSpell, line string) {
 	unit := spell.Unit
-	unit.rotationCast = rotationCast{spell: spell, channelAction: channelAction}
+	unit.rotationCast = rotationCast{spell: spell, channelAction: channelAction, line: line}
 	cast := spell.Cast(sim, target)
 	if cast {
 		spell.CountManualCast(target)

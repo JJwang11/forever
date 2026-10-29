@@ -1,6 +1,8 @@
 package core
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -20,8 +22,11 @@ func TestAPLLinesFollowConfigPositions(t *testing.T) {
 	groupRef := item(&proto.APLAction{Action: &proto.APLAction_GroupReference{GroupReference: &proto.APLActionGroupReference{GroupName: "b"}}})
 	config := func(rotationType proto.APLRotation_Type) *proto.APLRotation {
 		return &proto.APLRotation{
-			Type:           rotationType,
-			PrepullActions: []*proto.APLPrepullAction{{Action: cast(dotID), DoAtValue: constValue("-1s")}},
+			Type: rotationType,
+			PrepullActions: []*proto.APLPrepullAction{
+				{Action: cast(dotID), DoAtValue: constValue("-2s"), Hide: true},
+				{Action: cast(dotID), DoAtValue: constValue("-1s")},
+			},
 			PriorityList: []*proto.APLListItem{
 				{Action: cast(dotID), Hide: true},
 				item(cast(dotID)),
@@ -33,7 +38,7 @@ func TestAPLLinesFollowConfigPositions(t *testing.T) {
 			Groups: []*proto.APLGroup{
 				{Name: "a", Actions: []*proto.APLListItem{item(cast(dotID))}},
 				{Name: "b", Actions: []*proto.APLListItem{
-					item(cast(dotID)),
+					{Action: cast(dotID), Hide: true},
 					item(&proto.APLAction{Action: &proto.APLAction_Sequence{Sequence: &proto.APLActionSequence{
 						Actions: []*proto.APLAction{cast(unknownID), cast(dotID), cast(dotID)},
 					}}}),
@@ -61,7 +66,7 @@ func TestAPLLinesFollowConfigPositions(t *testing.T) {
 		}
 	}
 	sequenceOf := func(ref *APLAction) *APLActionSequence {
-		return ref.impl.(*APLActionGroupReference).group.actions[1].impl.(*APLActionSequence)
+		return ref.impl.(*APLActionGroupReference).group.actions[0].impl.(*APLActionSequence)
 	}
 
 	rot := fw.newAPLRotation(config(proto.APLRotation_TypeAPL))
@@ -72,7 +77,7 @@ func TestAPLLinesFollowConfigPositions(t *testing.T) {
 	}
 	want(steps[0], "priority 3 > group 2.2 > step 2")
 	want(steps[1], "priority 3 > group 2.2 > step 3")
-	want(rot.priorityList[2].impl.(*APLActionGroupReference).group.actions[1], "priority 4 > group 2.2")
+	want(rot.priorityList[2].impl.(*APLActionGroupReference).group.actions[0], "priority 4 > group 2.2")
 	schedule := rot.priorityList[3]
 	want(schedule, "priority 5")
 	want(schedule.impl.(*APLActionSchedule).innerAction, "priority 5")
@@ -83,7 +88,7 @@ func TestAPLLinesFollowConfigPositions(t *testing.T) {
 	for _, action := range multidot.actions {
 		want(action, "priority 6")
 	}
-	want(rot.prepullActions[0], "prepull 1")
+	want(rot.prepullActions[0], "prepull 2")
 
 	want(fw.newCustomRotation().priorityList[0], "")
 
@@ -92,5 +97,236 @@ func TestAPLLinesFollowConfigPositions(t *testing.T) {
 	actions = append(actions, auto.priorityList[4].impl.(*APLActionStrictMultidot).actions...)
 	for _, action := range actions {
 		want(action, "")
+	}
+}
+
+// A logged fake warrior sim at the pull, running this APL rotation with the spells and major cooldowns
+// register adds, its melee swings off. Every line the run logs is kept, formatted.
+type lineTest struct {
+	*channelTest
+	logs []string
+}
+
+func newLineTest(register func(char *Character), config *proto.APLRotation) *lineTest {
+	sim := setupFakeRageSimFrom(fakeRageSimRequest())
+	fw := sim.Raid.Parties[0].Players[0].(*FakeRageWarrior)
+	known := len(fw.Spellbook)
+	sim.Environment.State = Constructed
+	register(&fw.Character)
+	sim.Environment.State = Finalized
+	for _, spell := range fw.Spellbook[known:] {
+		spell.finalize()
+	}
+	fw.majorCooldownManager.finalize()
+	config.Type = proto.APLRotation_TypeAPL
+	fw.Rotation = fw.newAPLRotation(config)
+	sim.Cleanup()
+	sim.Reset()
+
+	lt := &lineTest{channelTest: &channelTest{sim: sim, fw: fw, rot: fw.Rotation}}
+	sim.Log = func(message string, vals ...interface{}) {
+		lt.logs = append(lt.logs, fmt.Sprintf(message, vals...))
+	}
+	sim.PrePull()
+	sim.Step()
+	fw.AutoAttacks.CancelAutoSwing(sim)
+	return lt
+}
+
+// The spell's Casting lines, in the order they were logged.
+func (lt *lineTest) casting(spell *Spell) []string {
+	return FilterSlice(lt.logs, func(line string) bool {
+		return strings.Contains(line, fmt.Sprintf("Casting %s (", spell.ActionID))
+	})
+}
+
+// Whether the spell was queued to go off later.
+func (lt *lineTest) queued(spell *Spell) bool {
+	return len(FilterSlice(lt.logs, func(line string) bool {
+		return strings.Contains(line, fmt.Sprintf("Queueing up %s ", spell.ActionID))
+	})) > 0
+}
+
+func aplCast(id int32) *proto.APLAction {
+	return &proto.APLAction{Action: &proto.APLAction_CastSpell{CastSpell: &proto.APLActionCastSpell{SpellId: ActionID{SpellID: id}.ToProto()}}}
+}
+
+func aplItems(actions ...*proto.APLAction) []*proto.APLListItem {
+	return MapSlice(actions, func(action *proto.APLAction) *proto.APLListItem { return &proto.APLListItem{Action: action} })
+}
+
+func wantLines(t *testing.T, name string, got []string, suffixes ...string) {
+	t.Helper()
+	if len(got) < len(suffixes) {
+		t.Fatalf("%s logged %d Casting lines, want at least %d: %q", name, len(got), len(suffixes), got)
+	}
+	for i, suffix := range suffixes {
+		if !strings.HasSuffix(got[i], suffix) {
+			t.Errorf("%s's Casting line %d is %q, want it to end %q", name, i+1, got[i], suffix)
+		}
+	}
+}
+
+// A cast the rotation starts ends its Casting line with the path of the line that started it, after the
+// text the line has always had.
+func TestRotationCastLogsItsLine(t *testing.T) {
+	var nuke *Spell
+	hidden := &proto.APLListItem{Action: aplCast(910110), Hide: true}
+	lt := newLineTest(func(char *Character) {
+		nuke = char.RegisterSpell(nukeConfig(&[]time.Duration{}))
+	}, &proto.APLRotation{PriorityList: append([]*proto.APLListItem{hidden}, aplItems(aplCast(910110))...)})
+
+	lt.runUntil(0)
+	want := fmt.Sprintf("[%s] Casting %s (Cost = 0.000, Cast Time = 0s, GCD = 1.5s, Effective Time = 1.5s) APL: priority 2", lt.fw.Label, nuke.ActionID)
+	if got := lt.casting(nuke); len(got) != 1 || got[0] != want {
+		t.Fatalf("the nuke's Casting lines are %q, want [%q]", got, want)
+	}
+}
+
+// A spell another spell's effects cast is not the rotation's cast, and its Casting line names no line.
+func TestCastInsideARotationCastLogsNoLine(t *testing.T) {
+	var outer, inner *Spell
+	lt := newLineTest(func(char *Character) {
+		inner = char.RegisterSpell(SpellConfig{ActionID: ActionID{SpellID: 910121}, ApplyEffects: func(*Simulation, *Unit, *Spell) {}})
+		config := nukeConfig(&[]time.Duration{})
+		config.ApplyEffects = func(sim *Simulation, target *Unit, _ *Spell) {
+			inner.Cast(sim, target)
+		}
+		outer = char.RegisterSpell(config)
+	}, &proto.APLRotation{PriorityList: aplItems(aplCast(910110))})
+
+	lt.runUntil(0)
+	wantLines(t, "the outer spell", lt.casting(outer), ") APL: priority 1")
+	if got := lt.casting(inner); len(got) != 1 || strings.Contains(got[0], " APL: ") {
+		t.Fatalf("the inner spell's Casting lines are %q, want one that names no line", got)
+	}
+}
+
+// A queued spell goes off with no line running; its Casting line names the line that queued it.
+func TestQueuedCastCarriesTheLineThatQueuedIt(t *testing.T) {
+	t.Run("a spell picked at a hardcast's end", func(t *testing.T) {
+		var slow, nuke *Spell
+		firstSecond := &proto.APLValue{Value: &proto.APLValue_Cmp{Cmp: &proto.APLValueCompare{
+			Op:  proto.APLValueCompare_OpLt,
+			Lhs: &proto.APLValue{Value: &proto.APLValue_CurrentTime{CurrentTime: &proto.APLValueCurrentTime{}}},
+			Rhs: constValue("1s"),
+		}}}
+		slowCast := aplCast(910122)
+		slowCast.Condition = firstSecond
+		lt := newLineTest(func(char *Character) {
+			config := recordedSpellConfig(910122, &[]time.Duration{})
+			config.Cast = CastConfig{DefaultCast: Cast{GCD: GCDDefault, CastTime: 2 * time.Second}}
+			slow = char.RegisterSpell(config)
+			nuke = char.RegisterSpell(nukeConfig(&[]time.Duration{}))
+		}, &proto.APLRotation{PriorityList: aplItems(slowCast, aplCast(910110))})
+
+		lt.runUntil(2*time.Second + 1)
+		wantLines(t, "the hardcast", lt.casting(slow), ") APL: priority 1")
+		if !lt.queued(nuke) {
+			t.Fatalf("the nuke should be queued at the 2 s cast end, logs: %q", lt.logs)
+		}
+		wantLines(t, "the queued nuke", lt.casting(nuke), ") APL: priority 2")
+	})
+
+	// The nuke at the pull starts the GCD; the second spell's lines, priority 2 and then 3, press it 100 ms
+	// apart from 1.2 s and queue it for the GCD end at 1.5 s, with the rotation's own look held back past it.
+	inQueueWindow := func(lines int) (*lineTest, *Spell) {
+		var second *Spell
+		lt := newLineTest(func(char *Character) {
+			config := nukeConfig(&[]time.Duration{})
+			config.Cast.CD = Cooldown{Timer: char.NewTimer(), Duration: time.Minute}
+			char.RegisterSpell(config)
+			secondConfig := recordedSpellConfig(910123, &[]time.Duration{})
+			secondConfig.Cast = CastConfig{DefaultCast: Cast{GCD: GCDDefault}}
+			second = char.RegisterSpell(secondConfig)
+		}, &proto.APLRotation{PriorityList: aplItems(aplCast(910110), aplCast(910123), aplCast(910123))})
+		for i := 1; i <= lines; i++ {
+			lt.runUntil(1200*time.Millisecond + time.Duration(i-1)*100*time.Millisecond)
+			lt.rot.priorityList[i].Execute(lt.sim)
+		}
+		lt.fw.SetRotationTimer(lt.sim, 1550*time.Millisecond)
+		if lt.fw.QueuedSpell == nil || lt.fw.QueuedSpell.spell != second {
+			t.Fatalf("the second spell should be queued for the GCD end at 1.5 s")
+		}
+		lt.runUntil(1501 * time.Millisecond)
+		return lt, second
+	}
+
+	t.Run("a spell queued in the spell queue window", func(t *testing.T) {
+		lt, second := inQueueWindow(1)
+		if got := lt.casting(second); len(got) != 1 || !strings.HasSuffix(got[0], ") APL: priority 2") {
+			t.Fatalf("the queued spell's Casting lines are %q, want one ending \") APL: priority 2\"", got)
+		}
+	})
+
+	t.Run("a spell queued again by another line", func(t *testing.T) {
+		lt, second := inQueueWindow(2)
+		if got := lt.casting(second); len(got) != 1 || !strings.HasSuffix(got[0], ") APL: priority 3") {
+			t.Fatalf("the spell queued again at 1.3 s has Casting lines %q, want one ending \") APL: priority 3\"", got)
+		}
+	})
+}
+
+// Steps after the first run in later passes of the rotation, outside the sequence's own run, and each
+// logs its own step.
+func TestStrictSequenceLaterStepsLogTheirStep(t *testing.T) {
+	var nuke *Spell
+	sequence := &proto.APLAction{Action: &proto.APLAction_StrictSequence{StrictSequence: &proto.APLActionStrictSequence{
+		Actions: []*proto.APLAction{aplCast(910110), aplCast(910110), aplCast(910110)},
+	}}}
+	lt := newLineTest(func(char *Character) {
+		nuke = char.RegisterSpell(nukeConfig(&[]time.Duration{}))
+	}, &proto.APLRotation{PriorityList: aplItems(sequence)})
+
+	lt.runUntil(3 * time.Second)
+	wantLines(t, "the nuke", lt.casting(nuke), ") APL: priority 1 > step 1", ") APL: priority 1 > step 2", ") APL: priority 1 > step 3")
+}
+
+// A major cooldown Autocast Other Cooldowns fires names the Autocast Other Cooldowns line.
+func TestAutocastCooldownLogsTheAutocastLine(t *testing.T) {
+	var cooldown *Spell
+	hidden := &proto.APLListItem{Action: aplCast(910110), Hide: true}
+	autocast := &proto.APLAction{Action: &proto.APLAction_AutocastOtherCooldowns{AutocastOtherCooldowns: &proto.APLActionAutocastOtherCooldowns{}}}
+	lt := newLineTest(func(char *Character) {
+		char.RegisterSpell(nukeConfig(&[]time.Duration{}))
+		config := recordedSpellConfig(910124, &[]time.Duration{})
+		config.Cast = CastConfig{CD: Cooldown{Timer: char.NewTimer(), Duration: time.Minute}}
+		cooldown = char.RegisterSpell(config)
+		char.AddMajorCooldown(MajorCooldown{Spell: cooldown, Type: CooldownTypeDPS})
+	}, &proto.APLRotation{PriorityList: append([]*proto.APLListItem{hidden}, aplItems(autocast)...)})
+
+	lt.runUntil(0)
+	wantLines(t, "the cooldown", lt.casting(cooldown), ") APL: priority 2")
+}
+
+// With logging off the rotation keeps no running line, so a cast reads none while its line runs.
+func TestUnloggedRunTracksNothing(t *testing.T) {
+	run := func(logged bool) []string {
+		var seen []string
+		lt := newLineTest(func(char *Character) {
+			config := nukeConfig(&[]time.Duration{})
+			config.ApplyEffects = func(_ *Simulation, _ *Unit, spell *Spell) {
+				seen = append(seen, spell.Unit.Rotation.runningLine)
+			}
+			char.RegisterSpell(config)
+		}, &proto.APLRotation{PriorityList: aplItems(aplCast(910110))})
+		if !logged {
+			lt.sim.Log = nil
+		}
+		lt.runUntil(5 * time.Second)
+		return seen
+	}
+
+	if seen := run(true); len(seen) == 0 || seen[0] != "priority 1" {
+		t.Fatalf("a logged cast read the running lines %q, want \"priority 1\"", seen)
+	}
+	seen := run(false)
+	if len(seen) < 3 {
+		t.Fatalf("the unlogged run cast %d times, want at least 3", len(seen))
+	}
+	for _, line := range seen {
+		if line != "" {
+			t.Fatalf("an unlogged cast read the running lines %q, want none", seen)
+		}
 	}
 }

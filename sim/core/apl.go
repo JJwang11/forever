@@ -64,6 +64,9 @@ type APLRotation struct {
 	// wait, and a Change Target to the current target is a step that does nothing.
 	inSequence bool
 
+	// The path of the line whose action is running, kept only while the sim logs; empty outside one.
+	runningLine string
+
 	// Validation warnings that occur during proto parsing.
 	// We return these back to the user for display in the UI.
 	curValidations          []*proto.APLValidation
@@ -431,6 +434,7 @@ func (rot *APLRotation) allPrepullActions() []*APLAction {
 func (rot *APLRotation) reset(sim *Simulation) {
 	rot.controllingActions = rot.controllingActions[:0]
 	rot.inLoop = false
+	rot.runningLine = ""
 	rot.interruptChannelIf = nil
 	rot.allowChannelRecastOnInterrupt = false
 	rot.evalGeneration++ // Invalidate any variable caches from previous iteration or initialization
