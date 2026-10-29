@@ -10,6 +10,8 @@ type APLAction struct {
 	condition APLValue
 	impl      APLActionImpl
 	spell     *Spell // The spell a cast action casts or queues, whose queue check runs before the condition.
+	line      string // The path of the config line the action runs for; empty outside APL rotations.
+	rot       *APLRotation
 }
 
 func (action *APLAction) Finalize(rot *APLRotation) {
@@ -171,7 +173,9 @@ func (rot *APLRotation) newAPLAction(config *proto.APLAction) *APLAction {
 		}
 	}
 
-	return newAPLActionEntry(condition, impl)
+	action := newAPLActionEntry(condition, impl)
+	action.rot = rot
+	return action
 }
 
 // Builds a rotation entry and hands it to the actions that read their own entry's condition.

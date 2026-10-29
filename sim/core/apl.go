@@ -83,6 +83,7 @@ type APLGroup struct {
 	actions      []*APLAction
 	variables    map[string]*proto.APLValue
 	referencedBy *APLActionGroupReference
+	configIdx    int // The group's index in the config's groups, shared by its copies.
 }
 
 type APLValueVariable struct {
@@ -211,6 +212,7 @@ func (unit *Unit) newAPLRotation(config *proto.APLRotation) *APLRotation {
 		group := &APLGroup{
 			name:      groupConfig.Name,
 			variables: make(map[string]*proto.APLValue),
+			configIdx: slices.Index(config.Groups, groupConfig),
 		}
 
 		for _, varConfig := range groupConfig.Variables {
@@ -327,6 +329,8 @@ func (unit *Unit) newAPLRotation(config *proto.APLRotation) *APLRotation {
 			}
 		}
 	}
+
+	rotation.assignLines(config)
 
 	return rotation
 }
@@ -786,7 +790,9 @@ func (rot *APLRotation) newAPLActionWithGroupVars(config *proto.APLAction, group
 	if impl == nil {
 		return nil
 	}
-	return newAPLActionEntry(condition, impl)
+	action := newAPLActionEntry(condition, impl)
+	action.rot = rot
+	return action
 }
 
 // Re-resolve variable references in an APLValue with updated group variables
