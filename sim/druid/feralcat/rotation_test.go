@@ -287,11 +287,10 @@ func TestJVMESDoesNotUseShadowmeld(t *testing.T) {
 func TestAdaptiveUnprowledOpenerUsesClearcastingForShredOtherwiseRake(t *testing.T) {
 	for _, tc := range []struct {
 		name         string
-		talents      string
 		clearcasting bool
 	}{
-		{"paid Rake", powershiftTalents, false},
-		{"Clearcasting Shred", powershiftTalents, true},
+		{"paid Rake", false},
+		{"Clearcasting Shred", true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			rotation := core.GetAplRotation("../../../ui/specs/druid/feralcat/apls", "adaptive").Rotation
@@ -300,7 +299,7 @@ func TestAdaptiveUnprowledOpenerUsesClearcastingForShredOtherwiseRake(t *testing
 					variable.Value.GetConst().Val = "-1"
 				}
 			}
-			request := sweepRequest(tc.talents, rotation, false, 1)
+			request := sweepRequest(powershiftTalents, rotation, false, 1)
 			request.Raid.Parties[0].Players[0].GetFeralCatDruid().Options.PrepullClearcasting = tc.clearcasting
 			request.SimOptions.Debug = true
 			result := core.RunSim(request, nil, simsignals.CreateSignals())
@@ -311,8 +310,7 @@ func TestAdaptiveUnprowledOpenerUsesClearcastingForShredOtherwiseRake(t *testing
 			if tc.clearcasting {
 				builderID = "9830"
 			}
-			ravage := strings.Index(result.Logs, "[0.00] [Cat (#1)] Casting {SpellID: "+builderID+"}")
-			if ravage < 0 {
+			if !strings.Contains(result.Logs, "[0.00] [Cat (#1)] Casting {SpellID: "+builderID+"}") {
 				t.Fatal("the opener did not cast the expected builder at pull")
 			}
 		})

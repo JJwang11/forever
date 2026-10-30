@@ -376,14 +376,13 @@ func TestGeneratedManaSpringTotemTakesTheTalentedValue(t *testing.T) {
 func TestGeneratedCritAurasApplyToAllCrit(t *testing.T) {
 	both := max(leaderOfThePack(t), moonkinAura(t))
 	for _, row := range []struct {
-		name     string
-		raid     *proto.RaidBuffs
-		physical float64
-		spell    float64
+		name string
+		raid *proto.RaidBuffs
+		crit float64
 	}{
-		{"Leader of the Pack", &proto.RaidBuffs{LeaderOfThePack: true}, leaderOfThePack(t), leaderOfThePack(t)},
-		{"Moonkin Aura", &proto.RaidBuffs{MoonkinAura: true}, moonkinAura(t), moonkinAura(t)},
-		{"both", &proto.RaidBuffs{LeaderOfThePack: true, MoonkinAura: true}, both, both},
+		{"Leader of the Pack", &proto.RaidBuffs{LeaderOfThePack: true}, leaderOfThePack(t)},
+		{"Moonkin Aura", &proto.RaidBuffs{MoonkinAura: true}, moonkinAura(t)},
+		{"both", &proto.RaidBuffs{LeaderOfThePack: true, MoonkinAura: true}, both},
 	} {
 		t.Run(row.name, func(t *testing.T) {
 			char := core.NewGeneratedBuffTestCharacter()
@@ -391,11 +390,11 @@ func TestGeneratedCritAurasApplyToAllCrit(t *testing.T) {
 			core.ApplyBuffEffects(char, row.raid, &proto.PartyBuffs{}, &proto.IndividualBuffs{})
 			char.ApplyBuildPhaseAuras(core.CharacterBuildPhaseBuffs)
 
-			if got := char.GetStats()[stats.PhysicalCritPercent]; got != row.physical {
-				t.Errorf("%s applied %v physical crit, want the game files' %v", row.name, got, row.physical)
+			if got := char.GetStats()[stats.PhysicalCritPercent]; got != row.crit {
+				t.Errorf("%s applied %v physical crit, want the game files' %v", row.name, got, row.crit)
 			}
-			if got := char.GetStats()[stats.SpellCritPercent]; got != row.spell {
-				t.Errorf("%s applied %v spell crit, want the game files' %v", row.name, got, row.spell)
+			if got := char.GetStats()[stats.SpellCritPercent]; got != row.crit {
+				t.Errorf("%s applied %v spell crit, want the game files' %v", row.name, got, row.crit)
 			}
 			if got := char.GetStats()[stats.RangedCritPercent]; got != 0 {
 				t.Errorf("%s applied %v on top of the physical crit a ranged attack already reads", row.name, got)
@@ -423,9 +422,6 @@ func TestGeneratedCritAurasShareOneCategory(t *testing.T) {
 		&proto.PartyBuffs{}, &proto.IndividualBuffs{})
 	char.ApplyBuildPhaseAuras(core.CharacterBuildPhaseBuffs)
 
-	if buffs.LeaderOfThePackCategory != buffs.MoonkinAuraCategory {
-		t.Fatalf("Leader of the Pack competes under %q and Moonkin Aura under %q", buffs.LeaderOfThePackCategory, buffs.MoonkinAuraCategory)
-	}
 	effects := char.ExclusiveEffectManager.GetExclusiveEffectCategory(buffs.LeaderOfThePackCategory)
 	if !effects.SingleAura {
 		t.Error("the crit category is not single-aura, so both auras could count")

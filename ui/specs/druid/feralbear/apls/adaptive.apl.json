@@ -473,14 +473,6 @@
       }
     },
     {
-      "name": "Refresh five-stack Lacerate now",
-      "value": {
-        "variableRef": {
-          "name": "Five-stack Lacerate is near expiry"
-        }
-      }
-    },
-    {
       "name": "Faerie Fire needs refreshing",
       "value": {
         "and": {
@@ -915,7 +907,7 @@
       "action": {
         "condition": {
           "variableRef": {
-            "name": "Refresh five-stack Lacerate now"
+            "name": "Five-stack Lacerate is near expiry"
           }
         },
         "castSpell": {

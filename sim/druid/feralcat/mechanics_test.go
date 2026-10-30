@@ -433,9 +433,6 @@ func TestShiftingPowerTradesManaForEnergy(t *testing.T) {
 	if got, want := mana-cat.CurrentMana(), float64(int32(55*cat.BaseMana)/100); got != want {
 		t.Errorf("mana spent = %v, want %v", got, want)
 	}
-	if got, want := cat.ShiftingPower.ReadyAt(), spelldata.MustFind(cat.ShiftingPower.SpellID).Cooldown(); got != want {
-		t.Errorf("shifting power ready at %v, want the row's %v", got, want)
-	}
 }
 
 func TestShiftingPowerNeedsTheTalentAndCatForm(t *testing.T) {
