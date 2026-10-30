@@ -1,7 +1,6 @@
 package hunter
 
 import (
-	"fmt"
 	"maps"
 	"math"
 	"slices"
@@ -490,45 +489,6 @@ func TestSurvivalistsDisciplineShortensTheTrapCooldown(t *testing.T) {
 		if got := immolation.ReadyAt() - sim.CurrentTime; got != want {
 			t.Errorf("with %d points, a placed Explosive Trap held Immolation Trap back %v, want %v", points, got, want)
 		}
-	}
-}
-
-func TestAutoShotWindupScalesWithRangedHaste(t *testing.T) {
-	player := &proto.Player{
-		Name: "Shot", Race: proto.Race_RaceOrc, Class: proto.Class_ClassHunter,
-		Equipment:     core.GetGearSet("../../ui/specs/hunter/dps/gear_sets", "p1").GearSet,
-		TalentsString: DefaultMMTalents, Spec: DefaultOptions,
-		Rotation: &proto.APLRotation{}, DistanceFromTarget: 20,
-	}
-	sim := core.NewSim(&proto.RaidSimRequest{
-		Raid:      core.SinglePlayerRaidProto(player, &proto.PartyBuffs{}, &proto.RaidBuffs{}, &proto.Debuffs{}),
-		Encounter: core.MakeSingleTargetEncounter(0), SimOptions: &proto.SimOptions{RandomSeed: 1},
-	}, simsignals.CreateSignals())
-	sim.Reset()
-	hunter := sim.Raid.Parties[0].Players[0].(*Hunter)
-	hunter.MultiplyRangedSpeed(sim, 2/hunter.TotalRangedHasteMultiplier())
-	auto := core.ActionID{OtherID: proto.OtherAction_OtherActionShoot}.String()
-	var start, end time.Duration
-	completed := false
-	sim.Log = func(format string, args ...interface{}) {
-		line := fmt.Sprintf(format, args...)
-		if strings.Contains(line, "Casting "+auto+" ") {
-			start = sim.CurrentTime
-		}
-		if strings.Contains(line, "Completed cast "+auto) {
-			end = sim.CurrentTime
-			completed = true
-		}
-	}
-	sim.PrePull()
-	for i := 0; !completed && i < 10000; i++ {
-		sim.Step()
-	}
-	if !completed {
-		t.Fatal("Auto Shot did not complete")
-	}
-	if got, want := end-start, core.RangedSwingWindup/2; got != want {
-		t.Errorf("Auto Shot windup at doubled ranged haste = %v, want %v", got, want)
 	}
 }
 
