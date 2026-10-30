@@ -37,6 +37,10 @@ export async function spansOf(document: vscode.TextDocument): Promise<RotationRe
 	return read?.version === document.version ? read.spans : (await readRotation(document)).spans;
 }
 
+// The JSON path of the rotation at a position, from the server.
+export const pathAt = (uri: vscode.Uri, { line, character }: vscode.Position) =>
+	request<JsonPath>(uri, 'siml/pathAt', { uri: uri.toString(), position: { line, character } });
+
 // The text a JSON path is written at.
 export function spanFor(spans: RotationResult['spans'], path: JsonPath): Range | undefined {
 	const key = path.join('/');

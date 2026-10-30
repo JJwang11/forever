@@ -1,14 +1,13 @@
-import { execFile } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { basename } from 'node:path';
 
 import * as vscode from 'vscode';
 
-import { applyEdits, documentFor, isAplSiml, readRotation, samePath, spanFor, spansOf, vscodeRange } from './host';
+import { applyEdits, documentFor, isAplSiml, pathAt, readRotation, samePath, spanFor, spansOf, vscodeRange } from './host';
 import { insertPattern } from './insert_pattern';
 import type { AplDatabase, FromPanel, JsonPath, PanelState, Range, Registered, TextEdit, ToPanel } from './protocol';
-import { databaseFor, log, logFailedBuild, onServerStarted, request } from './server';
+import { buildStep, databaseFor, log, onServerStarted, request } from './server';
 import { onSimRecord, type SimRecord, simRecord, simulate } from './simulate';
 
 const VIEW_TYPE = 'wowsims-apl.editor';
@@ -36,36 +35,35 @@ const FAILED = message(
 let building: Promise<void> | undefined;
 
 // Builds the panel's bundle with `make vscode-apl` in the repository the extension sits in
-// (.vscode/extensions/wowsims-apl), which also builds what it needs: the packages and the generated code.
+// (.vscode/extensions/wowsims-apl), which also builds what it needs: the packages and the generated code. The build
+// stops with the server builds, when the extension deactivates, and after their timeout.
 function buildPage(extensionUri: vscode.Uri): Promise<void> {
 	const root = vscode.Uri.joinPath(extensionUri, '..', '..', '..').fsPath;
 	building ??= Promise.resolve(
-		vscode.window.withProgress(
-			{ location: vscode.ProgressLocation.Notification, title: 'Building the APL editor panel (make vscode-apl)' },
-			() =>
-				new Promise<void>((resolve, reject) =>
-					execFile('make', ['vscode-apl'], { cwd: root, maxBuffer: 64 << 20 }, (error, stdout, stderr) => {
-						if (!error) return resolve();
-						logFailedBuild(`make vscode-apl in ${root}\n${stdout}${stderr || error.message}`);
-						reject(error);
-					}),
-				),
+		vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: 'Building the APL editor panel (make vscode-apl)' }, () =>
+			buildStep('make', ['vscode-apl'], root, { what: 'The APL editor panel', again: 'Open the panel again' }),
 		),
 	).finally(() => (building = undefined));
 	return building;
 }
 
 // Shows the panel's page, building its bundle first when the checkout has none: `make vscode-apl` writes it and it is
-// not committed.
-function showPage(panel: vscode.WebviewPanel, extensionUri: vscode.Uri): void {
+// not committed. Only a panel still open when the build ends takes the page: a closed one is disposed, and throws.
+function showPage(panel: vscode.WebviewPanel, key: string, extensionUri: vscode.Uri): void {
 	if (existsSync(vscode.Uri.joinPath(extensionUri, 'out', 'webview.js').fsPath)) {
 		panel.webview.html = html(panel.webview, extensionUri);
 		return;
 	}
 	panel.webview.html = BUILDING;
+	const live = () => panels.get(key) === panel;
 	buildPage(extensionUri).then(
-		() => (panel.webview.html = html(panel.webview, extensionUri)),
-		() => (panel.webview.html = FAILED),
+		() => {
+			if (live()) panel.webview.html = html(panel.webview, extensionUri);
+		},
+		(error: Error) => {
+			log(error.message);
+			if (live()) panel.webview.html = FAILED;
+		},
 	);
 }
 
@@ -100,7 +98,7 @@ function bind(panel: vscode.WebviewPanel, uri: vscode.Uri, extensionUri: vscode.
 	panels.set(key, panel);
 	panel.webview.options = { enableScripts: true, localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'out')] };
 	panel.title = `APL: ${basename(uri.fsPath)}`;
-	showPage(panel, extensionUri);
+	showPage(panel, key, extensionUri);
 
 	const post = (message: ToPanel) => void panel.webview.postMessage(message);
 	// The last of the panel's edits made or refused, and the document versions its own edits made.
@@ -269,8 +267,7 @@ function bind(panel: vscode.WebviewPanel, uri: vscode.Uri, extensionUri: vscode.
 		vscode.window.onDidChangeTextEditorSelection(async event => {
 			const document = event.textEditor.document;
 			if (document.uri.toString() !== key || event.kind === vscode.TextEditorSelectionChangeKind.Command) return;
-			const { line, character } = event.selections[0].active;
-			const path = await request<JsonPath>(document.uri, 'siml/pathAt', { uri: key, position: { line, character } }).catch(() => undefined);
+			const path = await pathAt(document.uri, event.selections[0].active).catch(() => undefined);
 			if (path) post({ type: 'cursor', path });
 		}),
 	];
@@ -295,7 +292,7 @@ async function openToSide(extensionUri: vscode.Uri, uri: vscode.Uri | undefined)
 	}
 	const open = panels.get(chosen.toString());
 	if (open) {
-		if (open.webview.html === FAILED) showPage(open, extensionUri);
+		if (open.webview.html === FAILED) showPage(open, chosen.toString(), extensionUri);
 		open.reveal(vscode.ViewColumn.Beside, true);
 		return;
 	}

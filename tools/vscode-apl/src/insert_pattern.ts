@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import { applyEdits, documentFor, isAplSiml, readRotation } from './host';
+import { applyEdits, documentFor, isAplSiml, pathAt, readRotation } from './host';
 import type { AplDatabase, AplPattern, AplPlaceholder, JsonObject, JsonPath, Registered, RegisteredName, TextEdit } from './protocol';
 import { databaseFor, request } from './server';
 
@@ -144,8 +144,7 @@ export function registerInsertPattern(context: vscode.ExtensionContext): void {
 			const editor = vscode.window.activeTextEditor;
 			if (!editor || !isAplSiml(editor.document.uri.path)) return;
 			const { uri } = editor.document;
-			const { line, character } = editor.selection.active;
-			const path = await request<JsonPath>(uri, 'siml/pathAt', { uri: uri.toString(), position: { line, character } }).catch(() => []);
+			const path = await pathAt(uri, editor.selection.active).catch(() => []);
 			await insertPattern(uri, path);
 		}),
 	);
