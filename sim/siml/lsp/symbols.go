@@ -4,8 +4,8 @@ import (
 	"github.com/wowsims/forever/sim/siml"
 )
 
-// Definition, references and rename of what a rotation names itself, which the analysis follows into the files a
-// `use … with` list sets variables of and the .siml files near them; here their files become URIs.
+// Definition, references and rename of what a rotation names itself, which the analysis follows into the files its
+// use lines read and the .siml files near them; here their files become URIs.
 
 // The URI of a file a location is in: the requesting document's for its own path or none, an open document's, else
 // the file's.

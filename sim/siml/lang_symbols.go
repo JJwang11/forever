@@ -166,7 +166,7 @@ func isNilNode(n node) bool {
 	return false
 }
 
-// Every occurrence of a variable, group, sequence or placeholder in the file, in file order.
+// Every occurrence of a variable, group, sequence, placeholder, def or parameter in the file, in file order.
 func (d *Doc) occurrences() []occurrence {
 	d.occOnce.Do(func() { d.occ = d.readOccurrences() })
 	return d.occ
@@ -608,8 +608,8 @@ func (d *Doc) Definition(at Position) []Location {
 	return out
 }
 
-// Every occurrence of what the occurrence at a position names, in this file, the file that declares it and the files
-// near that one whose use … with lists set it.
+// Every occurrence of what the occurrence at a position names, in this file, the file that declares it and, for a
+// group, a def or a variable, the files near that one that name it through a use line.
 func (d *Doc) References(at Position, includeDeclaration bool) []Location {
 	o, ok := d.occurrenceAt(d.Offset(at))
 	if !ok {
@@ -694,6 +694,11 @@ func (d *Doc) renameRefusal(key occurrence, newName string, found []foundOccurre
 			}
 		}
 	}
+	for _, f := range found {
+		if why := f.doc.holdsName(key, newName); why != "" {
+			return why
+		}
+	}
 	for _, s := range d.tree().statements {
 		if u, ok := s.(*useStmt); ok && key.kind == "variable" {
 			for _, x := range d.settableVariables(u.path.value) {
@@ -720,6 +725,45 @@ func (d *Doc) renameRefusal(key occurrence, newName string, found []foundOccurre
 				file = "The file"
 			}
 			return fmt.Sprintf("%s has a %s named %s already.", file, key.kind, o.name)
+		}
+	}
+	return ""
+}
+
+// Why a file a rename of key edits cannot take newName: it holds a def, a group or a variable outside its groups of
+// that name, or a file it uses does, which would be duplicate-def, section-conflict or duplicate-variable there.
+func (d *Doc) holdsName(key occurrence, newName string) string {
+	if newName == key.name || d.typed == nil || key.scope.inGroup {
+		return ""
+	}
+	taken := func(name string) bool {
+		if key.kind == "variable" {
+			return name != key.name && Identifier(name) == Identifier(newName)
+		}
+		return name == newName
+	}
+	switch key.kind {
+	case "def":
+		if d.typed.typer.defs.byName[newName] != nil {
+			return fmt.Sprintf("%s has a def named %s already.", filepath.Base(d.path), newName)
+		}
+		if in := d.typed.typer.defs.imported[newName]; in != nil {
+			return fmt.Sprintf("%s has a def named %s already.", filepath.Base(in.path), newName)
+		}
+	case "variable", "group":
+		for _, o := range d.occurrences() {
+			if o.kind == key.kind && o.definition && !o.scope.inGroup && taken(o.name) {
+				return fmt.Sprintf("%s has a %s named %s already.", filepath.Base(d.path), key.kind, o.name)
+			}
+		}
+		for _, s := range d.tree().top {
+			if u, ok := s.(*useStmt); ok {
+				for _, x := range declaredByFile(d.typed.used[u], resolveUse(d.path, u.path.value)) {
+					if x.group == (key.kind == "group") && taken(x.name) {
+						return fmt.Sprintf("%s has a %s named %s already.", filepath.Base(x.file), key.kind, x.name)
+					}
+				}
+			}
 		}
 	}
 	return ""

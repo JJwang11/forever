@@ -251,7 +251,7 @@ func TestDefNavigation(t *testing.T) {
 // (SPEC.md §6.10).
 func TestRenameKeepsRotation(t *testing.T) {
 	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "a.apl.siml"), []byte(plainPreface+"var ${Ranged range} = 12\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "a.apl.siml"), []byte(plainPreface+"var ${Ranged range} = 12\ndef lib_def = current_time > 2s\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	path := filepath.Join(dir, "b.apl.siml")
@@ -264,7 +264,7 @@ func TestRenameKeepsRotation(t *testing.T) {
 		"def h(x) = x > 1 and g",
 		"",
 		"priority:",
-		"  cast steady if f(steady) and h(2) and $ranged_range > 1 and $foo > 1",
+		"  cast steady if f(steady) and h(2) and $ranged_range > 1 and $foo > 1 and lib_def",
 	)
 	d := Analyze(path, []byte(text), smallNames(), langOpen)
 	before := string(d.RotationJSON())
@@ -279,6 +279,10 @@ func TestRenameKeepsRotation(t *testing.T) {
 		{"(x", "g", true},
 		{"def g", "x", true},
 		{"${Foo", "ranged_range", true},
+		// The name is taken in a file the rename edits: this one, which uses the file that declares the symbol.
+		{"$ranged_range", "Foo", true},
+		{"lib_def", "g", true},
+		{"def g", "lib_def", true},
 		{"(alpha", "beta", false},
 		{"${Foo", "Bar", false},
 	} {
