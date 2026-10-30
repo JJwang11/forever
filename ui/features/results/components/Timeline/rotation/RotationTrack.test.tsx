@@ -183,7 +183,7 @@ describe('RotationTrack', () => {
 		const WITH_ENTRY_PATHS = rotationModel([
 			castRow('cast:a', 'Alpha', [withEntryPath(0, 1, ENTRY_PATH), withEntryPath(2, 3, null), withEntryPath(4, 5, UNPLACED)]),
 		]);
-		const run = (changed: boolean): AplRun => ({ rotation: ROTATION, changed: () => changed });
+		const run = (changed: boolean): AplRun => ({ rotation: ROTATION, changedSinceRun: () => changed });
 		const casts = (container: HTMLElement) => container.querySelectorAll('[data-row-key="cast:a"] [data-testid="rotation-item-cast"]');
 		let revealed: Array<AplRevealRequest>;
 		let off: () => void;

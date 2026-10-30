@@ -49,7 +49,7 @@ export const Timeline = ({ active }: TimelineProps) => {
 		// The editor changes the rotation in place, so its counter in the store is the only sign of an edit.
 		const version = () => simPlayer.sim.store.getState().players[simPlayer.storeKey]?.v.rotation;
 		const compared = memoLast<boolean>();
-		return { rotation, changed: () => compared([version()], () => !APLRotation.equals(rotation, simPlayer.getResolvedAplRotation(true))) };
+		return { rotation, changedSinceRun: () => compared([version()], () => !APLRotation.equals(rotation, simPlayer.getResolvedAplRotation(true))) };
 	}, [shown, player, simPlayer]);
 
 	// The unit walk is inside the guard, not beside it: a result the model cannot be built from

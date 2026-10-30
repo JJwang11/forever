@@ -10,7 +10,7 @@ export interface AplRun {
 	 * Asked when a tooltip shows or a cast is clicked, so an edit in the Rotation tab compares nothing. It reads the
 	 * store unsubscribed, which holds because both happen in the Results tab, where the rotation cannot change.
 	 */
-	readonly changed: () => boolean;
+	readonly changedSinceRun: () => boolean;
 }
 
 /** The rotation the run's request carried for `player`. An Auto or Simple run carries one too, but its casts name no entry path. */
@@ -22,7 +22,7 @@ export interface ResolvedAplEntry {
 	readonly kind: Exclude<AplEntrySegment['kind'], 'step'>;
 	readonly item: APLListItem | APLPrepullAction;
 	/** The indexes of the steps after the row, outermost first. */
-	readonly steps: ReadonlyArray<number>;
+	readonly stepIndexes: ReadonlyArray<number>;
 	/** The actions those steps name, in the same order. */
 	readonly stepActions: ReadonlyArray<APLAction>;
 	readonly crumbs: ReadonlyArray<AplEntrySegment & { readonly groupName?: string }>;
@@ -44,14 +44,14 @@ const stepsOf = (action: APLAction | undefined): APLAction[] | undefined => {
 export function resolveAplEntry(rotation: APLRotation, path: AplEntryPath): ResolvedAplEntry | null {
 	let row: { item: APLListItem | APLPrepullAction; kind: ResolvedAplEntry['kind'] } | undefined;
 	let action: APLAction | undefined;
-	let steps: number[] = [];
+	let stepIndexes: number[] = [];
 	let stepActions: APLAction[] = [];
 	for (const segment of path) {
 		if (segment.kind === 'step') {
 			const next = stepsOf(action)?.[segment.index];
 			if (!next) return null;
 			action = next;
-			steps.push(segment.index);
+			stepIndexes.push(segment.index);
 			stepActions.push(next);
 			continue;
 		}
@@ -64,11 +64,11 @@ export function resolveAplEntry(rotation: APLRotation, path: AplEntryPath): Reso
 		if (!item) return null;
 		row = { item, kind: segment.kind };
 		action = item.action;
-		steps = [];
+		stepIndexes = [];
 		stepActions = [];
 	}
 	if (!row) return null;
 
 	const crumbs = path.map(segment => (segment.kind === 'group' ? { ...segment, groupName: rotation.groups[segment.group].name } : segment));
-	return { ...row, steps, stepActions, crumbs };
+	return { ...row, stepIndexes, stepActions, crumbs };
 }

@@ -178,7 +178,7 @@ describe('Timeline', () => {
 		emit(runOf('a', rotation), view.again);
 
 		expect(lastAplRun()?.rotation.priorityList[0].notes).toBe('ran');
-		expect(lastAplRun()?.changed()).toBe(false);
+		expect(lastAplRun()?.changedSinceRun()).toBe(false);
 	});
 
 	it('marks the run changed once the rotation is edited, keeping the rotation as it ran, without drawing the track again', () => {
@@ -186,12 +186,12 @@ describe('Timeline', () => {
 		const player = livePlayer(APLRotation.clone(rotation));
 		const view = mount(true, player);
 		emit(runOf('a', rotation), view.again);
-		expect(lastAplRun()?.changed()).toBe(false);
+		expect(lastAplRun()?.changedSinceRun()).toBe(false);
 		const drawn = state.aplRuns.length;
 
 		act(() => player.modifyAplRotation(live => live.priorityList.push({ notes: 'added' } as never)));
 		expect(state.aplRuns).toHaveLength(drawn);
-		expect(lastAplRun()?.changed()).toBe(true);
+		expect(lastAplRun()?.changedSinceRun()).toBe(true);
 		expect(lastAplRun()?.rotation.priorityList).toHaveLength(1);
 	});
 

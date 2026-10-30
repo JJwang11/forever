@@ -76,7 +76,7 @@ const SECOND_STEP: AplEntryPath = [
 
 const ranEntry = (aplEntryPath: AplEntryPath, { changed = false, ...overrides }: Partial<CastLog> & { changed?: boolean } = {}) => ({
 	log: castLog(12, { aplEntryPath, ...overrides }),
-	aplRun: { rotation, changed: () => changed },
+	aplRun: { rotation, changedSinceRun: () => changed },
 });
 
 /** A cast from the second entry of a group, with the path that reached it and the click hint. */

@@ -53,7 +53,7 @@ const AplEntryViewImpl = ({ entry }: { entry: ResolvedAplEntry }) => {
 			data-clipped={clipped ? '' : undefined}
 			className="max-h-24 overflow-hidden data-clipped:mask-linear-180 data-clipped:mask-linear-from-16 data-clipped:mask-linear-to-24"
 			data-testid="apl-entry-view">
-			<AplProvider changeSource={neverChanges} isPrepull={prepull} isGroup={entry.kind === 'group'} markedSteps={entry.steps}>
+			<AplProvider changeSource={neverChanges} isPrepull={prepull} isGroup={entry.kind === 'group'} markedSteps={entry.stepIndexes}>
 				<AplListItem player={player} config={item} leading={doAt} />
 			</AplProvider>
 		</div>
@@ -63,5 +63,5 @@ const AplEntryViewImpl = ({ entry }: { entry: ResolvedAplEntry }) => {
 // An entry resolved again for the same cast is a new object around the same row of the run's rotation.
 export const AplEntryView = memo(
 	AplEntryViewImpl,
-	(prev, next) => prev.entry.item === next.entry.item && shallowArrayEquals(prev.entry.steps, next.entry.steps),
+	(prev, next) => prev.entry.item === next.entry.item && shallowArrayEquals(prev.entry.stepIndexes, next.entry.stepIndexes),
 );

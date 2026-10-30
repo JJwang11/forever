@@ -35,7 +35,7 @@ describe('resolveAplEntry', () => {
 		const resolved = resolve('priority 2')!;
 		expect(resolved.kind).toBe('priority');
 		expect(resolved.item).toBe(rotation.priorityList[1]);
-		expect(resolved.steps).toEqual([]);
+		expect(resolved.stepIndexes).toEqual([]);
 		expect(resolved.stepActions).toEqual([]);
 	});
 
@@ -52,21 +52,21 @@ describe('resolveAplEntry', () => {
 	it('keeps trailing steps apart from the row of the sequence', () => {
 		const resolved = resolve('priority 1 > step 3')!;
 		expect(resolved.item).toBe(rotation.priorityList[0]);
-		expect(resolved.steps).toEqual([2]);
+		expect(resolved.stepIndexes).toEqual([2]);
 	});
 
 	it('names the group action holding the sequence for a group row with a step', () => {
 		const resolved = resolve('priority 3 > group 2.3 > step 3')!;
 		expect(resolved.kind).toBe('group');
 		expect(resolved.item).toBe(rotation.groups[1].actions[2]);
-		expect(resolved.steps).toEqual([2]);
+		expect(resolved.stepIndexes).toEqual([2]);
 	});
 
 	it('takes the row from a group reference that is a step of a sequence', () => {
 		const resolved = resolve('priority 3 > step 2 > group 2.2')!;
 		expect(resolved.kind).toBe('group');
 		expect(resolved.item).toBe(rotation.groups[1].actions[1]);
-		expect(resolved.steps).toEqual([]);
+		expect(resolved.stepIndexes).toEqual([]);
 		expect(resolved.stepActions).toEqual([]);
 	});
 
@@ -75,7 +75,7 @@ describe('resolveAplEntry', () => {
 		const outer = rotation.priorityList[3].action!.action as { sequence: { actions: Array<APLAction> } };
 		const inner = outer.sequence.actions[1].action as { strictSequence: { actions: Array<APLAction> } };
 		expect(resolved.item).toBe(rotation.priorityList[3]);
-		expect(resolved.steps).toEqual([1, 1]);
+		expect(resolved.stepIndexes).toEqual([1, 1]);
 		expect(resolved.stepActions).toHaveLength(2);
 		expect(resolved.stepActions[0]).toBe(outer.sequence.actions[1]);
 		expect(resolved.stepActions[1]).toBe(inner.strictSequence.actions[1]);
@@ -87,7 +87,7 @@ describe('resolveAplEntry', () => {
 		});
 		const resolved = resolveAplEntry(scheduled, parseAplEntryPath('priority 1 > step 2')!)!;
 		expect(resolved.item).toBe(scheduled.priorityList[0]);
-		expect(resolved.steps).toEqual([1]);
+		expect(resolved.stepIndexes).toEqual([1]);
 	});
 
 	it('names a prepull row', () => {

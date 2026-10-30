@@ -104,7 +104,7 @@ export const CastTooltip = ({ log, stack = [log], aplRun }: CastTooltipProps) =>
 						<AplEntryView entry={entry} />
 					</div>
 					<span className="text-muted">
-						{aplRun?.changed()
+						{aplRun?.changedSinceRun()
 							? i18n.t('results_tab.details.timeline.cast_tooltip.apl_entry.changed_hint')
 							: i18n.t('results_tab.details.timeline.cast_tooltip.apl_entry.open_hint')}
 					</span>

@@ -27,7 +27,7 @@ const rotation = APLRotation.create({
 	groups: [{ name: 'execute', actions: [{ action: waitFor('6s') }, { action: waitFor('7s') }], variables: [] }],
 });
 
-const ran = (changed = false): AplRun => ({ rotation, changed: () => changed });
+const ran = (changed = false): AplRun => ({ rotation, changedSinceRun: () => changed });
 
 const IN_GROUP: AplEntryPath = [
 	{ kind: 'priority', index: 5 },

@@ -395,7 +395,7 @@ export const RotationTrack = memo(({ model, active, aplRun }: RotationTrackProps
 		const rowKey = element?.closest<HTMLElement>('[data-row-key]')?.dataset.rowKey;
 		const row = element && rowKey && model?.byKey.has(rowKey) ? rowFor(rowKey) : null;
 		const item = row && row.kind !== 'header' && row.kind !== 'separator' ? row.items[Number(element!.dataset.itemIndex)] : null;
-		if (item?.kind !== 'cast' || !item.log.aplEntryPath || aplRun.changed()) return;
+		if (item?.kind !== 'cast' || !item.log.aplEntryPath || aplRun.changedSinceRun()) return;
 		if (requestAplReveal(simPlayer.aplRotation, item.log.aplEntryPath)) activateTab(ROTATION_TAB_ID);
 	};
 
