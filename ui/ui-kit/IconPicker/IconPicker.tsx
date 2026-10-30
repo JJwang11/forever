@@ -17,6 +17,13 @@ export interface IconPickerProps extends FieldFrameProps, ControlledProps<number
 	improvedIcon2?: ResolvedIcon;
 }
 
+/** Which improved badges a picker of `states` shows, and whether it writes its value over the icon: the one rule for the picker and a multi icon trigger. */
+export const improvedDisplay = (states: number, improvedIcon?: ResolvedIcon, improvedIcon2?: ResolvedIcon) => ({
+	fillImproved1: states >= 3 && !!improvedIcon,
+	fillImproved2: states >= 4 && !!improvedIcon2,
+	showCounterText: !improvedIcon && (states > 3 || states === 0),
+});
+
 /** Without a label, description or layout the swatch renders bare; with any of them it sits in a `Field` laid out as `icon`, whatever layout the caller passes. */
 export const IconPicker = ({
 	states,
@@ -33,9 +40,7 @@ export const IconPicker = ({
 }: IconPickerProps) => {
 	const labelId = useId();
 	const controlRef = useRef<HTMLAnchorElement>(null);
-	const fillImproved1 = states >= 3 && !!improvedIcon;
-	const fillImproved2 = states >= 4 && !!improvedIcon2;
-	const showCounterText = !improvedIcon && (states > 3 || states === 0);
+	const { fillImproved1, fillImproved2, showCounterText } = improvedDisplay(states, improvedIcon, improvedIcon2);
 	const rooted = hasFieldFrame(frameProps);
 
 	const handleLeftClick = () => {

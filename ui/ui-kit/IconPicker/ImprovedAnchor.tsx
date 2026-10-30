@@ -15,14 +15,10 @@ export interface ImprovedAnchorProps {
 	onMouseDown: MouseEventHandler;
 }
 
+/** The corner and lit state of an improved badge, shared by the clickable anchor and the display-only badge on a multi icon trigger. */
+export const improvedBadgeClass = (corner: 'left' | 'right', active: boolean) =>
+	clsx('absolute bottom-0 size-4 min-w-4', corner === 'left' ? 'left-px' : 'right-0', !active && 'border-gray-600 grayscale');
+
 export const ImprovedAnchor = ({ icon, testId, active, disabled, corner, ...events }: ImprovedAnchorProps) => (
-	<IconSwatch
-		icon={icon}
-		href={icon.href}
-		active={active}
-		disabled={disabled}
-		testId={testId}
-		className={clsx('absolute bottom-0 size-4 min-w-4', corner === 'left' ? 'left-px' : 'right-0', !active && 'border-gray-600 grayscale')}
-		{...events}
-	/>
+	<IconSwatch icon={icon} href={icon.href} active={active} disabled={disabled} testId={testId} className={improvedBadgeClass(corner, active)} {...events} />
 );
