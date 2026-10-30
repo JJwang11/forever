@@ -8,7 +8,7 @@ import { APLListItem, APLPrepullAction } from '@generated/proto/apl';
 import { usePlayer } from '@sim/context/SimHostContext';
 import type { Player } from '@sim/player/player';
 import { shallowArrayEquals, type StoreSubscribe } from '@sim/state/subscriptions';
-import { memo, useMemo } from 'react';
+import { memo, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 const never: StoreSubscribe = () => () => {};
 const neverChanges = () => never;
@@ -18,10 +18,21 @@ const ignore = () => {};
  * One APL line as the editor draws it, at full contrast, that nothing can change. The pickers write to a clone of
  * the line, and some of their paths still call `touchRotation` or write `valueVariables`; `inert`, with the
  * tooltip's `pointer-events-none`, keeps every picker shut so the rotation it came from stays as it ran.
- * The height is capped, and a line cut off by the cap fades out at the bottom.
+ * The height is capped at three picker rows, and only a line the cap cuts off fades out at the bottom.
  */
 const AplLineViewImpl = ({ line }: { line: ResolvedAplLine }) => {
 	const player = usePlayer();
+	const root = useRef<HTMLDivElement>(null);
+	const [clipped, setClipped] = useState(false);
+	useLayoutEffect(() => {
+		const element = root.current;
+		if (!element) return;
+		const measure = () => setClipped(element.scrollHeight > element.clientHeight + 1);
+		measure();
+		const observer = new ResizeObserver(measure);
+		observer.observe(element);
+		return () => observer.disconnect();
+	}, []);
 	const prepull = line.kind === 'prepull';
 	const { item, doAt } = useMemo(() => {
 		const clone = prepull ? APLPrepullAction.clone(line.item as APLPrepullAction) : APLListItem.clone(line.item as APLListItem);
@@ -31,7 +42,12 @@ const AplLineViewImpl = ({ line }: { line: ResolvedAplLine }) => {
 	}, [line.item, prepull, player]);
 
 	return (
-		<div inert className="max-h-60 overflow-hidden mask-linear-180 mask-linear-from-52 mask-linear-to-60" data-testid="apl-line-view">
+		<div
+			ref={root}
+			inert
+			data-clipped={clipped ? '' : undefined}
+			className="max-h-24 overflow-hidden data-clipped:mask-linear-180 data-clipped:mask-linear-from-16 data-clipped:mask-linear-to-24"
+			data-testid="apl-line-view">
 			<AplProvider changeSource={neverChanges} isPrepull={prepull} isGroup={line.kind === 'group'} markedSteps={line.steps}>
 				<AplListItem player={player} config={item} leading={doAt} />
 			</AplProvider>

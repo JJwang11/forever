@@ -46,13 +46,22 @@
 			@apply flex items-center gap-2 whitespace-nowrap;
 		}
 
+		/* The hits give way to the APL line below them, so a cast with many hits still shows its line. */
 		& .ui-timeline-tooltip-hits {
-			@apply flex flex-col;
+			@apply flex min-h-0 flex-col overflow-hidden;
 		}
 	}
 
+	.ui-timeline-hover-tooltip .ui-timeline-tooltip {
+		max-height: calc(80vh - 2 * var(--tooltip-body-padding-y) - 2px);
+	}
+
 	.ui-timeline-tooltip-apl {
-		@apply flex w-[min(40rem,88vw)] flex-col gap-1;
+		@apply flex w-[min(40rem,88vw)] shrink-0 flex-col gap-1;
+	}
+
+	.ui-timeline-tooltip-apl-preview {
+		@apply border border-surface-border bg-surface-raised p-2;
 	}
 
 	.ui-timeline-tooltip-header {

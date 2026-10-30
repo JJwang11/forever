@@ -61,17 +61,6 @@ export const CastTooltip = ({ log, stack = [log], aplRun }: CastTooltipProps) =>
 				{` ${timing}`}
 				{travelTime.length > 0 && travelTime}
 			</span>
-			{line && (
-				<div className="ui-timeline-tooltip-apl">
-					<span>{line.crumbs.map(crumbText).join(' › ')}</span>
-					<AplLineView line={line} />
-					<span className="text-muted">
-						{aplRun?.changed()
-							? i18n.t('results_tab.details.timeline.cast_tooltip.apl_line.changed_hint')
-							: i18n.t('results_tab.details.timeline.cast_tooltip.apl_line.open_hint')}
-					</span>
-				</div>
-			)}
 			{stack.length > 1 && (
 				<span>
 					{first.timestamp === log.timestamp
@@ -107,6 +96,19 @@ export const CastTooltip = ({ log, stack = [log], aplRun }: CastTooltipProps) =>
 						</li>
 					))}
 				</ul>
+			)}
+			{line && (
+				<div className="ui-timeline-tooltip-apl">
+					<span>{line.crumbs.map(crumbText).join(' › ')}</span>
+					<div className="ui-timeline-tooltip-apl-preview">
+						<AplLineView line={line} />
+					</div>
+					<span className="text-muted">
+						{aplRun?.changed()
+							? i18n.t('results_tab.details.timeline.cast_tooltip.apl_line.changed_hint')
+							: i18n.t('results_tab.details.timeline.cast_tooltip.apl_line.open_hint')}
+					</span>
+				</div>
 			)}
 		</div>
 	);
