@@ -26,7 +26,7 @@ func (priest *Priest) registerHolyTalents() {
 	priest.applyHolyReach()
 	priest.applyImprovedHealing()
 	priest.applySearingLight()
-	priest.applyBindingHeal()
+	priest.applyHolyBinding()
 
 	// Tier 5
 	priest.applyLitanyOfLight()
@@ -178,13 +178,47 @@ func (priest *Priest) applySearingLight() {
 	})
 }
 
-// Grants Binding Heal.
-func (priest *Priest) applyBindingHeal() {
-	if !priest.Talents.BindingHeal {
+// The self heal Holy Binding casts. Its row states a placeholder of 1; the talent's share sets the amount.
+const holyBindingHealID = 1328570
+
+// Each time you heal a target other than yourself with Flash Heal, you are healed for 50% as much.
+// This healing generates no threat.
+//
+// The talent is off in Shadowform, as its row states.
+func (priest *Priest) applyHolyBinding() {
+	if !priest.Talents.HolyBinding {
 		return
 	}
 
-	spellData.BindingHeal.Each(priest.registerBindingHeal)
+	share := spellData.HolyBinding.Rank(1).EffectN(1).Percent()
+	shadowform := spellData.Shadowform.Highest().ShapeshiftForm()
+
+	var amount float64
+	selfHeal := priest.RegisterSpell(core.SpellConfig{
+		ActionID:         core.ActionID{SpellID: holyBindingHealID},
+		SpellSchool:      core.SpellSchoolHoly,
+		DefenseType:      core.DefenseTypeMagic,
+		ProcMask:         core.ProcMaskSpellHealing,
+		Flags:            core.SpellFlagHelpful | core.SpellFlagPassiveSpell | core.SpellFlagIgnoreModifiers,
+		DamageMultiplier: 1,
+		ApplyEffects: func(sim *core.Simulation, target *core.Unit, spell *core.Spell) {
+			spell.CalcAndDealHealing(sim, target, amount, spell.OutcomeHealing)
+		},
+	})
+
+	priest.MakeProcTriggerAura(core.ProcTrigger{
+		Name:               "Holy Binding",
+		Callback:           core.CallbackOnHealDealt,
+		ClassSpellMask:     PriestSpellFlashHeal,
+		TriggerImmediately: true,
+		ExtraCondition: func(_ *core.Simulation, _ *core.Spell, result *core.SpellResult) bool {
+			return result.Target != &priest.Unit && priest.ShapeshiftForm != shadowform
+		},
+		Handler: func(sim *core.Simulation, _ *core.Spell, result *core.SpellResult) {
+			amount = result.Damage * share
+			selfHeal.Cast(sim, &priest.Unit)
+		},
+	})
 }
 
 // When you cast a healing spell, gain Mana equal to 20% of the base cost of the spell if your previous heal was a different spell.
@@ -219,7 +253,6 @@ const priestLitanyOfLightHeals = PriestSpellFlashHeal |
 	PriestSpellLesserHeal |
 	PriestSpellHeal |
 	PriestSpellGreaterHeal |
-	PriestSpellBindingHeal |
 	PriestSpellRenew |
 	PriestSpellPenance |
 	PriestSpellPrayerOfHealing |
