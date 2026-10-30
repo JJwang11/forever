@@ -265,8 +265,10 @@ func (spell *Spell) castForRotation(sim *Simulation, target *Unit, channelAction
 // such as the one that queues it for the next swing, credits it here.
 func (spell *Spell) CountManualCast(target *Unit) {
 	spell.SpellMetrics[target.UnitIndex].ManualCasts++
-	// The press's line goes with its credit.
-	if line := spell.Unit.rotationCastLine; line != "" {
+	// The press's line goes with its credit. A walk picked in a nested rotation pass runs its own line, so it
+	// takes none from the cast in flight.
+	running := spell.Unit.runningAPLLine()
+	if line := spell.Unit.rotationCastLine; line != "" && (running == "" || running == line) {
 		spell.swingLine = line
 	}
 }

@@ -378,6 +378,45 @@ func TestWalkAtHardcastEndTakesNoLine(t *testing.T) {
 	}
 }
 
+func TestWalkInsideQueuedCastTakesNoLine(t *testing.T) {
+	var queued *Spell
+	qid := ActionID{SpellID: 910123}.ToProto()
+	late := &proto.APLValue{Value: &proto.APLValue_Cmp{Cmp: &proto.APLValueCompare{
+		Op:  proto.APLValueCompare_OpGt,
+		Lhs: &proto.APLValue{Value: &proto.APLValue_CurrentTime{CurrentTime: &proto.APLValueCurrentTime{}}},
+		Rhs: constValue("1.3s"),
+	}}}
+	notReady := &proto.APLValue{Value: &proto.APLValue_Not{Not: &proto.APLValueNot{Val: &proto.APLValue{
+		Value: &proto.APLValue_SpellIsReady{SpellIsReady: &proto.APLValueSpellIsReady{SpellId: qid}},
+	}}}}
+	cond := &proto.APLValue{Value: &proto.APLValue_And{And: &proto.APLValueAnd{Vals: []*proto.APLValue{late, notReady}}}}
+	walk := &proto.APLAction{Condition: cond, Action: &proto.APLAction_MoveDuration{MoveDuration: &proto.APLActionMoveDuration{Duration: constValue("500ms")}}}
+	lt := newLineTest(func(char *Character) {
+		config := recordedSpellConfig(910123, &[]time.Duration{})
+		config.Cast = CastConfig{CD: Cooldown{Timer: char.NewTimer(), Duration: 1400 * time.Millisecond}}
+		config.ApplyEffects = func(sim *Simulation, _ *Unit, _ *Spell) {
+			char.ReactToEvent(sim, false, false)
+		}
+		queued = char.RegisterSpell(config)
+	}, &proto.APLRotation{PriorityList: aplItems(aplCast(910123), walk)})
+
+	lt.runUntil(1200 * time.Millisecond)
+	lt.rot.priorityList[0].Execute(lt.sim)
+	if !lt.queued(queued) {
+		t.Fatalf("the spell was not queued")
+	}
+	lt.runUntil(4 * time.Second)
+	walks := lt.casting(lt.fw.moveSpell)
+	if len(walks) == 0 {
+		t.Fatalf("no walk was picked")
+	}
+	for _, line := range walks {
+		if strings.Contains(line, " APL: ") {
+			t.Fatalf("the walks' Casting lines are %q, want none that names a line", walks)
+		}
+	}
+}
+
 // With logging off the rotation keeps no running line, so a cast reads none while its line runs.
 func TestUnloggedRunTracksNothing(t *testing.T) {
 	run := func(logged bool) []string {
