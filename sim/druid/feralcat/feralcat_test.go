@@ -74,8 +74,8 @@ func BenchmarkSimulate(b *testing.B) {
 }
 
 // The cat UI's Cat and Hybrid presets (presets.ts CatTalents and HybridTalents).
-const DefaultTalents = "050022-35200032121130212051-053"
-const HybridTalents = "050022-35230332121132212051-"
+const DefaultTalents = "050022-35200032123010125011-055"
+const HybridTalents = "050022-50220332123112125011-05"
 
 var DefaultSpecOptions = &proto.Player_FeralCatDruid{
 	FeralCatDruid: &proto.FeralCatDruid{
