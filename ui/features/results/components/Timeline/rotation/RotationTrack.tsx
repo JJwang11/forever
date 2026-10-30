@@ -390,12 +390,12 @@ export const RotationTrack = memo(({ model, active, aplRun }: RotationTrackProps
 	const simPlayer = usePlayer();
 	const activateTab = useActivateTab();
 	const onItemClick = (event: ReactMouseEvent<HTMLDivElement>) => {
-		if (!aplRun || aplRun.changed()) return;
+		if (!aplRun) return;
 		const element = (event.target as Element).closest<HTMLElement>('[data-item-index]');
 		const rowKey = element?.closest<HTMLElement>('[data-row-key]')?.dataset.rowKey;
 		const row = element && rowKey && model?.byKey.has(rowKey) ? rowFor(rowKey) : null;
 		const item = row && row.kind !== 'header' && row.kind !== 'separator' ? row.items[Number(element!.dataset.itemIndex)] : null;
-		if (item?.kind !== 'cast' || !item.log.aplLine) return;
+		if (item?.kind !== 'cast' || !item.log.aplLine || aplRun.changed()) return;
 		if (requestAplReveal(simPlayer.aplRotation, item.log.aplLine)) activateTab(ROTATION_TAB_ID);
 	};
 
