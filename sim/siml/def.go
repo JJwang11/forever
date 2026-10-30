@@ -117,25 +117,16 @@ func (t *typer) readDefs(tree *syntaxTree) {
 		}
 	}
 	for _, d := range defs {
-		mentioned := map[string]bool{}
 		walkTree(d.value, nil, func(n, _ any) {
-			switch x := n.(type) {
-			case *callNode:
-				if x.args == nil && d.isParam(x.name.text) {
-					mentioned[x.name.text] = true
-				} else if callee := t.defs.byName[x.name.text]; callee != nil {
+			if x, ok := n.(*callNode); ok && !(x.args == nil && d.isParam(x.name.text)) {
+				if callee := t.defs.byName[x.name.text]; callee != nil {
 					t.defs.used[callee] = t.defs.used[callee] || callee != d
-				}
-			case *memberNode:
-				mentioned[x.object.text] = true
-			case *accessorNode:
-				if x.unit != nil {
-					mentioned[x.unit.text] = true
 				}
 			}
 		})
+		mentioned := parameterWords(d)
 		for _, p := range d.params {
-			if !mentioned[p.text] {
+			if !slices.Contains(mentioned, p.text) {
 				t.warn("unused-parameter", fmt.Sprintf("%s never reads its parameter %s", d.name.text, p.text), p.span)
 			}
 		}
@@ -408,12 +399,13 @@ func (f *typedFile) importDefs() {
 			base += len(u.typer.lines.src) + 1
 			for _, s := range u.tree.top {
 				if x, ok := s.(*useStmt); ok && u.used[x] != nil {
-					take(u.used[x], resolveUse(path, x.path.value))
+					take(u.used[x], u.usedPaths[x])
 				}
 			}
 		}
 		take(f.used[use], f.usedPaths[use])
-		if len(clashes) > 0 {
+		// A used file with an error is reported at its use line alone (SPEC.md §9); its defs still read, so its calls do.
+		if len(clashes) > 0 && !hasError(f.used[use].diags) {
 			t.report("duplicate-def", "the def "+strings.Join(clashes, "; the def "), use.path.span)
 		}
 	}
