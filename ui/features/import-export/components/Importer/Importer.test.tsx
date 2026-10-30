@@ -137,6 +137,14 @@ describe('Importer', () => {
 		expect(onImport).toHaveBeenCalledWith(theHost, 'from the file', 'setup.siml', aSignal);
 	});
 
+	it('imports an uploaded file with its line breaks as line feeds', async () => {
+		const { onImport } = renderImporter();
+		await upload('setup.siml', 'siml 1\r\nspec hunter\rrace orc');
+
+		await clickImport();
+		expect(onImport).toHaveBeenCalledWith(theHost, 'siml 1\nspec hunter\nrace orc', 'setup.siml', aSignal);
+	});
+
 	// A typo fixed in an uploaded p1.gear.siml still reads as a gear file.
 	it('keeps the uploaded file name while the text is edited', async () => {
 		const { onImport } = renderImporter();

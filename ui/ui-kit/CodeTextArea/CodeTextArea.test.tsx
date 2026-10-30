@@ -61,6 +61,7 @@ describe('CodeTextArea', () => {
 		act(() => textarea().focus());
 		const at = TEXT.indexOf('"name"');
 		const typed = `${TEXT.slice(0, at)}ab\n${TEXT.slice(at)}`;
+		// fireEvent copies the selection keys onto the textarea after the value, which leaves the caret mid-text.
 		fireEvent.change(textarea(), { target: { value: typed, selectionStart: at + 3, selectionEnd: at + 3 } });
 		expect(onChange).toHaveBeenCalledWith(typed);
 		expect(screen.getByText(position(4, 1, 6))).toBeTruthy();
