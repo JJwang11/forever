@@ -12,7 +12,7 @@ const meta = {
 	title: 'Kit/CodeTextArea',
 	component: CodeTextArea,
 	tags: ['autodocs'],
-	args: { value: JSON_TEXT, className: 'h-64 w-full', spellCheck: false },
+	args: { value: JSON_TEXT, className: 'h-64 w-full' },
 	argTypes: {
 		readOnly: { control: 'boolean' },
 		className: { control: 'text' },

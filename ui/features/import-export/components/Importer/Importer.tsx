@@ -30,6 +30,8 @@ export const Importer = ({ open, onOpenChange, title, allowFileUpload = false, h
 	// The import that has not ended, which the Import button waits on and closing the dialog drops.
 	const running = useRef<AbortController>(undefined);
 	const [pending, setPending] = useState(false);
+	// How often the dialog has closed, so a file read that ends after a close leaves the next opening alone.
+	const closes = useRef(0);
 	const uploadInputId = `upload-input-${kebabCase(title)}`;
 
 	const dropRunning = () => {
@@ -42,6 +44,7 @@ export const Importer = ({ open, onOpenChange, title, allowFileUpload = false, h
 	// that has not ended.
 	const changeOpen = (next: boolean) => {
 		if (!next) {
+			closes.current++;
 			dropRunning();
 			setText('');
 			fileName.current = undefined;
@@ -108,7 +111,11 @@ export const Importer = ({ open, onOpenChange, title, allowFileUpload = false, h
 						onChange={async event => {
 							const file = event.target.files?.[0];
 							if (!file) return;
-							setText(await file.text());
+							const opening = closes.current;
+							// The browser turns a text box's line breaks into line feeds, and the cursor offsets count those.
+							const uploaded = (await file.text()).replace(/\r\n?/g, '\n');
+							if (closes.current !== opening) return;
+							setText(uploaded);
 							fileName.current = file.name;
 						}}
 					/>
@@ -131,14 +138,7 @@ export const Importer = ({ open, onOpenChange, title, allowFileUpload = false, h
 						onPaste={onPaste}
 					/>
 				) : (
-					<CodeTextArea
-						spellCheck={false}
-						testId="importer-textarea"
-						className="h-[40vh] w-full"
-						value={text}
-						onChange={editText}
-						onPaste={onPaste}
-					/>
+					<CodeTextArea testId="importer-textarea" className="h-[40vh]" value={text} onChange={editText} onPaste={onPaste} />
 				)}
 				{problems && (
 					<Notice level="error" className="mt-2" testId="importer-problems">

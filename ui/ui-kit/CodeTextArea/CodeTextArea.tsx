@@ -1,9 +1,10 @@
 import i18n from '@i18n/config';
+import { cssVars } from '@ui-kit/utils/css';
 import clsx, { type ClassValue } from 'clsx';
-import type { ComponentPropsWithoutRef, CSSProperties } from 'react';
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import type { ComponentPropsWithoutRef } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
-type OwnProps = 'className' | 'value' | 'defaultValue' | 'onChange' | 'wrap' | 'onScroll' | 'onFocus' | 'onBlur' | 'onClick' | 'onKeyUp';
+type OwnProps = 'className' | 'value' | 'defaultValue' | 'onChange' | 'wrap' | 'onScroll' | 'onFocus' | 'onSelect';
 
 export interface CodeTextAreaProps extends Omit<ComponentPropsWithoutRef<'textarea'>, OwnProps> {
 	value: string;
@@ -23,19 +24,17 @@ const countLines = (text: string) => {
  * A monospace text box for data files: line numbers beside the text, no wrapping, the cursor's line tinted and its
  * position in the bottom-right corner.
  */
-export const CodeTextArea = forwardRef<HTMLTextAreaElement, CodeTextAreaProps>(({ value, onChange, className, testId, ...props }, ref) => {
+export const CodeTextArea = ({ value, onChange, className, testId, ...props }: CodeTextAreaProps) => {
 	const frame = useRef<HTMLDivElement>(null);
 	const input = useRef<HTMLTextAreaElement>(null);
-	useImperativeHandle(ref, () => input.current!, []);
 
-	// The cursor offset, which stays at the start until the box is first focused: setting a textarea's value moves its
-	// selection to the end, so an export would open on its last line.
+	// The cursor offset, read only while the box has focus: setting a textarea's value moves its selection to the end,
+	// so an export would open on its last line, and a value written while the box is blurred would move the cursor from
+	// where it was left.
 	const [cursor, setCursor] = useState(0);
-	const [focused, setFocused] = useState(false);
-	const touched = useRef(false);
 	const readCursor = useCallback(() => {
 		const element = input.current;
-		if (!element || !touched.current) return;
+		if (!element) return;
 		setCursor(element.selectionDirection === 'backward' ? element.selectionStart : element.selectionEnd);
 	}, []);
 
@@ -49,9 +48,10 @@ export const CodeTextArea = forwardRef<HTMLTextAreaElement, CodeTextAreaProps>((
 		style.setProperty('--ui-code-scrollbar-y', `${element.offsetWidth - element.clientWidth}px`);
 	}, []);
 
-	// A value written from outside fires no input event, so the cursor and the scrollbars are read again after each one.
+	// A value written from outside fires no input event, so the scrollbars are read again after each one, and the cursor
+	// too while the box has focus.
 	useLayoutEffect(() => {
-		readCursor();
+		if (document.activeElement === input.current) readCursor();
 		place();
 	}, [value, readCursor, place]);
 
@@ -61,34 +61,26 @@ export const CodeTextArea = forwardRef<HTMLTextAreaElement, CodeTextAreaProps>((
 		return () => observer.disconnect();
 	}, [place]);
 
-	// Arrow keys and selections move the cursor with no input or click event; only `document` gets a `selectionchange`.
-	useEffect(() => {
-		if (!focused) return;
-		document.addEventListener('selectionchange', readCursor);
-		return () => document.removeEventListener('selectionchange', readCursor);
-	}, [focused, readCursor]);
-
 	const lineCount = useMemo(() => countLines(value), [value]);
 	const { line, column } = useMemo(() => {
-		const before = value.slice(0, cursor);
-		return { line: countLines(before), column: cursor - before.lastIndexOf('\n') };
+		const offset = Math.min(cursor, value.length);
+		const before = value.slice(0, offset);
+		return { line: countLines(before), column: offset - before.lastIndexOf('\n') };
 	}, [value, cursor]);
-	const gutter = useMemo(() => {
-		const numbers = Array.from({ length: lineCount }, (_, i) => i + 1);
-		return { before: numbers.slice(0, line - 1).join('\n'), after: numbers.slice(line).join('\n') };
-	}, [lineCount, line]);
+	// The numbers follow the line count only, and the cursor's number is drawn over its dim one, so a cursor move leaves a
+	// long file's gutter text alone.
+	const numbers = useMemo(() => Array.from({ length: lineCount }, (_, i) => i + 1).join('\n'), [lineCount]);
 
 	return (
-		<div ref={frame} className={clsx('ui-code-text-area', className)} style={{ '--ui-code-line': line - 1 } as CSSProperties}>
-			<div className="ui-code-text-area-line" />
+		<div ref={frame} className={clsx('ui-code-text-area', className)} style={cssVars({ '--ui-code-line': String(line - 1) })}>
 			<div className="ui-code-text-area-gutter" aria-hidden>
-				<div className="ui-code-text-area-numbers">
-					{gutter.before && `${gutter.before}\n`}
-					<span data-current="">{line}</span>
-					{gutter.after && `\n${gutter.after}`}
-				</div>
+				<div className="ui-code-text-area-numbers">{numbers}</div>
+				<div data-current="">{line}</div>
 			</div>
+			{/* After the gutter, so the tint lies over the cursor's number too. */}
+			<div className="ui-code-text-area-line" />
 			<textarea
+				spellCheck={false}
 				{...props}
 				ref={input}
 				value={value}
@@ -99,14 +91,8 @@ export const CodeTextArea = forwardRef<HTMLTextAreaElement, CodeTextAreaProps>((
 					onChange?.(event.currentTarget.value);
 					readCursor();
 				}}
-				onFocus={() => {
-					touched.current = true;
-					setFocused(true);
-					readCursor();
-				}}
-				onBlur={() => setFocused(false)}
-				onClick={readCursor}
-				onKeyUp={readCursor}
+				onFocus={readCursor}
+				onSelect={readCursor}
 				onScroll={place}
 			/>
 			<div className="ui-code-text-area-position" aria-hidden>
@@ -114,5 +100,4 @@ export const CodeTextArea = forwardRef<HTMLTextAreaElement, CodeTextAreaProps>((
 			</div>
 		</div>
 	);
-});
-CodeTextArea.displayName = 'CodeTextArea';
+};

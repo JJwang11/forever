@@ -101,7 +101,7 @@ export const Exporter = ({
 			{holdsLink ? (
 				<TextArea spellCheck={false} className="h-[60vh] w-full resize-none" data-testid="exporter-textarea" value={data} readOnly />
 			) : (
-				<CodeTextArea spellCheck={false} className="h-[60vh] w-full" testId="exporter-textarea" value={data} readOnly />
+				<CodeTextArea className="h-[60vh]" testId="exporter-textarea" value={data} readOnly />
 			)}
 		</Dialog>
 	);

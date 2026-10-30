@@ -16,7 +16,8 @@
 		@apply relative shrink-0 overflow-hidden border-r border-surface-border p-2 text-right font-mono text-ui leading-code whitespace-pre text-secondary select-none;
 
 		& [data-current] {
-			@apply text-foreground;
+			@apply absolute right-2 h-(--leading-code) bg-surface text-foreground;
+			top: calc(--spacing(2) + var(--ui-code-line) * var(--leading-code) - var(--ui-code-scroll-top, 0px));
 		}
 	}
 
@@ -25,7 +26,7 @@
 	}
 
 	.ui-code-text-area-input {
-		@apply relative block h-full min-w-0 flex-1 resize-none overflow-auto bg-transparent p-2 font-mono text-ui leading-code whitespace-pre outline-none;
+		@apply relative h-full min-w-0 flex-1 resize-none overflow-auto bg-transparent p-2 font-mono text-ui leading-code whitespace-pre outline-none;
 	}
 
 	.ui-code-text-area-position {
