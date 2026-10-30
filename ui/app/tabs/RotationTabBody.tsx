@@ -9,6 +9,7 @@ import { VariablesList } from '@features/apl/components/VariablesList';
 import { useAplReveal } from '@features/apl/hooks/useAplReveal';
 import type { AplPaneId } from '@features/apl/model/apl_panes';
 import { APL_PANES } from '@features/apl/model/apl_panes';
+import { SimlRotationActions } from '@features/import-export';
 import { CooldownsPicker, useAvailableCooldowns } from '@features/settings';
 import { APLRotation_Type as APLRotationType } from '@generated/proto/apl';
 import i18n from '@i18n/config';
@@ -30,11 +31,12 @@ const PANE_BODIES: Record<AplPaneId, ComponentType> = {
 	'apl-variables': VariablesList,
 };
 
-/** Preset picker and saved rotations, repeated in all three sub-tabs. */
+/** Preset picker, saved rotations and the rotation as SIML, repeated in all three sub-tabs. */
 const RotationSidebar = () => (
 	<>
 		<PresetConfigurationPicker categories={ROTATION_PRESETS} />
 		<SavedRotation />
+		<SimlRotationActions />
 	</>
 );
 

@@ -36,6 +36,9 @@ func (action *APLAction) heldByQueuedSpell(sim *Simulation) bool {
 }
 
 func (action *APLAction) Execute(sim *Simulation) {
+	if sim.aplActionExecuted != nil {
+		sim.aplActionExecuted(sim, action)
+	}
 	if sim.Log != nil {
 		action.executeLogged(sim)
 		return

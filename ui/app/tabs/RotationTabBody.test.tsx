@@ -4,11 +4,12 @@ import { renderWithHost } from '@testing/react';
 import { act, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-// Everything the simple pane mounts besides the Cooldowns block; none of it is under test here.
+// Everything the panes mount besides the Cooldowns block and the sidebar's SIML actions; none of it is under test here.
 vi.mock('@features/apl/components/AplNavbar', () => ({ AplNavbar: () => null }));
 vi.mock('@features/apl/components/GroupList', () => ({ GroupList: () => null }));
 vi.mock('@features/apl/components/PrePullList', () => ({ PrePullList: () => null }));
 vi.mock('@features/apl/components/PriorityList', () => ({ PriorityList: () => null }));
+vi.mock('@features/apl/components/PriorityPane', () => ({ PriorityPane: () => null }));
 vi.mock('@features/apl/components/RotationTypePicker', () => ({ RotationTypePicker: () => null }));
 vi.mock('@features/apl/components/SavedRotation', () => ({ SavedRotation: () => null }));
 vi.mock('@features/apl/components/SimpleRotationInputs', () => ({ SimpleRotationInputs: () => null }));
@@ -19,12 +20,13 @@ vi.mock('@features/settings', () => ({
 	CooldownsPicker: () => null,
 	useAvailableCooldowns: () => available,
 }));
+vi.mock('@features/import-export', () => ({ SimlRotationActions: () => <div data-testid="siml-rotation" /> }));
 
 let available: Array<unknown> = [];
 const { RotationTabBody } = await import('./RotationTabBody');
 
-const setup = (hideSimpleCooldowns?: boolean) =>
-	renderWithHost(<RotationTabBody rotationType={APLRotationType.TypeSimple} />, {
+const setup = (hideSimpleCooldowns?: boolean, rotationType = APLRotationType.TypeSimple) =>
+	renderWithHost(<RotationTabBody rotationType={rotationType} />, {
 		player: { hasSimpleRotationGenerator: () => true },
 		individualConfig: { rotationInputs: { inputs: [] }, hideSimpleCooldowns },
 	});
@@ -76,5 +78,11 @@ describe('RotationTabBody APL sub-tabs', () => {
 			requestAplReveal(rotation, [{ kind: 'priority', index: 0 }]);
 		});
 		await waitFor(() => expect(openPane(container)).toBe('apl-priority-list'));
+	});
+});
+
+describe('RotationTabBody sidebar', () => {
+	it.each([APLRotationType.TypeAuto, APLRotationType.TypeSimple, APLRotationType.TypeAPL])('holds the SIML actions beside rotation type %s', type => {
+		expect(setup(false, type).container.querySelector('[data-testid="siml-rotation"]')).not.toBeNull();
 	});
 });
