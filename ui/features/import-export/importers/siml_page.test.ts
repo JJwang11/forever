@@ -61,6 +61,18 @@ describe('a cooldowns: section', () => {
 
 		expect(player.aplRotation.priorityList).toHaveLength(0);
 		expect(player.getSimpleCooldowns().hpPercentForDefensives).toBe(0.4);
+		expect(player.getSimpleCooldowns().cooldowns).toHaveLength(1);
+	});
+
+	it("keeps the page's cooldowns through a rotation without one", async () => {
+		const { player, host } = await page();
+		reads({ player: { class: 'ClassHunter', hunter: {}, rotation: { type: 'TypeAPL' } } }, ['r']);
+
+		await SIML_IMPORTER.onImport(host, 'the text');
+
+		expect(player.aplRotation.priorityList).toHaveLength(0);
+		expect(player.getSimpleCooldowns().hpPercentForDefensives).toBe(0.2);
+		expect(player.getSimpleCooldowns().cooldowns).toHaveLength(1);
 	});
 });
 

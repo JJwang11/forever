@@ -2,7 +2,7 @@
 // categories, and the settings they come from. The sim's reading itself is tested in Go (sim/siml/api_test.go).
 import { Player } from '@generated/proto/api';
 import { APLRotation, APLRotation_Type as APLRotationType } from '@generated/proto/apl';
-import { ConsumesSpec, EquipmentSpec, ItemSpec, Spec } from '@generated/proto/common';
+import { ConsumesSpec, Cooldowns, EquipmentSpec, ItemSpec, Spec } from '@generated/proto/common';
 import { IndividualSimSettings, SimlDiagnostic, SimlParseResult } from '@generated/proto/ui';
 import { SimSettingCategories } from '@sim/constants/sim_settings';
 import { fakeHost } from '@testing/sim/fake_host';
@@ -33,9 +33,11 @@ vi.mock('@ui-kit/Toast', async importOriginal => ({
 }));
 
 const fromProto = vi.fn<(settings: IndividualSimSettings, categories: Array<SimSettingCategories>) => void>();
-// A page with nothing of its own, so what the importer loads is what the text holds.
+// A page with nothing of its own, so what the importer loads is what the text holds. The cooldowns are read before
+// a rotation loads and set after it.
 const toProto = () => IndividualSimSettings.create({ player: Player.create() });
-const hostFor = (spec: Spec) => fakeHost({ player: { getSpec: () => spec }, toProto, fromProto });
+const cooldowns = { getSimpleCooldowns: () => Cooldowns.create(), setSimpleCooldowns: vi.fn() };
+const hostFor = (spec: Spec) => fakeHost({ player: { getSpec: () => spec, ...cooldowns }, toProto, fromProto });
 const hunter = hostFor(Spec.SpecHunter);
 
 const loaded = () => {
@@ -175,7 +177,7 @@ describe('an import the dialog dropped', () => {
 
 describe('a gear planner', () => {
 	const readsEncounter = (...more: string[]) => reads({}, [...more, 'e'], Spec.SpecUnknown);
-	const planner = fakeHost({ player: { getSpec: () => Spec.SpecHolyPaladin }, simDisabled: true, toProto, fromProto });
+	const planner = fakeHost({ player: { getSpec: () => Spec.SpecHolyPaladin, ...cooldowns }, simDisabled: true, toProto, fromProto });
 
 	it('refuses a file holding only the encounter, which it does not import', async () => {
 		readsEncounter();

@@ -96,13 +96,17 @@ const importSiml = async (host: IndividualSimHost<any>, text: string, path: stri
 		});
 	}
 
+	// The player keeps the cooldowns in the rotation, which loading one replaces: read the page's before, and set them
+	// after it, with what the file's cooldowns: section writes over them.
+	const cooldowns =
+		(player.cooldowns || categories.includes(SimSettingCategories.Rotation)) &&
+		overPage(Cooldowns, host.player.getSimpleCooldowns(), player.cooldowns ?? Cooldowns.create());
 	batch(() => {
 		// `fromProto` reads no category as every category, which a file of cooldowns alone must not do.
 		if (categories.length) {
 			host.fromProto(withViewerStatFilters(overPage(IndividualSimSettings, host.toProto(categories), settings), host.sim), categories);
 		}
-		// The player keeps the cooldowns in the rotation, so they go in after it.
-		if (player.cooldowns) host.player.setSimpleCooldowns(overPage(Cooldowns, host.player.getSimpleCooldowns(), player.cooldowns));
+		if (cooldowns) host.player.setSimpleCooldowns(cooldowns);
 	});
 };
 

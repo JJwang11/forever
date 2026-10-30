@@ -29,9 +29,10 @@ const printReadable = async (host: IndividualSimHost<any>, request: Partial<Siml
 };
 
 /**
- * The setup as a full SIML file, holding the sections of `categories`: a category whose settings write nothing is
- * an empty section, so importing the file resets it. No category, as in the JSON export, is every category. The
- * rotation keeps the type the player set, so an Auto or Simple one reads back as Auto or Simple.
+ * The setup as a full SIML file, holding the sections of `categories`. An import loads it over the page
+ * (sim/siml/SPEC.md §8): an empty consumables: or encounter: section empties that message, but a setting at its zero
+ * value, such as no talents or 0 target dummies, keeps the importer's. No category, as in the JSON export, is every
+ * category. The rotation keeps the type the player set, so an Auto or Simple one reads back as Auto or Simple.
  */
 const printSimlSettings = (host: IndividualSimHost<any>, categories: Array<SimSettingCategories>): Promise<string> =>
 	printReadable(host, {

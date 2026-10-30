@@ -1,6 +1,6 @@
 import { Player } from '@generated/proto/api';
 import { APLRotation } from '@generated/proto/apl';
-import { Spec } from '@generated/proto/common';
+import { Cooldowns, Spec } from '@generated/proto/common';
 import { IndividualSimSettings, SimlDiagnostic, SimlParseResult } from '@generated/proto/ui';
 import i18n from '@i18n/config';
 import { SimSettingCategories } from '@sim/constants/sim_settings';
@@ -74,7 +74,11 @@ describe('the SIML rotation importer dialog', () => {
 	const importText = (text: string) => {
 		const fromProto = vi.fn();
 		const toProto = () => IndividualSimSettings.create({ player: Player.create() });
-		renderWithHost(<SimlRotationImporterDialog open onOpenChange={() => {}} />, { player: { getSpec: () => Spec.SpecHunter }, toProto, fromProto });
+		renderWithHost(<SimlRotationImporterDialog open onOpenChange={() => {}} />, {
+			player: { getSpec: () => Spec.SpecHunter, getSimpleCooldowns: () => Cooldowns.create(), setSimpleCooldowns: () => {} },
+			toProto,
+			fromProto,
+		});
 		screen.getByTestId<HTMLTextAreaElement>('importer-textarea').value = text;
 		fireEvent.click(screen.getByTestId('import-button'));
 		return fromProto;
