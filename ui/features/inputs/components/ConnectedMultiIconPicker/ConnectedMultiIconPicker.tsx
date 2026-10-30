@@ -1,4 +1,4 @@
-import { useResolvedIcon } from '@sim/hooks/useResolvedIcon';
+import { usePendingIcon, useResolvedIcon } from '@sim/hooks/useResolvedIcon';
 import { useStoreSubscribe } from '@sim/hooks/useStoreSubscribe';
 import type { Player } from '@sim/player/player';
 import type { StoreSubscribe } from '@sim/state/subscriptions';
@@ -29,17 +29,16 @@ export const ConnectedMultiIconPicker = <ModObject,>({ modObject, config, subscr
 	// Subscribed only to re-render on each notification: the reads below take `config` from the render, so a new
 	// config is followed without waiting for one.
 	useStoreSubscribe(subscribe, () => ({}));
-	const active = firstActiveInput(config, modObject);
-	const actionId = active?.input.actionId ?? null;
+	const picked = firstActiveInput(config, modObject);
 	const hidden = !!config.showWhen && !config.showWhen(modObject as unknown as Player<any>);
 
 	// With nothing on and no category icon, the first input's icon stands for the group.
-	const icon = useResolvedIcon(config.categoryId ?? actionId ?? config.inputs[0]?.actionId);
+	const icon = useResolvedIcon(config.categoryId ?? picked?.input.actionId ?? config.inputs[0]?.actionId);
 
 	// The corner badges and counter belong to the input's own icon, so a category icon carries none.
-	const shown = config.categoryId ? undefined : active?.input;
-	const improvedIcon = useResolvedIcon(shown?.improvedId);
-	const improvedIcon2 = useResolvedIcon(shown?.improvedId2);
+	const shown = config.categoryId ? null : picked;
+	const improvedIcon = usePendingIcon(shown?.input.improvedId);
+	const improvedIcon2 = usePendingIcon(shown?.input.improvedId2);
 
 	if (hidden) return null;
 
@@ -47,12 +46,12 @@ export const ConnectedMultiIconPicker = <ModObject,>({ modObject, config, subscr
 		<MultiIconPicker
 			label={config.label}
 			icon={icon}
-			active={!!actionId}
-			state={shown && active ? { states: shown.states, value: active.value, improvedIcon, improvedIcon2 } : undefined}
+			active={!!picked}
+			state={shown ? { states: shown.input.states, value: shown.value, improvedIcon, improvedIcon2 } : undefined}
 			direction={config.direction}
 			tooltip={config.tooltip}
 			numColumns={config.numColumns?.(modObject)}
-			keptTooltip={keptTooltipOf(config, modObject, !!actionId)}
+			keptTooltip={keptTooltipOf(config, modObject, !!picked)}
 			onClear={onClear}
 			testId={testId}>
 			{/* The menu is a row of bare swatches: each input's label would sit beside its icon, and the icon's tooltip names it. */}

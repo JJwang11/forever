@@ -2,8 +2,8 @@ import i18n from '@i18n/config';
 import { Field } from '@ui-kit/Field';
 import type { ResolvedIcon } from '@ui-kit/Field/types';
 import { IconEnumPickerDirection } from '@ui-kit/IconEnumPicker';
-import { improvedBadgeClass, improvedDisplay } from '@ui-kit/IconPicker';
-import { IconMenu, IconSwatch, type IconSwatchProps } from '@ui-kit/IconSwatch';
+import { improvedOverlay, type ImprovedState } from '@ui-kit/IconPicker/improvedOverlay';
+import { IconMenu, type IconSwatchProps } from '@ui-kit/IconSwatch';
 import { Tooltip, tooltipAnchorProps } from '@ui-kit/Tooltip';
 import { isRightClick } from '@ui-kit/utils/dom';
 import clsx from 'clsx';
@@ -17,7 +17,7 @@ export interface MultiIconPickerProps extends Pick<IconSwatchProps, 'keptTooltip
 	 * The shown input's own state, drawn on the trigger as an `IconPicker` draws it: the improved badges and the
 	 * counter text. Display only, so the trigger keeps its hover and right click. Left out, the trigger carries none.
 	 */
-	state?: { states: number; value: number; improvedIcon?: ResolvedIcon; improvedIcon2?: ResolvedIcon };
+	state?: ImprovedState;
 	onClear: () => void;
 	/** Horizontal, the default, opens the menu to the right as a row; vertical opens it below, in `numColumns` columns. */
 	direction?: IconEnumPickerDirection;
@@ -46,26 +46,15 @@ export const MultiIconPicker = ({
 	const tooltipId = useId();
 	const horizontal = direction === IconEnumPickerDirection.Horizontal;
 	const controlRef = useRef<HTMLAnchorElement>(null);
-	const { fillImproved1, fillImproved2, showCounterText } = state
-		? improvedDisplay(state.states, state.improvedIcon, state.improvedIcon2)
-		: { fillImproved1: false, fillImproved2: false, showCounterText: false };
-	const badge = (testId: string, badgeIcon: ResolvedIcon, corner: 'left' | 'right', lit: boolean) => (
-		<IconSwatch icon={badgeIcon} active={lit} testId={testId} className={clsx(improvedBadgeClass(corner, lit), 'pointer-events-none')} />
-	);
-	const badges = state && (fillImproved1 || fillImproved2) && (
-		<>
-			{fillImproved1 && state.improvedIcon && badge('multi-icon-picker-improved1', state.improvedIcon, 'right', state.value > 1)}
-			{fillImproved2 && state.improvedIcon2 && badge('multi-icon-picker-improved2', state.improvedIcon2, 'left', state.value > 2)}
-		</>
-	);
+	const overlay = state && improvedOverlay({ ...state, testIdPrefix: 'multi-icon-picker' });
 	const menu = (
 		<IconMenu
 			trigger={{
 				icon,
 				active,
 				keptTooltip,
-				text: state && showCounterText ? String(state.value) : undefined,
-				badges: badges || undefined,
+				text: overlay?.text,
+				badges: overlay?.badges,
 				className: clsx(!active && 'grayscale'),
 				testId: testId ?? 'multi-icon-picker-root',
 				// The trigger is a bare anchor carrying a background image, so it announces nothing without this. Base UI

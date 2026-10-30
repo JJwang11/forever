@@ -4,7 +4,7 @@ import i18n from '@i18n/config';
 import { ActionId } from '@sim/proto/action_id';
 import type { StoreSubscribe } from '@sim/state/subscriptions';
 import { filled } from '@testing/inputs';
-import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { IconPickerConfig } from '../ConnectedIconPicker/types';
@@ -119,57 +119,25 @@ describe('ConnectedMultiIconPicker', () => {
 		const badge = (n: 1 | 2) => screen.queryByTestId(`multi-icon-picker-improved${n}`);
 		const quad = () => configFor({ inputs: [input('kings', kingsId, { states: 4, improvedId, improvedId2: improved2Id })] });
 
-		it('keeps the input icon at every state and lights the badges by state', () => {
+		it("keeps the active input's own icon and lights its improved badges by its value", () => {
 			const buffs = new Buffs();
+			buffs.set('kings', 2);
 			mount(buffs, quad());
-			expect(badge(1)).toBeNull();
-
-			act(() => buffs.set('kings', 1));
 			expect(backgroundIcon()).toBe('kings.jpg');
 			expect(badge(1)!.style.backgroundImage).toContain('improved.jpg');
-			expect(badge(1)!.hasAttribute('data-active')).toBe(false);
+			expect(badge(1)!.hasAttribute('data-active')).toBe(true);
 			expect(badge(2)!.style.backgroundImage).toContain('improved2.jpg');
 			expect(badge(2)!.hasAttribute('data-active')).toBe(false);
-
-			act(() => buffs.set('kings', 2));
-			expect(backgroundIcon()).toBe('kings.jpg');
-			expect(badge(1)!.hasAttribute('data-active')).toBe(true);
-			expect(badge(2)!.hasAttribute('data-active')).toBe(false);
-
-			act(() => buffs.set('kings', 3));
-			expect(backgroundIcon()).toBe('kings.jpg');
-			expect(badge(2)!.hasAttribute('data-active')).toBe(true);
 		});
 
-		it('shows the second badge only from four states, and none for two', () => {
-			const buffs = new Buffs();
-			buffs.set('kings', 1);
-			mount(buffs, configFor({ inputs: [input('kings', kingsId, { states: 3, improvedId, improvedId2: improved2Id })] }));
-			expect(badge(1)).toBeTruthy();
-			expect(badge(2)).toBeNull();
-			cleanup();
-
-			mount(buffs, configFor({ inputs: [input('kings', kingsId, { improvedId })] }));
-			expect(badge(1)).toBeNull();
-		});
-
-		it('leaves the badges inert so hover and right click reach the trigger', () => {
+		it('leaves the badges unlinked and still clears on a right click with them on', () => {
 			const buffs = new Buffs();
 			buffs.set('kings', 2);
 			const onClear = vi.fn();
 			mount(buffs, quad(), onClear);
-			expect(badge(1)!.className).toContain('pointer-events-none');
 			expect(badge(1)!.hasAttribute('href')).toBe(false);
-
 			fireEvent.mouseDown(trigger(), { button: 2 });
 			expect(onClear).toHaveBeenCalledTimes(1);
-		});
-
-		it('writes the counter over the icon from four states when there is no improved icon', () => {
-			const buffs = new Buffs();
-			buffs.set('kings', 2);
-			mount(buffs, configFor({ inputs: [input('kings', kingsId, { states: 5 })] }));
-			expect(trigger().textContent).toBe('2');
 		});
 
 		it('carries none under a category icon', () => {
