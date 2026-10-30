@@ -63,6 +63,7 @@ type typer struct {
 	spec         string      // The spec line's Player spec field name; "" without one.
 	diags        []diag
 	refs         []nameRef // The names the file writes, as they are typed.
+	usedRefs     []nameRef // The names used files' defs write, each at the call in this file that reads it.
 	rawRefs      []span    // The raw tokens that hold an id a name could write.
 	kind         kindScope // The kind whose own arguments are being typed.
 	variableUses []*variableUse
@@ -867,7 +868,7 @@ func (t *typer) ref(f *field, n node) (protoreflect.Value, bool) {
 	if !ok {
 		return protoreflect.Value{}, false
 	}
-	t.refs = append(t.refs, r)
+	t.addRef(r)
 	return intValue(f.desc, int64(r.id)), true
 }
 
@@ -1053,7 +1054,7 @@ func (t *typer) actionID(n node, ns Namespace, cast bool) *proto.ActionID {
 			if ns == NamespaceAura && slices.Contains(t.names.ICDOnlyItems[n.name.text], t.spec) && !t.kind.readsICD() {
 				t.report("icd-trigger", fmt.Sprintf("item.%s is an internal cooldown trigger, which only icd_is_ready, internal_cooldown and trigger_icd find", n.name.text), n.name.span)
 			}
-			t.refs = append(t.refs, r)
+			t.addRef(r)
 			t.mark(n.span)
 			return &proto.ActionID{RawId: &proto.ActionID_ItemId{ItemId: r.id}}
 		}
@@ -1075,7 +1076,7 @@ func (t *typer) actionID(n node, ns Namespace, cast bool) *proto.ActionID {
 		if cast && e.Uncastable {
 			t.warn("not-castable", t.notCastable(n.name.text), n.name.span)
 		}
-		t.refs = append(t.refs, r)
+		t.addRef(r)
 		t.mark(n.span)
 		return r.actionID
 	}

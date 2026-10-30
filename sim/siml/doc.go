@@ -1,8 +1,10 @@
 package siml
 
 import (
+	"cmp"
 	"encoding/json"
 	"slices"
+	"strings"
 	"sync"
 	"unicode/utf16"
 	"unicode/utf8"
@@ -141,18 +143,23 @@ func (d *Doc) Spans() []PathSpan {
 	return out
 }
 
-// The names the text writes, in file order, with the ones no namespace holds (Known false). Each one's Path is within
-// the loader's message, and nil for a name outside it.
+// The names the text writes, in file order, with the ones no namespace holds (Known false). A name a used file's def
+// writes is at the call in this file that reads the def. Each one's Path is within the loader's message, and nil for
+// a name outside it.
 func (d *Doc) Refs() []NameRef {
 	if d.typed == nil {
 		return nil
 	}
-	sorted := slices.Clone(d.typed.typer.refs)
-	slices.SortStableFunc(sorted, func(a, b nameRef) int { return a.start - b.start })
-	// A name read more than once, in a when line or a def's value, is listed once, as it was read last.
+	t := d.typed.typer
+	sorted := slices.Concat(t.refs, t.usedRefs)
+	slices.SortStableFunc(sorted, func(a, b nameRef) int {
+		return cmp.Or(a.start-b.start, a.end-b.end, strings.Compare(a.name, b.name), strings.Compare(string(a.ns), string(b.ns)))
+	})
+	// A name read more than once, in a when line or a def's value, is listed once, as it was read last; a call that
+	// reads a used file's def lists each name the def's value writes.
 	refs := sorted[:0]
 	for _, r := range sorted {
-		if n := len(refs); n > 0 && refs[n-1].span == r.span {
+		if n := len(refs); n > 0 && refs[n-1].span == r.span && refs[n-1].name == r.name && refs[n-1].ns == r.ns {
 			refs[n-1] = r
 		} else {
 			refs = append(refs, r)

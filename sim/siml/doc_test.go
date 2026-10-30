@@ -2,6 +2,8 @@ package siml
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -231,5 +233,35 @@ func TestDocGearSpansAndRefs(t *testing.T) {
 	want := []string{"helm items/0/id item", "agility items/0/enchant enchant", "belt items/7/id item", "of_the_tiger items/7/randomSuffix suffix"}
 	if got := refLines(d); !slices.Equal(got, want) {
 		t.Errorf("the refs are %v, want %v", got, want)
+	}
+}
+
+// A name a used file's def writes is this file's, at the call that reads the def: a used file types a def only where
+// it calls it (SPEC.md §6.10), so one it never calls writes no name of its own.
+func TestRefsThroughUsedDefs(t *testing.T) {
+	dir := filepath.Join("testdata", "parse", "use_defs")
+	read := func(name string) *Doc {
+		src, err := os.ReadFile(filepath.Join(dir, name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return Analyze(filepath.Join(dir, name), src, corpusNames(t), langOpen)
+	}
+	main := read("main.apl.siml")
+	if _, err := main.File(); err != nil {
+		t.Fatal(err)
+	}
+	// weave.apl.siml's `def filler = arcane_shot`, read at main's `cast filler`.
+	var at []string
+	for _, r := range main.Refs() {
+		if r.Name == "arcane_shot" {
+			at = append(at, fmt.Sprintf("%d:%d-%d:%d", r.Start.Line, r.Start.Col, r.End.Line, r.End.Col))
+		}
+	}
+	if want := []string{"9:8-9:14"}; !slices.Equal(at, want) {
+		t.Errorf("main lists arcane_shot at %v, want %v: %v", at, want, refLines(main))
+	}
+	if lines := refLines(read("weave.apl.siml")); len(lines) != 0 {
+		t.Errorf("weave.apl.siml, which calls none of its defs, writes names: %v", lines)
 	}
 }

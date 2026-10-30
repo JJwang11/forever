@@ -183,10 +183,6 @@ func typeFile(ix *schemaIndex, names *Names, tree *syntaxTree, kind Kind, u *use
 	slices.SortFunc(f.categories, func(a, b string) int { return strings.Index(categoryOrder, a) - strings.Index(categoryOrder, b) })
 	f.declarations = rotation.declarations
 	f.diags = t.diags
-	// The names a used file's def writes are that file's, and its own read reports them.
-	inUsed := func(at span) bool { return at.end > len(tree.lines.src) }
-	t.refs = slices.DeleteFunc(t.refs, func(r nameRef) bool { return inUsed(r.span) })
-	t.rawRefs = slices.DeleteFunc(t.rawRefs, inUsed)
 	return f
 }
 
@@ -431,7 +427,7 @@ func (f *typedFile) slotRow(s *slotRowStmt, slots *placed, taken map[int32]bool)
 				continue
 			}
 			r.row = row
-			t.refs = append(t.refs, r)
+			t.addRef(r)
 			if part.ns == NamespaceItem {
 				row.Item = r.id
 			}

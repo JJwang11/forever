@@ -58,9 +58,36 @@ func (t *typer) lookup(n name, ns Namespace, position string, cast bool) (nameRe
 	r.known = ok
 	if !ok {
 		t.report("unknown-name", t.unknownName(n.text, ns, position, cast), n.span)
-		t.refs = append(t.refs, r)
+		t.addRef(r)
 	}
 	return r, ok
+}
+
+// at, or the call in this file that reads it when at lies in a used file's def: a used file's read types a def only
+// where it calls it (SPEC.md §6.10), so the names in the def's value are this file's. false when no call here holds it.
+func (t *typer) ownSpan(at span) (span, bool) {
+	if t.lines == nil || at.end <= len(t.lines.src) {
+		return at, true
+	}
+	for s := t.site; s != nil; s = s.outer {
+		if s.call.end <= len(t.lines.src) {
+			return s.call, true
+		}
+	}
+	return span{}, false
+}
+
+// Adds r to the names the file writes; one in a used file's def to usedRefs, at the call that reads the def.
+func (t *typer) addRef(r nameRef) {
+	at, ok := t.ownSpan(r.span)
+	switch {
+	case !ok:
+	case at == r.span:
+		t.refs = append(t.refs, r)
+	default:
+		r.span = at
+		t.usedRefs = append(t.usedRefs, r)
+	}
 }
 
 // Why ns holds no name: what the name is where another namespace holds it, else the names it may have meant, castable
@@ -214,8 +241,8 @@ func (t *typer) writtenUnit(k *aplKind, prefix *name, args *argList) proto.UnitR
 
 // Notes the raw token r when the message m read from it holds an id a name could write (raw-ref, SPEC.md §7.3).
 func (t *typer) noteRaw(r *rawNode, m protoreflect.Message) {
-	if t.ix.holdsID(m) && !slices.Contains(t.rawRefs, r.span) {
-		t.rawRefs = append(t.rawRefs, r.span)
+	if at, ok := t.ownSpan(r.span); ok && t.ix.holdsID(m) && !slices.Contains(t.rawRefs, at) {
+		t.rawRefs = append(t.rawRefs, at)
 	}
 }
 
