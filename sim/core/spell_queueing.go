@@ -185,7 +185,7 @@ func (spell *Spell) CastOrQueue(sim *Simulation, target *Unit) {
 }
 
 func (spell *Spell) castOrQueue(sim *Simulation, target *Unit, channelAction *APLActionChannelSpell) {
-	entryPath := spell.Unit.runningEntryPath()
+	entryPath := spell.Unit.currentEntryPath()
 	if spell.CanCast(sim, target) {
 		spell.Unit.setRotationCastEntryPath(entryPath)
 		spell.castForRotation(sim, target, channelAction)
@@ -215,7 +215,7 @@ type rotationCast struct {
 }
 
 // The path of the APL entry running now, kept only while the sim logs; empty outside one.
-func (unit *Unit) runningEntryPath() string {
+func (unit *Unit) currentEntryPath() string {
 	if unit.Rotation == nil {
 		return ""
 	}
@@ -231,13 +231,13 @@ func (unit *Unit) setRotationCastEntryPath(entryPath string) {
 
 // The suffix a Casting log line ends with: the APL entry path of the rotation cast. Only the rotation cast itself
 // carries it, so a spell cast while it runs, such as one its effects cast, names no entry path. A spell a press
-// queued for the next swing names the press's entry path once, on its next Casting line.
+// credited, such as one queued for the next swing, names the press's entry path once, on its next Casting line.
 func (spell *Spell) aplEntrySuffix() string {
 	if unit := spell.Unit; spell == unit.rotationCast.spell && unit.rotationCastEntryPath != "" {
 		return " APL: " + unit.rotationCastEntryPath
 	}
-	if entryPath := spell.swingEntryPath; entryPath != "" {
-		spell.swingEntryPath = ""
+	if entryPath := spell.creditedEntryPath; entryPath != "" {
+		spell.creditedEntryPath = ""
 		return " APL: " + entryPath
 	}
 	return ""
@@ -265,11 +265,11 @@ func (spell *Spell) castForRotation(sim *Simulation, target *Unit, channelAction
 // such as the one that queues it for the next swing, credits it here.
 func (spell *Spell) CountManualCast(target *Unit) {
 	spell.SpellMetrics[target.UnitIndex].ManualCasts++
-	// The press's entry path goes with its credit. A walk picked in a nested rotation pass runs its own entry path, so it
-	// takes none from the cast in flight.
-	running := spell.Unit.runningEntryPath()
+	// The press's entry path goes with its credit. A walk picked in a nested rotation pass runs its own entry path,
+	// so it takes none from the cast in flight.
+	running := spell.Unit.currentEntryPath()
 	if entryPath := spell.Unit.rotationCastEntryPath; entryPath != "" && (running == "" || running == entryPath) {
-		spell.swingEntryPath = entryPath
+		spell.creditedEntryPath = entryPath
 	}
 }
 

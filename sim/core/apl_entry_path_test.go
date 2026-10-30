@@ -167,7 +167,7 @@ func aplItems(actions ...*proto.APLAction) []*proto.APLListItem {
 	return MapSlice(actions, func(action *proto.APLAction) *proto.APLListItem { return &proto.APLListItem{Action: action} })
 }
 
-func wantLines(t *testing.T, name string, got []string, suffixes ...string) {
+func wantEntryPaths(t *testing.T, name string, got []string, suffixes ...string) {
 	t.Helper()
 	if len(got) < len(suffixes) {
 		t.Fatalf("%s logged %d Casting lines, want at least %d: %q", name, len(got), len(suffixes), got)
@@ -208,14 +208,14 @@ func TestCastInsideARotationCastLogsNoEntryPath(t *testing.T) {
 	}, &proto.APLRotation{PriorityList: aplItems(aplCast(910110))})
 
 	lt.runUntil(0)
-	wantLines(t, "the outer spell", lt.casting(outer), ") APL: priority 1")
+	wantEntryPaths(t, "the outer spell", lt.casting(outer), ") APL: priority 1")
 	if got := lt.casting(inner); len(got) != 1 || strings.Contains(got[0], " APL: ") {
 		t.Fatalf("the inner spell's Casting lines are %q, want one that names no entry path", got)
 	}
 }
 
 // A queued spell goes off with no entry running; its Casting line names the entry that queued it.
-func TestQueuedCastCarriesTheEntryThatQueuedIt(t *testing.T) {
+func TestQueuedCastCarriesTheEntryPathThatQueuedIt(t *testing.T) {
 	t.Run("a spell picked at a hardcast's end", func(t *testing.T) {
 		var slow, nuke *Spell
 		firstSecond := &proto.APLValue{Value: &proto.APLValue_Cmp{Cmp: &proto.APLValueCompare{
@@ -233,11 +233,11 @@ func TestQueuedCastCarriesTheEntryThatQueuedIt(t *testing.T) {
 		}, &proto.APLRotation{PriorityList: aplItems(slowCast, aplCast(910110))})
 
 		lt.runUntil(2*time.Second + 1)
-		wantLines(t, "the hardcast", lt.casting(slow), ") APL: priority 1")
+		wantEntryPaths(t, "the hardcast", lt.casting(slow), ") APL: priority 1")
 		if !lt.queued(nuke) {
 			t.Fatalf("the nuke should be queued at the 2 s cast end, logs: %q", lt.logs)
 		}
-		wantLines(t, "the queued nuke", lt.casting(nuke), ") APL: priority 2")
+		wantEntryPaths(t, "the queued nuke", lt.casting(nuke), ") APL: priority 2")
 	})
 
 	// The nuke at the pull starts the GCD; the second spell's entries, priority 2 and then 3, press it 100 ms
@@ -291,11 +291,11 @@ func TestStrictSequenceLaterStepsLogTheirStep(t *testing.T) {
 	}, &proto.APLRotation{PriorityList: aplItems(sequence)})
 
 	lt.runUntil(3 * time.Second)
-	wantLines(t, "the nuke", lt.casting(nuke), ") APL: priority 1 > step 1", ") APL: priority 1 > step 2", ") APL: priority 1 > step 3")
+	wantEntryPaths(t, "the nuke", lt.casting(nuke), ") APL: priority 1 > step 1", ") APL: priority 1 > step 2", ") APL: priority 1 > step 3")
 }
 
 // A major cooldown Autocast Other Cooldowns fires names the Autocast Other Cooldowns entry.
-func TestAutocastCooldownLogsTheAutocastEntry(t *testing.T) {
+func TestAutocastCooldownLogsTheAutocastEntryPath(t *testing.T) {
 	var cooldown *Spell
 	hidden := &proto.APLListItem{Action: aplCast(910110), Hide: true}
 	autocast := &proto.APLAction{Action: &proto.APLAction_AutocastOtherCooldowns{AutocastOtherCooldowns: &proto.APLActionAutocastOtherCooldowns{}}}
@@ -308,7 +308,7 @@ func TestAutocastCooldownLogsTheAutocastEntry(t *testing.T) {
 	}, &proto.APLRotation{PriorityList: append([]*proto.APLListItem{hidden}, aplItems(autocast)...)})
 
 	lt.runUntil(0)
-	wantLines(t, "the cooldown", lt.casting(cooldown), ") APL: priority 2")
+	wantEntryPaths(t, "the cooldown", lt.casting(cooldown), ") APL: priority 2")
 }
 
 // A press that queues an attack for the next swing credits it, and the swing's cast of the attack names the
@@ -339,9 +339,9 @@ func TestNextSwingAttackCarriesTheQueuingEntryPath(t *testing.T) {
 	lt.fw.AutoAttacks.EnableAutoSwing(lt.sim)
 
 	lt.runUntil(6 * time.Second)
-	wantLines(t, "the press", lt.casting(press), ") APL: priority 1")
+	wantEntryPaths(t, "the press", lt.casting(press), ") APL: priority 1")
 	got := lt.casting(attack)
-	wantLines(t, "the queued attack", got, ") APL: priority 1")
+	wantEntryPaths(t, "the queued attack", got, ") APL: priority 1")
 	if len(got) < 2 || strings.Contains(got[1], " APL: ") {
 		t.Fatalf("the attack's Casting lines are %q, want a second that names no entry path", got)
 	}
@@ -366,7 +366,7 @@ func TestWalkAtHardcastEndTakesNoEntryPath(t *testing.T) {
 	}, &proto.APLRotation{PriorityList: aplItems(slowCast, walk)})
 
 	lt.runUntil(3 * time.Second)
-	wantLines(t, "the hardcast", lt.casting(slow), ") APL: priority 1")
+	wantEntryPaths(t, "the hardcast", lt.casting(slow), ") APL: priority 1")
 	walks := lt.casting(lt.fw.moveSpell)
 	if len(walks) < 2 {
 		t.Fatalf("the walks' Casting lines are %q, want at least 2", walks)
