@@ -29,13 +29,14 @@ query, `config.toml` or a snippet after the extension is rebuilt from the Extens
 ## What it does
 
 - **Colours.** Keywords, sections, kinds and defs, accessor heads and properties, units, fields, variables,
-  placeholders, numbers with their units, strings, and raw JSON in backticks coloured as JSON.
-- **Outline.** Sections, groups, variables, defs, sequences and `when` blocks, in _outline: toggle_ and the outline
-  panel.
+  placeholders, numbers with their units, strings and raw JSON.
+- **Outline.** Sections, groups, variables, defs, sequences and `when` blocks, in _outline: toggle_, the outline
+  panel and the breadcrumbs.
 - **Indentation.** The line after a header or a `when` line goes in a level, as do the lines inside brackets.
-- **Brackets.** `( )`, `[ ]`, quotes and the backticks of raw JSON match and close; the brackets take rainbow colours.
-- **Comments.** _editor: toggle comments_ writes `// `.
-- **Vim text objects.** `af`/`if` a def (and its value), `af` a `when` block, `ac` a section, `gc` a comment block.
+- **Brackets.** `( )`, `[ ]`, quotes and the backticks of raw JSON match and close, and the brackets take rainbow
+  colours where `colorize_brackets` is on.
+- **Comments.** _editor: toggle comments_ (`gc` in vim mode) writes and removes `// `.
+- **Vim text objects.** `af`/`if` a def and its value, `af` a `when` block, `ac` a section.
 - **Snippets.** `siml` a rotation file, `when`, `group`, `sequence`, `def`, `var`, and the shapes of VS Code's Insert
   APL Pattern: `dot`, `debuff`, `buff`, `during`, `lineup`, `execute`, `notexecute`, `resource`, `toggle`,
   `potion`, `prepull`.
@@ -44,7 +45,8 @@ query, `config.toml` or a snippet after the extension is rebuilt from the Extens
   paths.
 
 Zed extensions draw no panels, so the VS Code panel (the rotation as a tree, its forms and its sims) has no
-counterpart here.
+counterpart here. Raw JSON is not coloured as JSON: Zed lists an injected language's outline in the file's, and JSON's
+would list every key of a raw row.
 
 ## The grammar
 
