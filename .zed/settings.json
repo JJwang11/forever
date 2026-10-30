@@ -2,6 +2,10 @@
 	"languages": {
 		"Go": {
 			"language_servers": ["gopls", "wowsims-spelldata", "..."]
+		},
+		"SIML": {
+			"semantic_tokens": "combined",
+			"tab_size": 2
 		}
 	}
 }
