@@ -48,6 +48,34 @@ func TestBiteLandedSpendsExtraEnergyAndComboPoints(t *testing.T) {
 	}
 }
 
+// Predatory Discipline 1328613: a landed bite keeps the extra energy and still deals its damage.
+func TestPredatoryDisciplineBiteKeepsExtraEnergy(t *testing.T) {
+	bite := func(talents string) float64 {
+		sim, cat := newCat(t, talents, nil)
+		target := cat.CurrentTarget
+		target.PseudoStats.BaseDodgeChance = 0
+		cat.AddStatDynamic(sim, stats.PhysicalHitPercent, 100)
+		cat.AddStatDynamic(sim, stats.PhysicalCritPercent, -100)
+		cat.AddComboPoints(sim, 5, cat.NewComboPointMetrics(core.ActionID{SpellID: 1}))
+		want := cat.CurrentEnergy() - cat.FerociousBite.Cost.GetCurrentCost()
+		if !cat.FerociousBite.Cast(sim, target) {
+			t.Fatal("bite did not cast")
+		}
+		if cat.ComboPoints() != 0 {
+			t.Fatalf("landed bite leaves CP=%d, want 0", cat.ComboPoints())
+		}
+		if talents != "" && cat.CurrentEnergy() != want {
+			t.Fatalf("bite with Predatory Discipline leaves energy=%g, want %g", cat.CurrentEnergy(), want)
+		}
+		return cat.FerociousBite.SpellMetrics[target.UnitIndex].TotalDamage
+	}
+	plain := bite("")
+	kept := bite("0000000000000000-00000000000010000000-0000000000000000")
+	if kept != plain {
+		t.Errorf("bite with Predatory Discipline dealt %g, want the untalented %g", kept, plain)
+	}
+}
+
 // Ravage 9867 and Pounce 9827 state No Active Defense: a target that dodges everything does not dodge them.
 func TestRavageAndPounceCannotBeDodged(t *testing.T) {
 	for _, opener := range []string{"Ravage", "Pounce"} {
