@@ -173,7 +173,7 @@ func TestCatStealthOpenersRun(t *testing.T) {
 // Rend and Tear raises Shred on a bleeding target, by the same amount under each of the cat's own
 // bleeds. With the bleed assumed, a target with no bleed of the cat's own takes the same raised Shred.
 func TestAssumedBleedRaisesShredLikeOwnBleed(t *testing.T) {
-	const rendAndTear5 = "0000000000000000-00000000000000000050-0000000000000000"
+	const rendAndTear5 = "0000000000000000-00000000000100005000-0000000000000000"
 	shred := func(assume bool, bleed func(*FeralDruid) *druid.DruidSpell) float64 {
 		sim, cat := newCat(t, rendAndTear5, nil)
 		cat.AssumeBleedActive = assume
@@ -212,7 +212,7 @@ func TestAssumedBleedRaisesShredLikeOwnBleed(t *testing.T) {
 // Rend and Tear raises bleed ticks. A Rake or Rip tick counts its own bleed as the bleed on the target,
 // and the talent is the only difference between the two builds.
 func TestRendAndTearRaisesBleedTicks(t *testing.T) {
-	const rendAndTear5 = "0000000000000000-00000000000000000050-0000000000000000"
+	const rendAndTear5 = "0000000000000000-00000000000000005000-0000000000000000"
 	tick := func(talents string, rip bool) float64 {
 		sim, cat := newCat(t, talents, nil)
 		cat.AddStatDynamic(sim, stats.PhysicalCritPercent, -100)

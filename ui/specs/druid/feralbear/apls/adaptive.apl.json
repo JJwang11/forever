@@ -256,46 +256,6 @@
       }
     },
     {
-      "name": "Ready for Berserk after Lacerate preparation",
-      "value": {
-        "and": {
-          "vals": [
-            {
-              "spellIsKnown": {
-                "spellId": {
-                  "spellId": 417141
-                }
-              }
-            },
-            {
-              "spellIsReady": {
-                "spellId": {
-                  "spellId": 417141
-                }
-              }
-            },
-            {
-              "variableRef": {
-                "name": "Attack-power reduction is covered"
-              }
-            },
-            {
-              "druidBleedIsActive": {}
-            },
-            {
-              "not": {
-                "val": {
-                  "variableRef": {
-                    "name": "Build five Lacerate stacks before Berserk"
-                  }
-                }
-              }
-            }
-          ]
-        }
-      }
-    },
-    {
       "name": "Five-stack Lacerate is near expiry",
       "value": {
         "and": {
@@ -336,7 +296,7 @@
                 "val": {
                   "spellIsKnown": {
                     "spellId": {
-                      "spellId": 1238073
+                      "spellId": 1238070
                     }
                   }
                 }
@@ -348,7 +308,7 @@
                 "lhs": {
                   "spellTimeToReady": {
                     "spellId": {
-                      "spellId": 1238073
+                      "spellId": 1238070
                     }
                   }
                 },
@@ -381,7 +341,7 @@
                 "rhs": {
                   "spellCurrentCost": {
                     "spellId": {
-                      "spellId": 1238073
+                      "spellId": 1238070
                     }
                   }
                 }
@@ -394,40 +354,10 @@
     {
       "name": "Ready to use Elune's Light",
       "value": {
-        "and": {
-          "vals": [
-            {
-              "spellIsKnown": {
-                "spellId": {
-                  "spellId": 1259799
-                }
-              }
-            },
-            {
-              "or": {
-                "vals": [
-                  {
-                    "auraIsActive": {
-                      "auraId": {
-                        "spellId": 417141
-                      }
-                    }
-                  },
-                  {
-                    "not": {
-                      "val": {
-                        "spellIsKnown": {
-                          "spellId": {
-                            "spellId": 417141
-                          }
-                        }
-                      }
-                    }
-                  }
-                ]
-              }
-            }
-          ]
+        "spellIsKnown": {
+          "spellId": {
+            "spellId": 1259799
+          }
         }
       }
     },
@@ -458,14 +388,14 @@
                               {
                                 "spellIsKnown": {
                                   "spellId": {
-                                    "spellId": 1238073
+                                    "spellId": 1238070
                                   }
                                 }
                               },
                               {
                                 "spellIsReady": {
                                   "spellId": {
-                                    "spellId": 1238073
+                                    "spellId": 1238070
                                   }
                                 }
                               }
@@ -481,7 +411,7 @@
                             "rhs": {
                               "spellCurrentCost": {
                                 "spellId": {
-                                  "spellId": 1238073
+                                  "spellId": 1238070
                                 }
                               }
                             }
@@ -501,14 +431,14 @@
                                   {
                                     "spellIsKnown": {
                                       "spellId": {
-                                        "spellId": 1238073
+                                        "spellId": 1238070
                                       }
                                     }
                                   },
                                   {
                                     "spellIsReady": {
                                       "spellId": {
-                                        "spellId": 1238073
+                                        "spellId": 1238070
                                       }
                                     }
                                   }
@@ -545,23 +475,8 @@
     {
       "name": "Refresh five-stack Lacerate now",
       "value": {
-        "and": {
-          "vals": [
-            {
-              "variableRef": {
-                "name": "Five-stack Lacerate is near expiry"
-              }
-            },
-            {
-              "not": {
-                "val": {
-                  "variableRef": {
-                    "name": "Ready for Berserk after Lacerate preparation"
-                  }
-                }
-              }
-            }
-          ]
+        "variableRef": {
+          "name": "Five-stack Lacerate is near expiry"
         }
       }
     },
@@ -589,36 +504,6 @@
                 },
                 "sourceUnit": {
                   "type": "CurrentTarget"
-                }
-              }
-            }
-          ]
-        }
-      }
-    },
-    {
-      "name": "Berserk needs an opening bleed",
-      "value": {
-        "and": {
-          "vals": [
-            {
-              "spellIsKnown": {
-                "spellId": {
-                  "spellId": 417141
-                }
-              }
-            },
-            {
-              "spellIsReady": {
-                "spellId": {
-                  "spellId": 417141
-                }
-              }
-            },
-            {
-              "not": {
-                "val": {
-                  "druidBleedIsActive": {}
                 }
               }
             }
@@ -687,70 +572,6 @@
                     "name": "Mighty Rage potion rage threshold"
                   }
                 }
-              }
-            }
-          ]
-        }
-      }
-    },
-    {
-      "name": "Build five Lacerate stacks before Berserk",
-      "value": {
-        "and": {
-          "vals": [
-            {
-              "spellIsKnown": {
-                "spellId": {
-                  "spellId": 417141
-                }
-              }
-            },
-            {
-              "spellIsReady": {
-                "spellId": {
-                  "spellId": 417141
-                }
-              }
-            },
-            {
-              "not": {
-                "val": {
-                  "variableRef": {
-                    "name": "Lacerate has five stacks"
-                  }
-                }
-              }
-            },
-            {
-              "or": {
-                "vals": [
-                  {
-                    "cmp": {
-                      "op": "OpLt",
-                      "lhs": {
-                        "remainingTime": {}
-                      },
-                      "rhs": {
-                        "const": {
-                          "val": "180s"
-                        }
-                      }
-                    }
-                  },
-                  {
-                    "cmp": {
-                      "op": "OpGe",
-                      "lhs": {
-                        "remainingTime": {}
-                      },
-                      "rhs": {
-                        "const": {
-                          "val": "205s"
-                        }
-                      }
-                    }
-                  }
-                ]
               }
             }
           ]
@@ -881,7 +702,7 @@
       }
     },
     {
-      "notes": "Use Elune's Light with Berserk when available",
+      "notes": "Use Elune's Light when available",
       "action": {
         "condition": {
           "variableRef": {
@@ -1124,63 +945,18 @@
       }
     },
     {
-      "notes": "Apply a missing bleed before Primal Bite and Berserk",
-      "action": {
-        "condition": {
-          "variableRef": {
-            "name": "Berserk needs an opening bleed"
-          }
-        },
-        "castSpell": {
-          "spellId": {
-            "spellId": 1235827
-          }
-        }
-      }
-    },
-    {
       "notes": "Use Primal Bite before spending rage on filler",
       "action": {
         "condition": {
           "spellIsKnown": {
             "spellId": {
-              "spellId": 1238073
+              "spellId": 1238070
             }
           }
         },
         "castSpell": {
           "spellId": {
-            "spellId": 1238073
-          }
-        }
-      }
-    },
-    {
-      "notes": "Build five Lacerate stacks before Berserk when there is time",
-      "action": {
-        "condition": {
-          "variableRef": {
-            "name": "Build five Lacerate stacks before Berserk"
-          }
-        },
-        "castSpell": {
-          "spellId": {
-            "spellId": 1235827
-          }
-        }
-      }
-    },
-    {
-      "notes": "Use Berserk after building Lacerate, unless waiting risks the next use",
-      "action": {
-        "condition": {
-          "variableRef": {
-            "name": "Ready for Berserk after Lacerate preparation"
-          }
-        },
-        "castSpell": {
-          "spellId": {
-            "spellId": 417141
+            "spellId": 1238070
           }
         }
       }
@@ -1188,15 +964,6 @@
     {
       "notes": "Build or refresh Lacerate when no higher-priority attack needs the global",
       "action": {
-        "condition": {
-          "not": {
-            "val": {
-              "variableRef": {
-                "name": "Ready for Berserk after Lacerate preparation"
-              }
-            }
-          }
-        },
         "castSpell": {
           "spellId": {
             "spellId": 1235827

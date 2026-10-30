@@ -29,7 +29,7 @@ func TestMonocatStaysInCatForm(t *testing.T) {
 	for _, c := range []struct {
 		name string
 		id   int32
-	}{{"Shifting Power", 1322605}, {"Shred", 9830}, {"Rip", 9896}, {"Rake", 9904}, {"Berserk", 417141}, {"Faerie Fire", 9907}} {
+	}{{"Shifting Power", 1322605}, {"Shred", 9830}, {"Rip", 9896}, {"Rake", 9904}, {"Faerie Fire", 9907}} {
 		if castsOf(player.Actions, c.id) == 0 {
 			t.Errorf("%s was never cast", c.name)
 		}
@@ -76,38 +76,12 @@ func TestMonocatKeepsRakeUp(t *testing.T) {
 }
 
 func TestMonocatWithoutShiftingPowerTalent(t *testing.T) {
-	player := runCat(t, catPowershiftRequest(withFeralDigit(powershiftTalents, 10, '0'), defaultCatRotation(), false))
+	player := runCat(t, catPowershiftRequest(withFeralDigit(powershiftTalents, 19, '0'), defaultCatRotation(), false))
 	if got := castsOf(player.Actions, 1322605); got != 0 {
 		t.Fatalf("shifting power casts = %d, the talent is not taken", got)
 	}
 	if castsOf(player.Actions, 9896) == 0 {
 		t.Fatal("rip was never cast")
-	}
-}
-
-func TestAdaptiveDoesNotPoolForUntalentedBerserk(t *testing.T) {
-	rotation := defaultCatRotation()
-	request := catPowershiftRequest(withFeralDigit(powershiftTalents, 19, '0'), rotation, false)
-	request.SimOptions.Debug = true
-	request.Encounter.Duration = 120
-	baseline := core.RunSim(request, nil, simsignals.CreateSignals())
-	if baseline.Error != nil {
-		t.Fatal(baseline.Error.Message)
-	}
-	if castsOf(baseline.RaidMetrics.Parties[0].Players[0].Actions, spellBerserk) != 0 {
-		t.Fatal("Berserk was cast without the talent")
-	}
-	for _, variable := range rotation.ValueVariables {
-		if variable.Name == "Followup Berserk energy target" {
-			variable.Value.GetConst().Val = "1000"
-		}
-	}
-	changed := core.RunSim(request, nil, simsignals.CreateSignals())
-	if changed.Error != nil {
-		t.Fatal(changed.Error.Message)
-	}
-	if baseline.Logs != changed.Logs {
-		t.Fatal("changing the Berserk energy target changed casts without Berserk talented")
 	}
 }
 
@@ -118,41 +92,6 @@ func TestMonocatClawsWhenShredCannotLand(t *testing.T) {
 	}
 	if castsOf(player.Actions, 9850) == 0 || castsOf(player.Actions, 9896) == 0 {
 		t.Error("claw did not build combo points into rip")
-	}
-}
-
-// Berserk activates at the same moment as the builder it buffs.
-func TestMonocatOpensBerserkWithABuilder(t *testing.T) {
-	request := catPowershiftRequest(powershiftTalents, defaultCatRotation(), false)
-	request.SimOptions.Debug = true
-	result := core.RunSim(request, nil, simsignals.CreateSignals())
-	if result.Error != nil {
-		t.Fatal(result.Error.Message)
-	}
-	lines := strings.Split(result.Logs, "\n")
-	found := false
-	for i, line := range lines {
-		if !strings.Contains(line, "Casting {SpellID: 417141}") {
-			continue
-		}
-		found = true
-		at := line[:strings.Index(line, "]")+1]
-		builder := false
-		for _, next := range lines[i+1:] {
-			if !strings.HasPrefix(next, at) {
-				break
-			}
-			if strings.Contains(next, "Casting {SpellID: 9830}") || strings.Contains(next, "Casting {SpellID: 9904}") {
-				builder = true
-				break
-			}
-		}
-		if !builder {
-			t.Errorf("Berserk at %s is not followed by Shred or Rake", at)
-		}
-	}
-	if !found {
-		t.Fatal("Berserk was never cast")
 	}
 }
 
@@ -350,11 +289,9 @@ func TestAdaptiveUnprowledOpenerUsesClearcastingForShredOtherwiseRake(t *testing
 		name         string
 		talents      string
 		clearcasting bool
-		berserk      bool
 	}{
-		{"paid Rake", powershiftTalents, false, true},
-		{"Clearcasting Shred", powershiftTalents, true, true},
-		{"without Berserk", "05002-55000032021032212050-055", false, false},
+		{"paid Rake", powershiftTalents, false},
+		{"Clearcasting Shred", powershiftTalents, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			rotation := core.GetAplRotation("../../../ui/specs/druid/feralcat/apls", "adaptive").Rotation
@@ -370,7 +307,6 @@ func TestAdaptiveUnprowledOpenerUsesClearcastingForShredOtherwiseRake(t *testing
 			if result.Error != nil {
 				t.Fatal(result.Error.Message)
 			}
-			berserk := strings.Index(result.Logs, "[0.00] [Cat (#1)] Casting {SpellID: 417141}")
 			builderID := "9904"
 			if tc.clearcasting {
 				builderID = "9830"
@@ -378,12 +314,6 @@ func TestAdaptiveUnprowledOpenerUsesClearcastingForShredOtherwiseRake(t *testing
 			ravage := strings.Index(result.Logs, "[0.00] [Cat (#1)] Casting {SpellID: "+builderID+"}")
 			if ravage < 0 {
 				t.Fatal("the opener did not cast the expected builder at pull")
-			}
-			if tc.berserk && (berserk < 0 || ravage < berserk) {
-				t.Fatal("the opener did not cast Berserk before the builder")
-			}
-			if !tc.berserk && berserk >= 0 {
-				t.Fatal("Berserk was cast without the talent")
 			}
 		})
 	}
@@ -439,50 +369,6 @@ func TestAdaptiveCatResourcePotionSelection(t *testing.T) {
 				}
 			}
 		})
-	}
-}
-
-func TestJVMESBerserkImmediatelyPrecedesACatAttack(t *testing.T) {
-	for _, race := range []proto.Race{proto.Race_RaceTauren, proto.Race_RaceNightElf, proto.Race_RaceHighOrderSkyborne, proto.Race_RaceWindshaperSkyborne} {
-		for _, cannotShred := range []bool{false, true} {
-			t.Run(race.String()+"/cannotShred="+strconv.FormatBool(cannotShred), func(t *testing.T) {
-				rotation := core.GetAplRotation("../../../ui/specs/druid/feralcat/apls", "adaptive").Rotation
-				request := sweepRequest(powershiftTalents, rotation, cannotShred, 1)
-				request.Encounter.Duration = 210
-				request.Raid.Parties[0].Players[0].Race = race
-				request.SimOptions.Debug = true
-				result := core.RunSim(request, nil, simsignals.CreateSignals())
-				if result.Error != nil {
-					t.Fatal(result.Error.Message)
-				}
-				lines := strings.Split(result.Logs, "\n")
-				uses := 0
-				for i, line := range lines {
-					if !strings.Contains(line, "Casting {SpellID: 417141}") {
-						continue
-					}
-					uses++
-					at := line[:strings.Index(line, "]")+1]
-					found := false
-					for _, next := range lines[i+1:] {
-						if !strings.Contains(next, "Casting ") || strings.Contains(next, "GCD = 0s") {
-							continue
-						}
-						found = strings.HasPrefix(next, at) && (strings.Contains(next, "Casting {SpellID: 9867}") || strings.Contains(next, "Casting {SpellID: 9904}") || strings.Contains(next, "Casting {SpellID: 9830}") || strings.Contains(next, "Casting {SpellID: 9850}"))
-						if !found {
-							t.Errorf("Berserk at %s was followed by %s", at, next)
-						}
-						break
-					}
-					if !found {
-						t.Error("Berserk was not immediately followed by a Cat builder")
-					}
-				}
-				if uses < 2 {
-					t.Fatal("the fixture did not exercise a later Berserk activation")
-				}
-			})
-		}
 	}
 }
 
@@ -624,7 +510,7 @@ func TestAdaptiveClawsWhenShredCannotLand(t *testing.T) {
 	for _, cannotShred := range []bool{false, true} {
 		t.Run(strconv.FormatBool(cannotShred), func(t *testing.T) {
 			rotation := core.GetAplRotation("../../../ui/specs/druid/feralcat/apls", "adaptive").Rotation
-			req := sweepRequest("050022-35200032121131212051-052", rotation, cannotShred, 10)
+			req := sweepRequest("050022-35200032123011125011-054", rotation, cannotShred, 10)
 			player := runCat(t, req)
 			claws, shreds := castsOf(player.Actions, 9850), castsOf(player.Actions, 9830)
 			if cannotShred {
@@ -750,7 +636,6 @@ const (
 	spellRake    int32 = 9904
 	spellFF      int32 = 9907
 	spellSP      int32 = 1322605
-	spellBerserk int32 = 417141
 	spellElune   int32 = 1259799
 	spellClear   int32 = 16870
 	itemSapper   int32 = 10646
@@ -758,7 +643,7 @@ const (
 
 	spellBite       int32 = 22829
 	spellDireBear   int32 = 9634
-	spellPrimalBite int32 = 1238073
+	spellPrimalBite int32 = 1238070
 	spellEnrage     int32 = 5229
 	spellMaul       int32 = 9881
 	spellInnervate  int32 = 29166

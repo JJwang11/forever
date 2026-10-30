@@ -26,7 +26,7 @@ func TestBearShippedAplRuns(t *testing.T) {
 		t.Fatalf("sim error: %s", result.Error.Message)
 	}
 	player := result.RaidMetrics.Parties[0].Players[0]
-	for _, id := range []int32{1238073, 9881} {
+	for _, id := range []int32{1238070, 9881} {
 		if bearCastsOf(player.Actions, id) == 0 {
 			t.Fatalf("shipped bear APL never casts %d", id)
 		}
@@ -83,7 +83,9 @@ func TestBearFormRecastGrantsFuror(t *testing.T) {
 					player := req.Raid.Parties[0].Players[0]
 					player.Rotation = &proto.APLRotation{}
 					trees := strings.Split(player.TalentsString, "-")
-					trees[2] = fmt.Sprintf("0%d", rank)
+					feral := []byte(trees[1])
+					feral[1] = byte('0' + rank)
+					trees[1] = string(feral)
 					player.TalentsString = strings.Join(trees, "-")
 					sim := core.NewSim(req, simsignals.CreateSignals())
 					sim.Reset()
@@ -403,7 +405,7 @@ func TestAdaptiveBearPrepullDoesNotShiftWithoutFuror(t *testing.T) {
 	req := bearNakedRequest()
 	req.Raid.Tanks = nil
 	player := req.Raid.Parties[0].Players[0]
-	player.TalentsString = "050022-25200302120132012051-005"
+	player.TalentsString = "050022-20200302123102125010-055"
 	player.Rotation = rotation
 	sim := core.NewSim(req, simsignals.CreateSignals())
 	sim.Reset()
@@ -430,7 +432,7 @@ func TestAdaptiveBearPrepullDoesNotShiftWithoutFuror(t *testing.T) {
 
 const (
 	spellDireBear   int32 = 9634
-	spellPrimalBite int32 = 1238073
+	spellPrimalBite int32 = 1238070
 	spellMaul       int32 = 9881
 	spellLacerate   int32 = 1235827
 	spellSwipe      int32 = 9908
@@ -439,7 +441,6 @@ const (
 	spellFF         int32 = 9907
 	spellFrenzied   int32 = 22842
 	spellBarkskin   int32 = 22812
-	spellBerserk    int32 = 417141
 	itemSapper      int32 = 10646
 	itemStoneshield int32 = 13455
 	itemHealthstone int32 = 9421
@@ -605,7 +606,7 @@ func TestAdaptiveBearAvailabilityWarnings(t *testing.T) {
 			t.Fatal(result.Error.Message)
 		}
 		metrics := result.RaidMetrics.Parties[0].Players[0]
-		for _, id := range []int32{spellPrimalBite, spellLacerate, spellMaul, spellBerserk} {
+		for _, id := range []int32{spellPrimalBite, spellLacerate, spellMaul} {
 			if bearCastsOf(metrics.Actions, id) == 0 {
 				t.Errorf("consumes=%t spell %d was never cast", consumes, id)
 			}

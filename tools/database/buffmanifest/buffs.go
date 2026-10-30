@@ -187,24 +187,26 @@ var Raid = []BuffSpec{
 			proto.Stat_StatNatureResistance,
 		},
 	},
-	// Melee and ranged crit only, so it stacks with Moonkin Aura's spell crit.
+	// Raises all crit, as Moonkin Aura below does; the two share one category, so only one counts.
 	{
 		Field:      "leader_of_the_pack",
 		SpellID:    24932,
 		CastID:     17007,
-		Category:   "LeaderOfThePack",
+		Category:   "RaidCrit",
 		SingleAura: true,
 		Stats: []proto.Stat{
 			proto.Stat_StatAttackPower,
+			proto.Stat_StatSpellDamage,
 		},
 	},
 	{
 		Field:      "moonkin_aura",
 		SpellID:    24907,
 		TooltipID:  24858,
-		Category:   "MoonkinAura",
+		Category:   "RaidCrit",
 		SingleAura: true,
 		Stats: []proto.Stat{
+			proto.Stat_StatAttackPower,
 			proto.Stat_StatSpellDamage,
 		},
 	},
