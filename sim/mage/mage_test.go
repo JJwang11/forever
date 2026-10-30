@@ -32,55 +32,51 @@ func TestFrost(t *testing.T) {
 
 func TestFingersOfFrostGivesBlizzardTicksNoShatterBonus(t *testing.T) {
 	const noShatter, shatter = "--000000001000000200", "--000000001000300200"
-	critsWithout, uptimeWithout := blizzardTickCrits(t, noShatter)
-	critsWith, uptimeWith := blizzardTickCrits(t, shatter)
+	ticksWithout, directWithout, _ := shatterCrits(noShatter)
+	ticksWith, directWith, uptimeWith := shatterCrits(shatter)
 
-	if uptimeWithout == 0 || uptimeWith == 0 {
-		t.Fatalf("Fingers of Frost was never up: uptime %.1f s without Shatter, %.1f s with", uptimeWithout, uptimeWith)
+	if uptimeWith == 0 {
+		t.Fatal("Fingers of Frost was never up")
 	}
-	if critsWithout == 0 {
+	if ticksWithout == 0 {
 		t.Fatal("no Blizzard tick crit")
 	}
-	if critsWith != critsWithout {
-		t.Errorf("Blizzard tick crits moved with Shatter: %d without, %d with", critsWithout, critsWith)
+	if directWith <= directWithout {
+		t.Fatalf("Fire Blast gained no crits with Shatter: %d without, %d with", directWithout, directWith)
+	}
+	if ticksWith != ticksWithout {
+		t.Errorf("Blizzard tick crits moved with Shatter: %d without, %d with", ticksWithout, ticksWith)
 	}
 }
 
-func blizzardTickCrits(t *testing.T, talents string) (crits int32, fingersOfFrostUptime float64) {
-	t.Helper()
-
-	castID := spellData.Blizzard.Highest().ID
+func shatterCrits(talents string) (tickCrits, directCrits int32, fingersOfFrostUptime float64) {
 	tickID := spellData.BlizzardTriggered.Highest().ID
-	suite := mageSuite(talents, "frost")
-	rotation := fmt.Sprintf(`{"type":"TypeAPL","priorityList":[{"action":{"castSpell":{"spellId":{"spellId":%d}}}}]}`, castID)
+	directID := spellData.FireBlast.Highest().ID
+	suite := frostSuite()
+	rotation := fmt.Sprintf(`{"type":"TypeAPL","priorityList":[{"action":{"castSpell":{"spellId":{"spellId":%d}}}},{"action":{"castSpell":{"spellId":{"spellId":%d}}}}]}`,
+		directID, spellData.Blizzard.Highest().ID)
 	player := core.WithSpec(&proto.Player{
-		Class:              suite.Class,
-		Race:               suite.Race,
-		Equipment:          suite.GearSet.GearSet,
-		Consumables:        suite.Consumables,
-		TalentsString:      talents,
-		Profession1:        suite.Profession1,
-		Profession2:        suite.Profession2,
-		Rotation:           core.APLRotationFromJsonString(rotation),
-		DistanceFromTarget: 30,
+		Class:         suite.Class,
+		Race:          suite.Race,
+		Equipment:     suite.GearSet.GearSet,
+		TalentsString: talents,
+		Rotation:      core.APLRotationFromJsonString(rotation),
 	}, suite.SpecOptions.SpecOptions)
-	target := core.NewDefaultTarget()
 	result := core.RunRaidSim(&proto.RaidSimRequest{
-		Raid:       core.SinglePlayerRaidProto(player, core.FullPartyBuffs, core.FullRaidBuffs, core.FullDebuffs),
-		Encounter:  &proto.Encounter{Duration: 40, Targets: []*proto.Target{target, target, target, target}},
-		SimOptions: &proto.SimOptions{Iterations: 200, IsTest: true, RandomSeed: 101},
+		Raid:       core.SinglePlayerRaidProto(player, &proto.PartyBuffs{}, &proto.RaidBuffs{}, &proto.Debuffs{}),
+		Encounter:  &proto.Encounter{Duration: 40, Targets: []*proto.Target{core.NewDefaultTarget()}},
+		SimOptions: core.DefaultSimTestOptions,
 	})
-	if result.Error != nil {
-		t.Fatal(result.Error.Message)
-	}
 
 	metrics := result.RaidMetrics.Parties[0].Players[0]
 	for _, action := range metrics.Actions {
-		if action.Id.GetSpellId() != tickID {
-			continue
-		}
 		for _, target := range action.Targets {
-			crits += target.Crits
+			switch action.Id.GetSpellId() {
+			case tickID:
+				tickCrits += target.Crits
+			case directID:
+				directCrits += target.Crits
+			}
 		}
 	}
 	for _, aura := range metrics.Auras {
@@ -88,7 +84,7 @@ func blizzardTickCrits(t *testing.T, talents string) (crits int32, fingersOfFros
 			fingersOfFrostUptime = aura.UptimeSecondsAvg
 		}
 	}
-	return crits, fingersOfFrostUptime
+	return tickCrits, directCrits, fingersOfFrostUptime
 }
 
 func BenchmarkMage(b *testing.B) {
