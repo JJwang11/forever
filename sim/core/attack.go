@@ -391,7 +391,8 @@ func (wa *WeaponAttack) swing(sim *Simulation) time.Duration {
 	attackSpell := wa.spell
 	isRanged := wa == &wa.unit.AutoAttacks.ranged
 
-	// A blocked ranged auto waits for movement recovery or a swing reset to schedule it again.
+	// A blocked ranged auto resumes when movement ends, the target returns to range,
+	// a melee swing resets it, or a ranged weapon swap resets it.
 	if isRanged && (wa.unit.Moving || wa.requirementFails(sim)) {
 		wa.dropRangedWindup(sim)
 		wa.swingAt = NeverExpires
@@ -450,7 +451,6 @@ func (wa *WeaponAttack) swing(sim *Simulation) time.Duration {
 	// A melee swing restarts the ranged auto: the next one fires a full ranged swing after it, the
 	// windup included, wherever the player stands by then.
 	if !isRanged && wa.unit.AutoAttacks.AutoSwingRanged {
-		wa.unit.AutoAttacks.ranged.updateSwingDuration(wa.unit.TotalRangedHasteMultiplier())
 		wa.unit.AutoAttacks.StopRangedUntil(sim, sim.CurrentTime)
 	}
 
