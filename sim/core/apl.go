@@ -794,9 +794,7 @@ func (rot *APLRotation) newAPLActionWithGroupVars(config *proto.APLAction, group
 	if impl == nil {
 		return nil
 	}
-	action := newAPLActionEntry(condition, impl)
-	action.rot = rot
-	return action
+	return newAPLActionEntry(condition, impl)
 }
 
 // Re-resolve variable references in an APLValue with updated group variables

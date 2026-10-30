@@ -334,7 +334,6 @@ func (rot *APLRotation) newActionStrictMultidot(config *proto.APLActionStrictMul
 						Index: targets[i].Index,
 					},
 				}),
-				rot: rot,
 			})
 		} else {
 			actions = append(actions, &APLAction{
@@ -345,7 +344,6 @@ func (rot *APLRotation) newActionStrictMultidot(config *proto.APLActionStrictMul
 						Index: targets[i].Index,
 					},
 				}),
-				rot: rot,
 			})
 		}
 	}

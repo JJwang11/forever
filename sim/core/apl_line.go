@@ -31,6 +31,12 @@ func (rot *APLRotation) assignLines(config *proto.APLRotation) {
 // parent's line. GetInnerActions lists every descendant, so the positional children go first.
 func (rot *APLRotation) assignLine(action *APLAction, line string) {
 	action.line = line
+	action.rot = rot
+	assignSteps := func(steps []*APLAction, stepIdx []int) {
+		for i, step := range steps {
+			rot.assignLine(step, fmt.Sprintf("%s > step %d", line, stepIdx[i]+1))
+		}
+	}
 	switch impl := action.impl.(type) {
 	case *APLActionGroupReference:
 		if impl.group == nil {
@@ -41,16 +47,13 @@ func (rot *APLRotation) assignLine(action *APLAction, line string) {
 			rot.assignLine(groupAction, fmt.Sprintf("%s > group %d.%d", line, impl.group.configIdx+1, rot.groupListIdxMap[slot][i]+1))
 		}
 	case *APLActionSequence:
-		for i, step := range impl.subactions {
-			rot.assignLine(step, fmt.Sprintf("%s > step %d", line, impl.subactionIdx[i]+1))
-		}
+		assignSteps(impl.subactions, impl.subactionIdx)
 	case *APLActionStrictSequence:
-		for i, step := range impl.subactions {
-			rot.assignLine(step, fmt.Sprintf("%s > step %d", line, impl.subactionIdx[i]+1))
-		}
+		assignSteps(impl.subactions, impl.subactionIdx)
 	case *APLActionStrictMultidot:
 		for _, target := range impl.actions {
 			target.line = line
+			target.rot = rot
 		}
 	}
 	for _, inner := range action.impl.GetInnerActions() {

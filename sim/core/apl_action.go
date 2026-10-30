@@ -190,9 +190,7 @@ func (rot *APLRotation) newAPLAction(config *proto.APLAction) *APLAction {
 		}
 	}
 
-	action := newAPLActionEntry(condition, impl)
-	action.rot = rot
-	return action
+	return newAPLActionEntry(condition, impl)
 }
 
 // Builds a rotation entry and hands it to the actions that read their own entry's condition.

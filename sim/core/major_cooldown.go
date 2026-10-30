@@ -130,14 +130,11 @@ func (mcd *MajorCooldown) tryActivateHelper(sim *Simulation, character *Characte
 	shouldActivate := mcd.shouldActivateHelper(sim, character)
 
 	if shouldActivate {
-		var line string
-		if sim.Log != nil {
-			line = character.runningAPLLine()
-		}
+		character.setRotationCastLine(character.runningAPLLine())
 		if mcd.Spell.Flags.Matches(SpellFlagHelpful) {
-			mcd.Spell.castForRotation(sim, &character.Unit, nil, line)
+			mcd.Spell.castForRotation(sim, &character.Unit, nil)
 		} else {
-			mcd.Spell.castForRotation(sim, character.CurrentTarget, nil, line)
+			mcd.Spell.castForRotation(sim, character.CurrentTarget, nil)
 		}
 
 		mcd.numUsages++

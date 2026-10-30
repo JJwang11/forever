@@ -15,39 +15,31 @@ import (
 // step fails to build. Auto and custom rotations name no line.
 func TestAPLLinesFollowConfigPositions(t *testing.T) {
 	const dotID, unknownID = 910105, 910106
-	spellID := func(id int32) *proto.ActionID { return ActionID{SpellID: id}.ToProto() }
-	cast := func(id int32) *proto.APLAction {
-		return &proto.APLAction{Action: &proto.APLAction_CastSpell{CastSpell: &proto.APLActionCastSpell{SpellId: spellID(id)}}}
+	refTo := func(name string) *proto.APLAction {
+		return &proto.APLAction{Action: &proto.APLAction_GroupReference{GroupReference: &proto.APLActionGroupReference{GroupName: name}}}
 	}
-	item := func(action *proto.APLAction) *proto.APLListItem { return &proto.APLListItem{Action: action} }
-	refTo := func(name string) *proto.APLListItem {
-		return item(&proto.APLAction{Action: &proto.APLAction_GroupReference{GroupReference: &proto.APLActionGroupReference{GroupName: name}}})
-	}
-	groupRef := refTo("b")
 	config := func(rotationType proto.APLRotation_Type) *proto.APLRotation {
 		return &proto.APLRotation{
 			Type: rotationType,
 			PrepullActions: []*proto.APLPrepullAction{
-				{Action: cast(dotID), DoAtValue: constValue("-2s"), Hide: true},
-				{Action: cast(dotID), DoAtValue: constValue("-1s")},
+				{Action: aplCast(dotID), DoAtValue: constValue("-2s"), Hide: true},
+				{Action: aplCast(dotID), DoAtValue: constValue("-1s")},
 			},
-			PriorityList: []*proto.APLListItem{
-				{Action: cast(dotID), Hide: true},
-				item(cast(dotID)),
-				groupRef,
-				groupRef,
-				item(&proto.APLAction{Action: &proto.APLAction_Schedule{Schedule: &proto.APLActionSchedule{Schedule: "0s", InnerAction: cast(dotID)}}}),
-				item(&proto.APLAction{Action: &proto.APLAction_StrictMultidot{StrictMultidot: &proto.APLActionStrictMultidot{SpellId: spellID(dotID), MaxDots: 2}}}),
+			PriorityList: append([]*proto.APLListItem{{Action: aplCast(dotID), Hide: true}}, aplItems(
+				aplCast(dotID),
+				refTo("b"),
+				refTo("b"),
+				&proto.APLAction{Action: &proto.APLAction_Schedule{Schedule: &proto.APLActionSchedule{Schedule: "0s", InnerAction: aplCast(dotID)}}},
+				&proto.APLAction{Action: &proto.APLAction_StrictMultidot{StrictMultidot: &proto.APLActionStrictMultidot{SpellId: ActionID{SpellID: dotID}.ToProto(), MaxDots: 2}}},
 				refTo("a"),
-			},
+			)...),
 			Groups: []*proto.APLGroup{
-				{Name: "a", Actions: []*proto.APLListItem{{Action: cast(dotID), Hide: true}, refTo("b")}},
-				{Name: "b", Actions: []*proto.APLListItem{
-					{Action: cast(dotID), Hide: true},
-					item(&proto.APLAction{Action: &proto.APLAction_Sequence{Sequence: &proto.APLActionSequence{
-						Actions: []*proto.APLAction{cast(unknownID), cast(dotID), cast(dotID)},
-					}}}),
-				}},
+				{Name: "a", Actions: append([]*proto.APLListItem{{Action: aplCast(dotID), Hide: true}}, aplItems(refTo("b"))...)},
+				{Name: "b", Actions: append([]*proto.APLListItem{{Action: aplCast(dotID), Hide: true}}, aplItems(
+					&proto.APLAction{Action: &proto.APLAction_Sequence{Sequence: &proto.APLActionSequence{
+						Actions: []*proto.APLAction{aplCast(unknownID), aplCast(dotID), aplCast(dotID)},
+					}}},
+				)...)},
 			},
 		}
 	}
@@ -352,6 +344,37 @@ func TestNextSwingAttackCarriesTheQueuingLine(t *testing.T) {
 	wantLines(t, "the queued attack", got, ") APL: priority 1")
 	if len(got) < 2 || strings.Contains(got[1], " APL: ") {
 		t.Fatalf("the attack's Casting lines are %q, want a second that names no line", got)
+	}
+}
+
+// A walk the rotation picks at a hardcast's end is no press of the hardcast, so no later walk names the
+// hardcast's line.
+func TestWalkAtHardcastEndTakesNoLine(t *testing.T) {
+	var slow *Spell
+	slowCast := aplCast(910122)
+	slowCast.Condition = &proto.APLValue{Value: &proto.APLValue_Cmp{Cmp: &proto.APLValueCompare{
+		Op:  proto.APLValueCompare_OpLt,
+		Lhs: &proto.APLValue{Value: &proto.APLValue_CurrentTime{CurrentTime: &proto.APLValueCurrentTime{}}},
+		Rhs: constValue("1s"),
+	}}}
+	walk := &proto.APLAction{Action: &proto.APLAction_MoveDuration{MoveDuration: &proto.APLActionMoveDuration{Duration: constValue("500ms")}}}
+	lt := newLineTest(func(char *Character) {
+		config := recordedSpellConfig(910122, &[]time.Duration{})
+		config.Flags |= SpellFlagCanCastWhileMoving
+		config.Cast = CastConfig{DefaultCast: Cast{GCD: GCDDefault, CastTime: 2 * time.Second}}
+		slow = char.RegisterSpell(config)
+	}, &proto.APLRotation{PriorityList: aplItems(slowCast, walk)})
+
+	lt.runUntil(3 * time.Second)
+	wantLines(t, "the hardcast", lt.casting(slow), ") APL: priority 1")
+	walks := lt.casting(lt.fw.moveSpell)
+	if len(walks) < 2 {
+		t.Fatalf("the walks' Casting lines are %q, want at least 2", walks)
+	}
+	for _, line := range walks {
+		if strings.Contains(line, " APL: ") {
+			t.Fatalf("the walks' Casting lines are %q, want none that names a line", walks)
+		}
 	}
 }
 

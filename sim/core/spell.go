@@ -156,7 +156,6 @@ type Spell struct {
 	SpellMetrics      []SpellMetrics
 	splitSpellMetrics [][]SpellMetrics // Used to split metrics by some condition.
 	casts             int              // Sum of casts on all targets, for efficient CPM calculation
-	swingLine         string           // The APL line of the press that queued the spell for the next swing, until a Casting line names it.
 
 	// Performs the actions of this spell.
 	ApplyEffects ApplySpellResults
@@ -215,6 +214,8 @@ type Spell struct {
 	RelatedSelfBuff   *Aura
 
 	Source ActionSource
+
+	swingLine string // The APL line of the press that queued the spell for the next swing, until a Casting line names it.
 }
 
 func (unit *Unit) OnSpellRegistered(handler SpellRegisteredHandler) {
