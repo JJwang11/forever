@@ -215,7 +215,7 @@ type Spell struct {
 
 	Source ActionSource
 
-	swingLine string // The APL line of the press that queued the spell for the next swing, until a Casting line names it.
+	swingEntryPath string // The APL entry path of the press that queued the spell for the next swing, until a Casting line names it.
 }
 
 func (unit *Unit) OnSpellRegistered(handler SpellRegisteredHandler) {
@@ -588,7 +588,7 @@ func (spell *Spell) reset(sim *Simulation) {
 		}
 	}
 	spell.casts = 0
-	spell.swingLine = ""
+	spell.swingEntryPath = ""
 	if spell.rechargeTimer != nil {
 		spell.rechargeTimer.Cancel(sim)
 		spell.rechargeTimer = nil

@@ -215,7 +215,7 @@ func (spell *Spell) makeCastFunc(config CastConfig) CastSuccessFunc {
 		if spell.CurCast.CastTime > 0 {
 			if sim.Log != nil && !spell.Flags.Matches(SpellFlagNoLogs) {
 				spell.Unit.Log(sim, "Casting %s (Cost = %0.03f, Cast Time = %s, GCD = %s, Effective Time = %s)%s",
-					spell.ActionID, max(0, spell.CurCast.Cost), spell.CurCast.CastTime, max(0, spell.CurCast.GCDTime()), spell.CurCast.EffectiveTime(), spell.aplLineSuffix())
+					spell.ActionID, max(0, spell.CurCast.Cost), spell.CurCast.CastTime, max(0, spell.CurCast.GCDTime()), spell.CurCast.EffectiveTime(), spell.aplEntrySuffix())
 			}
 
 			spell.Unit.Hardcast = Hardcast{
@@ -279,7 +279,7 @@ func (spell *Spell) makeCastFunc(config CastConfig) CastSuccessFunc {
 
 		if sim.Log != nil && !spell.Flags.Matches(SpellFlagNoLogs) {
 			spell.Unit.Log(sim, "Casting %s (Cost = %0.03f, Cast Time = %s, GCD = %s, Effective Time = %s)%s",
-				spell.ActionID, max(0, spell.CurCast.Cost), spell.CurCast.CastTime, max(0, spell.CurCast.GCDTime()), spell.CurCast.EffectiveTime(), spell.aplLineSuffix())
+				spell.ActionID, max(0, spell.CurCast.Cost), spell.CurCast.CastTime, max(0, spell.CurCast.GCDTime()), spell.CurCast.EffectiveTime(), spell.aplEntrySuffix())
 			spell.Unit.Log(sim, "Completed cast %s", spell.ActionID)
 		}
 
@@ -377,7 +377,7 @@ func (spell *Spell) makeCastFuncSimple() CastSuccessFunc {
 			// The ranged auto's windup already logged its cast start.
 			if spell != spell.Unit.AutoAttacks.ranged.spell {
 				spell.Unit.Log(sim, "Casting %s (Cost = %0.03f, Cast Time = %s, GCD = %s, Effective Time = %s)%s",
-					spell.ActionID, 0.0, "0s", "0s", "0s", spell.aplLineSuffix())
+					spell.ActionID, 0.0, "0s", "0s", "0s", spell.aplEntrySuffix())
 			}
 			spell.Unit.Log(sim, "Completed cast %s", spell.ActionID)
 		}
@@ -410,7 +410,7 @@ func (spell *Spell) makeCastFuncAutosOrProcs() CastSuccessFunc {
 			// The ranged auto's windup already logged its cast start.
 			if spell != spell.Unit.AutoAttacks.ranged.spell {
 				spell.Unit.Log(sim, "Casting %s (Cost = %0.03f, Cast Time = %s, GCD = %s, Effective Time = %s)%s",
-					spell.ActionID, 0.0, "0s", "0s", "0s", spell.aplLineSuffix())
+					spell.ActionID, 0.0, "0s", "0s", "0s", spell.aplEntrySuffix())
 			}
 			spell.Unit.Log(sim, "Completed cast %s", spell.ActionID)
 		}
@@ -431,7 +431,7 @@ func (spell *Spell) makeCastFuncAutosOrProcs() CastSuccessFunc {
 func (spell *Spell) Proc(sim *Simulation, target *Unit) {
 	if sim.Log != nil && !spell.Flags.Matches(SpellFlagNoLogs) {
 		spell.Unit.Log(sim, "Casting %s (Cost = %0.03f, Cast Time = %s, GCD = %s, Effective Time = %s)%s",
-			spell.ActionID, 0.0, "0s", "0s", "0s", spell.aplLineSuffix())
+			spell.ActionID, 0.0, "0s", "0s", "0s", spell.aplEntrySuffix())
 		spell.Unit.Log(sim, "Completed cast %s", spell.ActionID)
 	}
 

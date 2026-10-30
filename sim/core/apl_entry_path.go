@@ -7,10 +7,10 @@ import (
 	"github.com/wowsims/forever/sim/core/proto"
 )
 
-// Gives every action of an APL rotation the path of its config line, counted from 1 with hidden lines
-// included. Auto and Simple runs and the custom rotation of pets and targets get no lines; a rotation
+// Gives every action of an APL rotation the path of its config entry, counted from 1 with hidden entries
+// included. Auto and Simple runs and the custom rotation of pets and targets get no entry paths; a rotation
 // with no type runs as an APL and gets them.
-func (rot *APLRotation) assignLines(config *proto.APLRotation) {
+func (rot *APLRotation) assignEntryPaths(config *proto.APLRotation) {
 	if config.Type == proto.APLRotation_TypeAuto || config.Type == proto.APLRotation_TypeSimple {
 		return
 	}
@@ -20,21 +20,21 @@ func (rot *APLRotation) assignLines(config *proto.APLRotation) {
 		}
 	}
 	for i, action := range rot.prepullActions {
-		rot.assignLine(action, fmt.Sprintf("prepull %d", rot.prepullIdxMap[i]+1))
+		rot.assignEntryPath(action, fmt.Sprintf("prepull %d", rot.prepullIdxMap[i]+1))
 	}
 	for i, action := range rot.priorityList {
-		rot.assignLine(action, fmt.Sprintf("priority %d", rot.priorityListIdxMap[i]+1))
+		rot.assignEntryPath(action, fmt.Sprintf("priority %d", rot.priorityListIdxMap[i]+1))
 	}
 }
 
 // A group's actions and a sequence's steps add their own segment; any other inner action runs for its
-// parent's line. GetInnerActions lists every descendant, so the positional children go first.
-func (rot *APLRotation) assignLine(action *APLAction, line string) {
-	action.line = line
+// parent's entry path. GetInnerActions lists every descendant, so the positional children go first.
+func (rot *APLRotation) assignEntryPath(action *APLAction, entryPath string) {
+	action.entryPath = entryPath
 	action.rot = rot
 	assignSteps := func(steps []*APLAction, stepIdx []int) {
 		for i, step := range steps {
-			rot.assignLine(step, fmt.Sprintf("%s > step %d", line, stepIdx[i]+1))
+			rot.assignEntryPath(step, fmt.Sprintf("%s > step %d", entryPath, stepIdx[i]+1))
 		}
 	}
 	switch impl := action.impl.(type) {
@@ -44,7 +44,7 @@ func (rot *APLRotation) assignLine(action *APLAction, line string) {
 		}
 		slot := slices.Index(rot.groups, impl.group)
 		for i, groupAction := range impl.group.actions {
-			rot.assignLine(groupAction, fmt.Sprintf("%s > group %d.%d", line, impl.group.configIdx+1, rot.groupListIdxMap[slot][i]+1))
+			rot.assignEntryPath(groupAction, fmt.Sprintf("%s > group %d.%d", entryPath, impl.group.configIdx+1, rot.groupListIdxMap[slot][i]+1))
 		}
 	case *APLActionSequence:
 		assignSteps(impl.subactions, impl.subactionIdx)
@@ -52,13 +52,13 @@ func (rot *APLRotation) assignLine(action *APLAction, line string) {
 		assignSteps(impl.subactions, impl.subactionIdx)
 	case *APLActionStrictMultidot:
 		for _, target := range impl.actions {
-			target.line = line
+			target.entryPath = entryPath
 			target.rot = rot
 		}
 	}
 	for _, inner := range action.impl.GetInnerActions() {
-		if inner.line == "" {
-			rot.assignLine(inner, line)
+		if inner.entryPath == "" {
+			rot.assignEntryPath(inner, entryPath)
 		}
 	}
 }

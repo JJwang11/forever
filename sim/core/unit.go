@@ -241,8 +241,8 @@ type Unit struct {
 
 	SpellsInFlight map[*Spell]int32
 
-	// The path of the APL line the rotation cast runs for, set only while the sim logs and until its Cast returns.
-	rotationCastLine string
+	// The path of the APL entry the rotation cast runs for, set only while the sim logs and until its Cast returns.
+	rotationCastEntryPath string
 }
 
 func (unit *Unit) getSpellDamageValueImpl(spell *Spell, _ *Unit) float64 {

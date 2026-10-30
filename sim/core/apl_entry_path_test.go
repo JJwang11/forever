@@ -9,11 +9,11 @@ import (
 	"github.com/wowsims/forever/sim/core/proto"
 )
 
-// Every action of an APL rotation names the line it was built from by the config's own positions: hidden
+// Every action of an APL rotation names the entry it was built from by the config's own positions: hidden
 // rows count, a group segment names the group's place in the config rather than the sim's copy of it, a
 // group another group references adds a segment of its own, and a step keeps its place when an earlier
-// step fails to build. Auto and custom rotations name no line.
-func TestAPLLinesFollowConfigPositions(t *testing.T) {
+// step fails to build. Auto and custom rotations name no entry path.
+func TestAPLEntryPathsFollowConfigPositions(t *testing.T) {
 	const dotID, unknownID = 910105, 910106
 	refTo := func(name string) *proto.APLAction {
 		return &proto.APLAction{Action: &proto.APLAction_GroupReference{GroupReference: &proto.APLActionGroupReference{GroupName: name}}}
@@ -56,10 +56,10 @@ func TestAPLLinesFollowConfigPositions(t *testing.T) {
 		Dot:      DotConfig{Aura: Aura{Label: "Test Dot"}, NumberOfTicks: 5, TickLength: 3 * time.Second},
 	})
 
-	want := func(action *APLAction, line string) {
+	want := func(action *APLAction, entryPath string) {
 		t.Helper()
-		if action.line != line {
-			t.Errorf("%s has line %q, want %q", action.impl, action.line, line)
+		if action.entryPath != entryPath {
+			t.Errorf("%s has entry path %q, want %q", action.impl, action.entryPath, entryPath)
 		}
 	}
 	sequenceOf := func(ref *APLAction) *APLActionSequence {
@@ -114,12 +114,12 @@ func TestAPLLinesFollowConfigPositions(t *testing.T) {
 
 // A logged fake warrior sim at the pull, running this APL rotation with the spells and major cooldowns
 // register adds, its melee swings off. Every line the run logs is kept, formatted.
-type lineTest struct {
+type entryPathTest struct {
 	*channelTest
 	logs []string
 }
 
-func newLineTest(register func(char *Character), config *proto.APLRotation) *lineTest {
+func newEntryPathTest(register func(char *Character), config *proto.APLRotation) *entryPathTest {
 	sim := setupFakeRageSimFrom(fakeRageSimRequest())
 	fw := sim.Raid.Parties[0].Players[0].(*FakeRageWarrior)
 	known := len(fw.Spellbook)
@@ -135,7 +135,7 @@ func newLineTest(register func(char *Character), config *proto.APLRotation) *lin
 	sim.Cleanup()
 	sim.Reset()
 
-	lt := &lineTest{channelTest: &channelTest{sim: sim, fw: fw, rot: fw.Rotation}}
+	lt := &entryPathTest{channelTest: &channelTest{sim: sim, fw: fw, rot: fw.Rotation}}
 	sim.Log = func(message string, vals ...interface{}) {
 		lt.logs = append(lt.logs, fmt.Sprintf(message, vals...))
 	}
@@ -146,14 +146,14 @@ func newLineTest(register func(char *Character), config *proto.APLRotation) *lin
 }
 
 // The spell's Casting lines, in the order they were logged.
-func (lt *lineTest) casting(spell *Spell) []string {
+func (lt *entryPathTest) casting(spell *Spell) []string {
 	return FilterSlice(lt.logs, func(line string) bool {
 		return strings.Contains(line, fmt.Sprintf("Casting %s (", spell.ActionID))
 	})
 }
 
 // Whether the spell was queued to go off later.
-func (lt *lineTest) queued(spell *Spell) bool {
+func (lt *entryPathTest) queued(spell *Spell) bool {
 	return len(FilterSlice(lt.logs, func(line string) bool {
 		return strings.Contains(line, fmt.Sprintf("Queueing up %s ", spell.ActionID))
 	})) > 0
@@ -179,12 +179,12 @@ func wantLines(t *testing.T, name string, got []string, suffixes ...string) {
 	}
 }
 
-// A cast the rotation starts ends its Casting line with the path of the line that started it, after the
+// A cast the rotation starts ends its Casting line with the path of the entry that started it, after the
 // text the line has always had.
-func TestRotationCastLogsItsLine(t *testing.T) {
+func TestRotationCastLogsItsEntryPath(t *testing.T) {
 	var nuke *Spell
 	hidden := &proto.APLListItem{Action: aplCast(910110), Hide: true}
-	lt := newLineTest(func(char *Character) {
+	lt := newEntryPathTest(func(char *Character) {
 		nuke = char.RegisterSpell(nukeConfig(&[]time.Duration{}))
 	}, &proto.APLRotation{PriorityList: append([]*proto.APLListItem{hidden}, aplItems(aplCast(910110))...)})
 
@@ -195,10 +195,10 @@ func TestRotationCastLogsItsLine(t *testing.T) {
 	}
 }
 
-// A spell another spell's effects cast is not the rotation's cast, and its Casting line names no line.
-func TestCastInsideARotationCastLogsNoLine(t *testing.T) {
+// A spell another spell's effects cast is not the rotation's cast, and its Casting line names no entry path.
+func TestCastInsideARotationCastLogsNoEntryPath(t *testing.T) {
 	var outer, inner *Spell
-	lt := newLineTest(func(char *Character) {
+	lt := newEntryPathTest(func(char *Character) {
 		inner = char.RegisterSpell(SpellConfig{ActionID: ActionID{SpellID: 910121}, ApplyEffects: func(*Simulation, *Unit, *Spell) {}})
 		config := nukeConfig(&[]time.Duration{})
 		config.ApplyEffects = func(sim *Simulation, target *Unit, _ *Spell) {
@@ -210,12 +210,12 @@ func TestCastInsideARotationCastLogsNoLine(t *testing.T) {
 	lt.runUntil(0)
 	wantLines(t, "the outer spell", lt.casting(outer), ") APL: priority 1")
 	if got := lt.casting(inner); len(got) != 1 || strings.Contains(got[0], " APL: ") {
-		t.Fatalf("the inner spell's Casting lines are %q, want one that names no line", got)
+		t.Fatalf("the inner spell's Casting lines are %q, want one that names no entry path", got)
 	}
 }
 
-// A queued spell goes off with no line running; its Casting line names the line that queued it.
-func TestQueuedCastCarriesTheLineThatQueuedIt(t *testing.T) {
+// A queued spell goes off with no entry running; its Casting line names the entry that queued it.
+func TestQueuedCastCarriesTheEntryThatQueuedIt(t *testing.T) {
 	t.Run("a spell picked at a hardcast's end", func(t *testing.T) {
 		var slow, nuke *Spell
 		firstSecond := &proto.APLValue{Value: &proto.APLValue_Cmp{Cmp: &proto.APLValueCompare{
@@ -225,7 +225,7 @@ func TestQueuedCastCarriesTheLineThatQueuedIt(t *testing.T) {
 		}}}
 		slowCast := aplCast(910122)
 		slowCast.Condition = firstSecond
-		lt := newLineTest(func(char *Character) {
+		lt := newEntryPathTest(func(char *Character) {
 			config := recordedSpellConfig(910122, &[]time.Duration{})
 			config.Cast = CastConfig{DefaultCast: Cast{GCD: GCDDefault, CastTime: 2 * time.Second}}
 			slow = char.RegisterSpell(config)
@@ -240,11 +240,11 @@ func TestQueuedCastCarriesTheLineThatQueuedIt(t *testing.T) {
 		wantLines(t, "the queued nuke", lt.casting(nuke), ") APL: priority 2")
 	})
 
-	// The nuke at the pull starts the GCD; the second spell's lines, priority 2 and then 3, press it 100 ms
+	// The nuke at the pull starts the GCD; the second spell's entries, priority 2 and then 3, press it 100 ms
 	// apart from 1.2 s and queue it for the GCD end at 1.5 s, with the rotation's own look held back past it.
-	inQueueWindow := func(lines int) (*lineTest, *Spell) {
+	inQueueWindow := func(entries int) (*entryPathTest, *Spell) {
 		var second *Spell
-		lt := newLineTest(func(char *Character) {
+		lt := newEntryPathTest(func(char *Character) {
 			config := nukeConfig(&[]time.Duration{})
 			config.Cast.CD = Cooldown{Timer: char.NewTimer(), Duration: time.Minute}
 			char.RegisterSpell(config)
@@ -252,7 +252,7 @@ func TestQueuedCastCarriesTheLineThatQueuedIt(t *testing.T) {
 			secondConfig.Cast = CastConfig{DefaultCast: Cast{GCD: GCDDefault}}
 			second = char.RegisterSpell(secondConfig)
 		}, &proto.APLRotation{PriorityList: aplItems(aplCast(910110), aplCast(910123), aplCast(910123))})
-		for i := 1; i <= lines; i++ {
+		for i := 1; i <= entries; i++ {
 			lt.runUntil(1200*time.Millisecond + time.Duration(i-1)*100*time.Millisecond)
 			lt.rot.priorityList[i].Execute(lt.sim)
 		}
@@ -271,7 +271,7 @@ func TestQueuedCastCarriesTheLineThatQueuedIt(t *testing.T) {
 		}
 	})
 
-	t.Run("a spell queued again by another line", func(t *testing.T) {
+	t.Run("a spell queued again by another entry", func(t *testing.T) {
 		lt, second := inQueueWindow(2)
 		if got := lt.casting(second); len(got) != 1 || !strings.HasSuffix(got[0], ") APL: priority 3") {
 			t.Fatalf("the spell queued again at 1.3 s has Casting lines %q, want one ending \") APL: priority 3\"", got)
@@ -286,7 +286,7 @@ func TestStrictSequenceLaterStepsLogTheirStep(t *testing.T) {
 	sequence := &proto.APLAction{Action: &proto.APLAction_StrictSequence{StrictSequence: &proto.APLActionStrictSequence{
 		Actions: []*proto.APLAction{aplCast(910110), aplCast(910110), aplCast(910110)},
 	}}}
-	lt := newLineTest(func(char *Character) {
+	lt := newEntryPathTest(func(char *Character) {
 		nuke = char.RegisterSpell(nukeConfig(&[]time.Duration{}))
 	}, &proto.APLRotation{PriorityList: aplItems(sequence)})
 
@@ -294,12 +294,12 @@ func TestStrictSequenceLaterStepsLogTheirStep(t *testing.T) {
 	wantLines(t, "the nuke", lt.casting(nuke), ") APL: priority 1 > step 1", ") APL: priority 1 > step 2", ") APL: priority 1 > step 3")
 }
 
-// A major cooldown Autocast Other Cooldowns fires names the Autocast Other Cooldowns line.
-func TestAutocastCooldownLogsTheAutocastLine(t *testing.T) {
+// A major cooldown Autocast Other Cooldowns fires names the Autocast Other Cooldowns entry.
+func TestAutocastCooldownLogsTheAutocastEntry(t *testing.T) {
 	var cooldown *Spell
 	hidden := &proto.APLListItem{Action: aplCast(910110), Hide: true}
 	autocast := &proto.APLAction{Action: &proto.APLAction_AutocastOtherCooldowns{AutocastOtherCooldowns: &proto.APLActionAutocastOtherCooldowns{}}}
-	lt := newLineTest(func(char *Character) {
+	lt := newEntryPathTest(func(char *Character) {
 		char.RegisterSpell(nukeConfig(&[]time.Duration{}))
 		config := recordedSpellConfig(910124, &[]time.Duration{})
 		config.Cast = CastConfig{CD: Cooldown{Timer: char.NewTimer(), Duration: time.Minute}}
@@ -312,11 +312,11 @@ func TestAutocastCooldownLogsTheAutocastLine(t *testing.T) {
 }
 
 // A press that queues an attack for the next swing credits it, and the swing's cast of the attack names the
-// press's line. A later swing that casts it again, with no new press, names none.
-func TestNextSwingAttackCarriesTheQueuingLine(t *testing.T) {
+// press's entry path. A later swing that casts it again, with no new press, names none.
+func TestNextSwingAttackCarriesTheQueuingEntryPath(t *testing.T) {
 	var press, attack *Spell
 	armed := false
-	lt := newLineTest(func(char *Character) {
+	lt := newEntryPathTest(func(char *Character) {
 		attack = char.RegisterSpell(SpellConfig{ActionID: ActionID{SpellID: 910131}, ApplyEffects: func(*Simulation, *Unit, *Spell) {}})
 		press = char.RegisterSpell(SpellConfig{
 			ActionID: ActionID{SpellID: 910130},
@@ -343,13 +343,13 @@ func TestNextSwingAttackCarriesTheQueuingLine(t *testing.T) {
 	got := lt.casting(attack)
 	wantLines(t, "the queued attack", got, ") APL: priority 1")
 	if len(got) < 2 || strings.Contains(got[1], " APL: ") {
-		t.Fatalf("the attack's Casting lines are %q, want a second that names no line", got)
+		t.Fatalf("the attack's Casting lines are %q, want a second that names no entry path", got)
 	}
 }
 
 // A walk the rotation picks at a hardcast's end is no press of the hardcast, so no later walk names the
-// hardcast's line.
-func TestWalkAtHardcastEndTakesNoLine(t *testing.T) {
+// hardcast's entry path.
+func TestWalkAtHardcastEndTakesNoEntryPath(t *testing.T) {
 	var slow *Spell
 	slowCast := aplCast(910122)
 	slowCast.Condition = &proto.APLValue{Value: &proto.APLValue_Cmp{Cmp: &proto.APLValueCompare{
@@ -358,7 +358,7 @@ func TestWalkAtHardcastEndTakesNoLine(t *testing.T) {
 		Rhs: constValue("1s"),
 	}}}
 	walk := &proto.APLAction{Action: &proto.APLAction_MoveDuration{MoveDuration: &proto.APLActionMoveDuration{Duration: constValue("500ms")}}}
-	lt := newLineTest(func(char *Character) {
+	lt := newEntryPathTest(func(char *Character) {
 		config := recordedSpellConfig(910122, &[]time.Duration{})
 		config.Flags |= SpellFlagCanCastWhileMoving
 		config.Cast = CastConfig{DefaultCast: Cast{GCD: GCDDefault, CastTime: 2 * time.Second}}
@@ -373,12 +373,12 @@ func TestWalkAtHardcastEndTakesNoLine(t *testing.T) {
 	}
 	for _, line := range walks {
 		if strings.Contains(line, " APL: ") {
-			t.Fatalf("the walks' Casting lines are %q, want none that names a line", walks)
+			t.Fatalf("the walks' Casting lines are %q, want none that names an entry path", walks)
 		}
 	}
 }
 
-func TestWalkInsideQueuedCastTakesNoLine(t *testing.T) {
+func TestWalkInsideQueuedCastTakesNoEntryPath(t *testing.T) {
 	var queued *Spell
 	qid := ActionID{SpellID: 910123}.ToProto()
 	late := &proto.APLValue{Value: &proto.APLValue_Cmp{Cmp: &proto.APLValueCompare{
@@ -391,7 +391,7 @@ func TestWalkInsideQueuedCastTakesNoLine(t *testing.T) {
 	}}}}
 	cond := &proto.APLValue{Value: &proto.APLValue_And{And: &proto.APLValueAnd{Vals: []*proto.APLValue{late, notReady}}}}
 	walk := &proto.APLAction{Condition: cond, Action: &proto.APLAction_MoveDuration{MoveDuration: &proto.APLActionMoveDuration{Duration: constValue("500ms")}}}
-	lt := newLineTest(func(char *Character) {
+	lt := newEntryPathTest(func(char *Character) {
 		config := recordedSpellConfig(910123, &[]time.Duration{})
 		config.Cast = CastConfig{CD: Cooldown{Timer: char.NewTimer(), Duration: 1400 * time.Millisecond}}
 		config.ApplyEffects = func(sim *Simulation, _ *Unit, _ *Spell) {
@@ -412,19 +412,19 @@ func TestWalkInsideQueuedCastTakesNoLine(t *testing.T) {
 	}
 	for _, line := range walks {
 		if strings.Contains(line, " APL: ") {
-			t.Fatalf("the walks' Casting lines are %q, want none that names a line", walks)
+			t.Fatalf("the walks' Casting lines are %q, want none that names an entry path", walks)
 		}
 	}
 }
 
-// With logging off the rotation keeps no running line, so a cast reads none while its line runs.
+// With logging off the rotation keeps no running entry path, so a cast reads none while its entry runs.
 func TestUnloggedRunTracksNothing(t *testing.T) {
 	run := func(logged bool) []string {
 		var seen []string
-		lt := newLineTest(func(char *Character) {
+		lt := newEntryPathTest(func(char *Character) {
 			config := nukeConfig(&[]time.Duration{})
 			config.ApplyEffects = func(_ *Simulation, _ *Unit, spell *Spell) {
-				seen = append(seen, spell.Unit.Rotation.runningLine)
+				seen = append(seen, spell.Unit.Rotation.runningEntryPath)
 			}
 			char.RegisterSpell(config)
 		}, &proto.APLRotation{PriorityList: aplItems(aplCast(910110))})
@@ -436,15 +436,15 @@ func TestUnloggedRunTracksNothing(t *testing.T) {
 	}
 
 	if seen := run(true); len(seen) == 0 || seen[0] != "priority 1" {
-		t.Fatalf("a logged cast read the running lines %q, want \"priority 1\"", seen)
+		t.Fatalf("a logged cast read the running entry paths %q, want \"priority 1\"", seen)
 	}
 	seen := run(false)
 	if len(seen) < 3 {
 		t.Fatalf("the unlogged run cast %d times, want at least 3", len(seen))
 	}
-	for _, line := range seen {
-		if line != "" {
-			t.Fatalf("an unlogged cast read the running lines %q, want none", seen)
+	for _, entryPath := range seen {
+		if entryPath != "" {
+			t.Fatalf("an unlogged cast read the running entry paths %q, want none", seen)
 		}
 	}
 }
