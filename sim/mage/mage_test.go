@@ -1,6 +1,7 @@
 package mage
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/wowsims/forever/sim/common" // imported to get item effects included.
@@ -27,6 +28,67 @@ func TestFire(t *testing.T) {
 
 func TestFrost(t *testing.T) {
 	core.RunTestSuite(t, t.Name(), core.FullCharacterTestSuiteGenerator([]core.CharacterSuiteConfig{frostSuite()}))
+}
+
+func TestFingersOfFrostGivesBlizzardTicksNoShatterBonus(t *testing.T) {
+	const noShatter, shatter = "--000000001000000200", "--000000001000300200"
+	critsWithout, uptimeWithout := blizzardTickCrits(t, noShatter)
+	critsWith, uptimeWith := blizzardTickCrits(t, shatter)
+
+	if uptimeWithout == 0 || uptimeWith == 0 {
+		t.Fatalf("Fingers of Frost was never up: uptime %.1f s without Shatter, %.1f s with", uptimeWithout, uptimeWith)
+	}
+	if critsWithout == 0 {
+		t.Fatal("no Blizzard tick crit")
+	}
+	if critsWith != critsWithout {
+		t.Errorf("Blizzard tick crits moved with Shatter: %d without, %d with", critsWithout, critsWith)
+	}
+}
+
+func blizzardTickCrits(t *testing.T, talents string) (crits int32, fingersOfFrostUptime float64) {
+	t.Helper()
+
+	castID := spellData.Blizzard.Highest().ID
+	tickID := spellData.BlizzardTriggered.Highest().ID
+	suite := mageSuite(talents, "frost")
+	rotation := fmt.Sprintf(`{"type":"TypeAPL","priorityList":[{"action":{"castSpell":{"spellId":{"spellId":%d}}}}]}`, castID)
+	player := core.WithSpec(&proto.Player{
+		Class:              suite.Class,
+		Race:               suite.Race,
+		Equipment:          suite.GearSet.GearSet,
+		Consumables:        suite.Consumables,
+		TalentsString:      talents,
+		Profession1:        suite.Profession1,
+		Profession2:        suite.Profession2,
+		Rotation:           core.APLRotationFromJsonString(rotation),
+		DistanceFromTarget: 30,
+	}, suite.SpecOptions.SpecOptions)
+	target := core.NewDefaultTarget()
+	result := core.RunRaidSim(&proto.RaidSimRequest{
+		Raid:       core.SinglePlayerRaidProto(player, core.FullPartyBuffs, core.FullRaidBuffs, core.FullDebuffs),
+		Encounter:  &proto.Encounter{Duration: 40, Targets: []*proto.Target{target, target, target, target}},
+		SimOptions: &proto.SimOptions{Iterations: 200, IsTest: true, RandomSeed: 101},
+	})
+	if result.Error != nil {
+		t.Fatal(result.Error.Message)
+	}
+
+	metrics := result.RaidMetrics.Parties[0].Players[0]
+	for _, action := range metrics.Actions {
+		if action.Id.GetSpellId() != tickID {
+			continue
+		}
+		for _, target := range action.Targets {
+			crits += target.Crits
+		}
+	}
+	for _, aura := range metrics.Auras {
+		if aura.Id.GetSpellId() == spellData.FingersOfFrostTriggered.Highest().ID {
+			fingersOfFrostUptime = aura.UptimeSecondsAvg
+		}
+	}
+	return crits, fingersOfFrostUptime
 }
 
 func BenchmarkMage(b *testing.B) {
