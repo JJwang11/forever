@@ -75,7 +75,6 @@ export const DefaultIndividualBuffs = IndividualBuffs.create({
 	greaterBlessingOfKings: true,
 	greaterBlessingOfWisdom: true,
 	innervates: 1,
-	greaterBlessingOfSalvation: true,
 });
 
 export const DefaultDebuffs = Debuffs.create({
