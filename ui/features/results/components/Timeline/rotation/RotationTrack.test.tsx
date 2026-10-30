@@ -1,5 +1,5 @@
 import type { AplRun } from '@features/apl/model/apl_line';
-import { getAplReveal } from '@features/apl/model/reveal';
+import { type AplRevealRequest, aplReveals } from '@features/apl/model/reveal';
 import { TabActivationContext } from '@features/hooks/useActivateTab';
 import type { RowItem } from '@features/results/model/timeline/rotation';
 import { APLListItem, APLRotation } from '@generated/proto/apl';
@@ -11,7 +11,7 @@ import { castItem, castRow, rotationModel } from '@testing/timeline_rotation';
 import { act, fireEvent, render } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { DrStickySlotContext } from '../../DetailedResults/context/DrStickySlotContext';
 import { RotationTrack } from './RotationTrack';
@@ -22,7 +22,11 @@ vi.mock('@sim/state/subscriptions', async () => mockSubscriptions());
 // letting them run here would put a Wowhead fetch behind every row.
 vi.mock('./RotationRowIcon', () => ({ RotationRowIcon: () => <a data-testid="rotation-row-icon" /> }));
 
+// The player's rotation, unchanged since the run in the cases that click a cast.
+const ROTATION = APLRotation.create({ priorityList: [APLListItem.create(), APLListItem.create(), APLListItem.create()] });
+
 const host = fakeHost({
+	player: { aplRotation: ROTATION },
 	sim: { getShowDamageMetrics: () => true, getShowThreatMetrics: () => true, getShowHealingMetrics: () => true } as never,
 });
 
@@ -78,7 +82,7 @@ const Wrapper = ({ children }: { children: ReactNode }) => {
 	);
 };
 
-const mount = async (model = MODEL, aplRun: AplRun | null = null) => {
+const mount = async (model = MODEL, aplRun?: AplRun) => {
 	const view = render(
 		<Wrapper>
 			<RotationTrack model={model} active aplRun={aplRun} />
@@ -177,25 +181,31 @@ describe('RotationTrack', () => {
 		};
 		const UNPLACED: AplLinePath = [{ kind: 'priority', index: 7 }];
 		const LINED = rotationModel([castRow('cast:a', 'Alpha', [lined(0, 1, LINE), lined(2, 3, null), lined(4, 5, UNPLACED)])]);
-		const ROTATION = APLRotation.create({ priorityList: [APLListItem.create(), APLListItem.create(), APLListItem.create()] });
-		const run = (changed: boolean): AplRun => ({ rotation: ROTATION, changed });
+		const run = (changed: boolean): AplRun => ({ rotation: ROTATION, changed: () => changed });
 		const casts = (container: HTMLElement) => container.querySelectorAll('[data-row-key="cast:a"] [data-testid="rotation-item-cast"]');
+		let revealed: Array<AplRevealRequest>;
+		let off: () => void;
 
-		beforeEach(() => activateTab.mockClear());
+		beforeEach(() => {
+			activateTab.mockClear();
+			revealed = [];
+			off = aplReveals.on(request => revealed.push(request));
+		});
+
+		afterEach(() => off());
 
 		it('opens the Rotation tab on the line that cast it', async () => {
 			const { container } = await mount(LINED, run(false));
-			const before = getAplReveal()?.nonce ?? 0;
 
 			fireEvent.click(casts(container)[0]);
 
 			expect(activateTab).toHaveBeenCalledWith('rotation-tab');
-			expect(getAplReveal()).toEqual({ path: LINE, nonce: before + 1 });
+			expect(revealed).toHaveLength(1);
+			expect(revealed[0].item).toBe(ROTATION.priorityList[2]);
 		});
 
 		it('does nothing for a cast no line launched, a rotation changed since the run, or the end of a pan', async () => {
 			const unchanged = await mount(LINED, run(false));
-			const before = getAplReveal();
 			fireEvent.click(casts(unchanged.container)[1]);
 
 			const cast = casts(unchanged.container)[0];
@@ -209,17 +219,16 @@ describe('RotationTrack', () => {
 			fireEvent.click(casts(changed.container)[0]);
 
 			expect(activateTab).not.toHaveBeenCalled();
-			expect(getAplReveal()).toBe(before);
+			expect(revealed).toEqual([]);
 		});
 
 		it('does nothing for a cast whose line the run rotation cannot place, as its tooltip shows none', async () => {
 			const { container } = await mount(LINED, run(false));
-			const before = getAplReveal();
 
 			fireEvent.click(casts(container)[2]);
 
 			expect(activateTab).not.toHaveBeenCalled();
-			expect(getAplReveal()).toBe(before);
+			expect(revealed).toEqual([]);
 		});
 	});
 

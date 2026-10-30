@@ -98,7 +98,7 @@ const mount = (active: boolean, player = livePlayer()) => {
 	return { ...view, again: (next = active) => view.rerender(<Timeline active={next} />) };
 };
 
-const lastAplRun = () => state.aplRuns.at(-1) as AplRun | null;
+const lastAplRun = () => state.aplRuns.at(-1) as AplRun | undefined;
 
 describe('Timeline', () => {
 	it('holds a run that lands while the tab is closed, and draws it when the tab opens', () => {
@@ -178,24 +178,21 @@ describe('Timeline', () => {
 		emit(runOf('a', rotation), view.again);
 
 		expect(lastAplRun()?.rotation.priorityList[0].notes).toBe('ran');
-		expect(lastAplRun()?.changed).toBe(false);
+		expect(lastAplRun()?.changed()).toBe(false);
 	});
 
-	it('marks the run changed once the rotation is edited, keeping the rotation as it ran', () => {
+	it('marks the run changed once the rotation is edited, keeping the rotation as it ran, without drawing the track again', () => {
 		const rotation = APLRotation.create({ type: APLRotation_Type.TypeAPL, priorityList: [{ notes: 'ran' }] });
 		const player = livePlayer(APLRotation.clone(rotation));
 		const view = mount(true, player);
 		emit(runOf('a', rotation), view.again);
+		expect(lastAplRun()?.changed()).toBe(false);
+		const drawn = state.aplRuns.length;
 
 		act(() => player.modifyAplRotation(live => live.priorityList.push({ notes: 'added' } as never)));
-		expect(lastAplRun()?.changed).toBe(true);
+		expect(state.aplRuns).toHaveLength(drawn);
+		expect(lastAplRun()?.changed()).toBe(true);
 		expect(lastAplRun()?.rotation.priorityList).toHaveLength(1);
-	});
-
-	it('hands the track no run for an Auto rotation', () => {
-		const view = mount(true);
-		emit(runOf('a', APLRotation.create({ type: APLRotation_Type.TypeAuto })), view.again);
-		expect(lastAplRun()).toBeNull();
 	});
 
 	it('mounts only the pane that is showing', () => {

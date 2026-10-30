@@ -9,17 +9,17 @@ import { copyAplClip, useAplPaste } from '@features/apl/hooks/useAplClipboard';
 import { useVariableExtraction } from '@features/apl/hooks/useVariableExtraction';
 import { aplItemId, PRIORITY } from '@features/apl/model/apply_move';
 import { freshUuids } from '@features/apl/model/fresh_uuids';
+import type { AplRevealRequest } from '@features/apl/model/reveal';
 import { rotationSource } from '@features/apl/utils';
 import { useListItems } from '@features/inputs/hooks/useListItems';
 import { APLListItem } from '@generated/proto/apl';
 import i18n from '@i18n/config';
 import { usePlayer } from '@sim/context/SimHostContext';
 import type { Player } from '@sim/player/player';
-import type { AplLinePath } from '@sim/proto/combat_log';
 import { Tree } from '@ui-kit/Tree';
 
 const newRow = () => APLListItem.create({ action: {} });
-const inPriorityList = (line: AplLinePath) => line[0]?.kind === 'priority';
+const inPriorityList = (request: AplRevealRequest) => request.kind === 'priority';
 
 /** The rotation's priority list: a section of the priority pane's tree, one item per row. */
 export const PriorityList = () => {
@@ -87,7 +87,7 @@ export const PriorityList = () => {
 										/>
 									}>
 									<Tree.Item.Body>
-										<AplRevealTarget own={[{ kind: 'priority', index }]}>
+										<AplRevealTarget getItem={() => config.getValue(player)}>
 											<AplListItem player={player} config={config} />
 										</AplRevealTarget>
 									</Tree.Item.Body>

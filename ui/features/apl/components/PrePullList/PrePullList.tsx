@@ -5,18 +5,20 @@ import { ValuePicker } from '@features/apl/components/ValuePicker';
 import { AplProvider } from '@features/apl/context/AplContext';
 import { aplItemId, PREPULL } from '@features/apl/model/apply_move';
 import { freshUuids } from '@features/apl/model/fresh_uuids';
+import type { AplRevealRequest } from '@features/apl/model/reveal';
 import { rotationSource } from '@features/apl/utils';
 import { useListItems } from '@features/inputs/hooks/useListItems';
 import { APLPrepullAction, APLValue } from '@generated/proto/apl';
 import i18n from '@i18n/config';
 import { usePlayer } from '@sim/context/SimHostContext';
 import type { Player } from '@sim/player/player';
-import type { AplLinePath } from '@sim/proto/combat_log';
 import { randomUUID } from '@sim/utils/misc';
 import { Tree } from '@ui-kit/Tree';
 
+import { doAtConfig } from './do_at';
+
 const AT_PULL = () => APLValue.create({ value: { oneofKind: 'const', const: { val: '-1s' } }, uuid: { value: randomUUID() } });
-const inPrepullList = (line: AplLinePath) => line[0]?.kind === 'prepull';
+const inPrepullList = (request: AplRevealRequest) => request.kind === 'prepull';
 
 /** The actions taken before the pull, each with the time it happens at: a section of the priority pane's tree. */
 export const PrePullList = () => {
@@ -65,26 +67,22 @@ export const PrePullList = () => {
 										}
 										actions={<AplItemActions label={label} onCopy={() => rows.copy(index)} onDelete={() => rows.remove(index)} />}>
 										<Tree.Item.Body>
-											<AplRevealTarget own={[{ kind: 'prepull', index }]}>
+											<AplRevealTarget getItem={() => config.getValue(player)}>
 												<AplListItem
 													player={player}
 													config={config}
 													leading={
 														<ValuePicker
 															player={player}
-															config={{
-																label: i18n.t('rotation_tab.apl.prepull_actions.do_at.label'),
-																labelTooltip: i18n.t('rotation_tab.apl.prepull_actions.do_at.tooltip'),
-																extraClassNames: ['w-auto'],
-																layout: 'inline',
-																getValue: () => config.getValue(player)?.doAtValue,
-																setValue: (subject: Player<any>, newValue: APLValue | undefined) => {
+															config={doAtConfig(
+																() => config.getValue(player)?.doAtValue,
+																(subject: Player<any>, newValue: APLValue | undefined) => {
 																	const current = config.getValue(subject);
 																	if (!current) return;
 																	current.doAtValue = newValue || AT_PULL();
 																	subject.touchRotation();
 																},
-															}}
+															)}
 														/>
 													}
 												/>

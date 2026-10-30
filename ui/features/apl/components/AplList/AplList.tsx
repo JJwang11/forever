@@ -1,14 +1,14 @@
 import { AplProvider } from '@features/apl/context/AplContext';
-import { useAplRevealOpen, useAplRevealTarget } from '@features/apl/hooks/useAplReveal';
+import { useAplReveal } from '@features/apl/hooks/useAplReveal';
 import { actionKinds, type APLActionKind } from '@features/apl/model/action_kinds';
 import { type AplMove, applyMove, canApplyMove, type MoveSource, type OffersKind, resolveMoveSource } from '@features/apl/model/apply_move';
-import type { APLRotation } from '@generated/proto/apl';
+import type { AplRevealRequest } from '@features/apl/model/reveal';
+import type { APLAction, APLListItem, APLPrepullAction, APLRotation } from '@generated/proto/apl';
 import i18n from '@i18n/config';
 import { usePlayer } from '@sim/context/SimHostContext';
-import { aplLineKey, type AplLinePath } from '@sim/proto/combat_log';
 import { TooltipButton } from '@ui-kit/TooltipButton';
 import { Tree, type TreeDensity, type TreeLayout, type TreeSortable, useTreeItem } from '@ui-kit/Tree';
-import { type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 
 export interface AplListRootProps {
 	/** `APL_ROWS`, `APL_GROUPS` or `APL_VARIABLES`: which lists of the rotation the tree's moves land in. */
@@ -83,18 +83,17 @@ export interface AplListEntryProps {
 	/** A row the eye has switched off: its handle and title fade with its body. */
 	muted?: boolean;
 	/** For a section or a group: whether a line a cast's click opens sits under it, so the item opens. */
-	revealOn?: (line: AplLinePath) => boolean;
+	revealOn?: (request: AplRevealRequest) => boolean;
 	testId?: string;
 	/** The item's `Tree.Item.Body` and/or `Tree.Item.Children`. */
 	children?: ReactNode;
 }
 
-const RevealOpen = ({ on }: { on: (line: AplLinePath) => boolean }) => {
-	const { onPath, nonce } = useAplRevealOpen(on);
+const RevealOpen = ({ on }: { on: (request: AplRevealRequest) => boolean }) => {
 	const { setOpen } = useTreeItem();
-	useLayoutEffect(() => {
-		if (onPath) setOpen(true);
-	}, [onPath, nonce, setOpen]);
+	useAplReveal(request => {
+		if (on(request)) setOpen(true);
+	});
 	return null;
 };
 
@@ -169,8 +168,8 @@ export const AplItemActions = ({ label, onCopy, onCopyToClipboard, onExtract, ca
 const FLASH_MS = 1500;
 
 export interface AplRevealTargetProps {
-	/** The path of the row or step inside, as a cast's Casting line names it. */
-	own: AplLinePath;
+	/** The rotation's own row or step inside, read when a cast's click comes. */
+	getItem: () => APLListItem | APLPrepullAction | APLAction | undefined;
 	children: ReactNode;
 }
 
@@ -179,20 +178,20 @@ export interface AplRevealTargetProps {
  * through it, it opens its item; when the line is this one, it scrolls into view and flashes. The
  * scroll waits a frame, for the tab, the sub-tab and the items above it to have opened.
  */
-export const AplRevealTarget = ({ own, children }: AplRevealTargetProps) => {
-	const { onPath, isTarget, nonce } = useAplRevealTarget(own);
+export const AplRevealTarget = ({ getItem, children }: AplRevealTargetProps) => {
 	const { setOpen } = useTreeItem();
 	const ref = useRef<HTMLDivElement>(null);
 	const [flash, setFlash] = useState(false);
-	// Callers build `own` afresh on every render, and a new `linePath` would re-render every memoised
-	// picker below through the context.
-	const [linePath, setLinePath] = useState(own);
-	if (aplLineKey(linePath) !== aplLineKey(own)) setLinePath(own);
-	useLayoutEffect(() => {
-		if (onPath) setOpen(true);
-	}, [onPath, nonce, setOpen]);
+	const [reveals, setReveals] = useState(0);
+	useAplReveal(({ item, steps }) => {
+		const own = getItem();
+		const step = steps.indexOf(own as APLAction);
+		if (own !== item && step === -1) return;
+		setOpen(true);
+		if (own === item ? steps.length === 0 : step === steps.length - 1) setReveals(count => count + 1);
+	});
 	useEffect(() => {
-		if (!isTarget) return;
+		if (!reveals) return;
 		const frame = requestAnimationFrame(() => {
 			ref.current?.scrollIntoView({ block: 'center' });
 			setFlash(true);
@@ -203,13 +202,11 @@ export const AplRevealTarget = ({ own, children }: AplRevealTargetProps) => {
 			clearTimeout(timer);
 			setFlash(false);
 		};
-	}, [isTarget, nonce]);
+	}, [reveals]);
 	return (
-		<AplProvider linePath={linePath}>
-			<div ref={ref} data-flash={flash ? '' : undefined} className="rounded-sm transition-colors duration-500 data-flash:bg-primary-dampened">
-				{children}
-			</div>
-		</AplProvider>
+		<div ref={ref} data-flash={flash ? '' : undefined} className="rounded-sm transition-colors duration-500 data-flash:bg-primary-dampened">
+			{children}
+		</div>
 	);
 };
 

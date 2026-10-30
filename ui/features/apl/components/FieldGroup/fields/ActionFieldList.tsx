@@ -11,18 +11,25 @@ import i18n from '@i18n/config';
 import type { Player } from '@sim/player/player';
 import { Tree } from '@ui-kit/Tree';
 import clsx from 'clsx';
-import type { ReactNode } from 'react';
+import { type ReactNode, useMemo } from 'react';
 
 const UNMARKED: ReadonlyArray<number> = [];
 
+interface MarkedStepProps {
+	markedSteps: ReadonlyArray<number>;
+	index: number;
+	children: ReactNode;
+}
+
 // The step on the way to the one that fired hands the rest of the indexes down; every other step hands down an
 // empty list, since `AplProvider` passes its parent's on for `undefined`.
-const markStep = (picker: ReactNode, markedSteps: ReadonlyArray<number>, index: number) => {
+const MarkedStep = ({ markedSteps, index, children }: MarkedStepProps) => {
 	const onPath = markedSteps[0] === index;
+	const below = useMemo(() => (onPath ? markedSteps.slice(1) : UNMARKED), [onPath, markedSteps]);
 	return (
-		<AplProvider markedSteps={onPath ? markedSteps.slice(1) : UNMARKED}>
+		<AplProvider markedSteps={below}>
 			<div data-marked={onPath && markedSteps.length === 1 ? '' : undefined} className="rounded-sm data-marked:bg-primary-dampened">
-				{picker}
+				{children}
 			</div>
 		</AplProvider>
 	);
@@ -47,7 +54,7 @@ export const ActionFieldList = ({ player, config }: ActionFieldListProps) => {
 		// Called through, not passed: `clone` reads `this`, so the bare method copies nothing.
 		copyItem: (oldItem: APLAction) => freshUuids(APLAction.clone(oldItem)),
 	};
-	const { listGroup, markedSteps, linePath } = useApl();
+	const { listGroup, markedSteps } = useApl();
 	const group = listGroup ?? 'apl-actions';
 	const { items, itemConfig, create, remove, copy, move, hidden, disabled } = useListItems(player, listConfig);
 	const sortable = useOwnListSortable(move, group);
@@ -66,8 +73,8 @@ export const ActionFieldList = ({ player, config }: ActionFieldListProps) => {
 			<Tree.Items>
 				{items.map((action, index) => {
 					const key = String(keyFor(action, index));
-					const picker = <ActionPicker player={player} config={itemConfig(action, index)} />;
-					const body = markedSteps.length ? markStep(picker, markedSteps, index) : picker;
+					const stepConfig = itemConfig(action, index);
+					const picker = <ActionPicker player={player} config={stepConfig} />;
 					return (
 						<Tree.Item key={key} id={key} testId="apl-action-list-item">
 							<Tree.Item.Header>
@@ -82,7 +89,15 @@ export const ActionFieldList = ({ player, config }: ActionFieldListProps) => {
 								</Tree.Item.Actions>
 							</Tree.Item.Header>
 							<Tree.Item.Body>
-								{linePath ? <AplRevealTarget own={[...linePath, { kind: 'step', index }]}>{body}</AplRevealTarget> : body}
+								<AplRevealTarget getItem={() => stepConfig.getValue(player)}>
+									{markedSteps.length ? (
+										<MarkedStep markedSteps={markedSteps} index={index}>
+											{picker}
+										</MarkedStep>
+									) : (
+										picker
+									)}
+								</AplRevealTarget>
 							</Tree.Item.Body>
 						</Tree.Item>
 					);

@@ -22,7 +22,7 @@ vi.mock('../action_id', () => {
 	return { ActionId };
 });
 
-import { aplLineKey, parseAplLine } from './apl_line';
+import { parseAplLine } from './apl_line';
 import { buildCastLogs } from './derive';
 import { parseAll } from './parse';
 import type { CastBeganLog } from './types';
@@ -43,12 +43,6 @@ describe('parseAplLine', () => {
 
 	it.each(['priority x', 'priority 0', 'group 2', 'group 1.x', 'group 1.2.3', 'bogus 1', 'priority 1 > ', 'priority 1 2'])('gives null for %j', text => {
 		expect(parseAplLine(text)).toBeNull();
-	});
-
-	it('keys paths apart', () => {
-		const a = aplLineKey(parseAplLine('priority 6 > group 2.2 > step 3')!);
-		expect(a).not.toBe(aplLineKey(parseAplLine('priority 6 > group 2.2 > step 4')!));
-		expect(a).not.toBe(aplLineKey(parseAplLine('priority 6 > group 2.2')!));
 	});
 });
 

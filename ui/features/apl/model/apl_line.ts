@@ -1,29 +1,30 @@
-import { type APLAction, type APLListItem, type APLPrepullAction, type APLRotation, APLRotation_Type } from '@generated/proto/apl';
+import type { APLAction, APLListItem, APLPrepullAction, APLRotation } from '@generated/proto/apl';
 import type { AplLinePath, AplLineSegment } from '@sim/proto/combat_log';
 import type { SimResult, UnitMetrics } from '@sim/proto/sim_result';
-
-import type { AplPaneId } from './apl_panes';
+import { MAX_PARTY_SIZE } from '@sim/raid/party';
 
 /** The rotation a run ran, and whether the player's rotation differs from it now. */
 export interface AplRun {
 	readonly rotation: APLRotation;
-	readonly changed: boolean;
+	/**
+	 * Asked when a tooltip shows or a cast is clicked, so an edit in the Rotation tab compares nothing. It reads the
+	 * store unsubscribed, which holds because both happen in the Results tab, where the rotation cannot change.
+	 */
+	readonly changed: () => boolean;
 }
 
-/**
- * The rotation the run's request carried for `player`, or null when the user picked Auto or Simple: the request
- * holds an APL generated from those too. A rotation with no type is an APL, as `Player.getRotationType` reads it.
- */
-export function runRotation(result: SimResult, player: UnitMetrics): APLRotation | null {
-	const rotation = result.request.raid?.parties[Math.floor(player.index / 5)]?.players[player.index % 5]?.rotation;
-	return rotation && (rotation.type === APLRotation_Type.TypeAPL || rotation.type === APLRotation_Type.TypeUnknown) ? rotation : null;
+/** The rotation the run's request carried for `player`. An Auto or Simple run carries one too, but its casts name no line. */
+export function runRotation(result: SimResult, player: UnitMetrics): APLRotation | undefined {
+	return result.request.raid?.parties[Math.floor(player.index / MAX_PARTY_SIZE)]?.players[player.index % MAX_PARTY_SIZE]?.rotation;
 }
 
 export interface ResolvedAplLine {
-	readonly pane: Extract<AplPaneId, 'apl-priority-list' | 'apl-action-groups'>;
+	readonly kind: Exclude<AplLineSegment['kind'], 'step'>;
 	readonly item: APLListItem | APLPrepullAction;
-	readonly prepull: boolean;
+	/** The indexes of the steps after the row, outermost first. */
 	readonly steps: ReadonlyArray<number>;
+	/** The actions those steps name, in the same order. */
+	readonly stepActions: ReadonlyArray<APLAction>;
 	readonly crumbs: ReadonlyArray<AplLineSegment & { readonly groupName?: string }>;
 }
 
@@ -41,15 +42,17 @@ const stepsOf = (action: APLAction | undefined): APLAction[] | undefined => {
  * Null when any segment no longer fits the rotation, a step included.
  */
 export function resolveAplLine(rotation: APLRotation, path: AplLinePath): ResolvedAplLine | null {
-	let row: { item: APLListItem | APLPrepullAction; segment: AplLineSegment } | undefined;
+	let row: { item: APLListItem | APLPrepullAction; kind: ResolvedAplLine['kind'] } | undefined;
 	let action: APLAction | undefined;
 	let steps: number[] = [];
+	let stepActions: APLAction[] = [];
 	for (const segment of path) {
 		if (segment.kind === 'step') {
 			const next = stepsOf(action)?.[segment.index];
 			if (!next) return null;
 			action = next;
 			steps.push(segment.index);
+			stepActions.push(next);
 			continue;
 		}
 		const item =
@@ -59,13 +62,13 @@ export function resolveAplLine(rotation: APLRotation, path: AplLinePath): Resolv
 					? rotation.groups[segment.group]?.actions[segment.index]
 					: rotation.priorityList[segment.index];
 		if (!item) return null;
-		row = { item, segment };
+		row = { item, kind: segment.kind };
 		action = item.action;
 		steps = [];
+		stepActions = [];
 	}
 	if (!row) return null;
 
 	const crumbs = path.map(segment => (segment.kind === 'group' ? { ...segment, groupName: rotation.groups[segment.group].name } : segment));
-	const pane = row.segment.kind === 'group' ? 'apl-action-groups' : 'apl-priority-list';
-	return { pane, item: row.item, prepull: row.segment.kind === 'prepull', steps, crumbs };
+	return { ...row, steps, stepActions, crumbs };
 }

@@ -1,6 +1,5 @@
 import { rotationSource } from '@features/apl/utils';
 import type { Player } from '@sim/player/player';
-import type { AplLinePath } from '@sim/proto/combat_log';
 import type { StoreSubscribe } from '@sim/state/subscriptions';
 import { createContext, type ReactNode, useContext, useMemo } from 'react';
 
@@ -17,19 +16,9 @@ export interface AplScope {
 	listGroup: string | undefined;
 	/** In a drawn APL line, the step indexes down to the step that fired, outermost first; empty where no step below is marked. */
 	markedSteps: ReadonlyArray<number>;
-	/** In the Rotation tab, the path of the row or step the pickers below edit, which a cast's click can open; unset in a drawn APL line. */
-	linePath: AplLinePath | undefined;
 }
 
-const DEFAULT: AplScope = {
-	isPrepull: false,
-	isGroup: false,
-	changeSource: rotationSource,
-	inSequence: false,
-	listGroup: undefined,
-	markedSteps: [],
-	linePath: undefined,
-};
+const DEFAULT: AplScope = { isPrepull: false, isGroup: false, changeSource: rotationSource, inSequence: false, listGroup: undefined, markedSteps: [] };
 
 const AplContext = createContext<AplScope>(DEFAULT);
 
@@ -43,7 +32,7 @@ export interface AplProviderProps extends Partial<AplScope> {
  * It travels down rather than being read up off the DOM — `closest('.apl-prepull-action-picker')`
  * and its kin cannot answer, because a React component renders before it is in the document.
  */
-export const AplProvider = ({ isPrepull, isGroup, changeSource, inSequence, listGroup, markedSteps, linePath, children }: AplProviderProps) => {
+export const AplProvider = ({ isPrepull, isGroup, changeSource, inSequence, listGroup, markedSteps, children }: AplProviderProps) => {
 	const parent = useContext(AplContext);
 	const scope = useMemo(
 		() => ({
@@ -53,9 +42,8 @@ export const AplProvider = ({ isPrepull, isGroup, changeSource, inSequence, list
 			inSequence: inSequence ?? parent.inSequence,
 			listGroup: listGroup ?? parent.listGroup,
 			markedSteps: markedSteps ?? parent.markedSteps,
-			linePath: linePath ?? parent.linePath,
 		}),
-		[isPrepull, isGroup, changeSource, inSequence, listGroup, markedSteps, linePath, parent],
+		[isPrepull, isGroup, changeSource, inSequence, listGroup, markedSteps, parent],
 	);
 	return <AplContext value={scope}>{children}</AplContext>;
 };

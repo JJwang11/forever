@@ -1,18 +1,15 @@
 import { resolveAplLine } from '@features/apl/model/apl_line';
-import { APLAction, APLRotation, APLValue, APLValueCompare_ComparisonOperator as Op } from '@generated/proto/apl';
+import { APLAction, APLRotation, APLValue } from '@generated/proto/apl';
 import { ActionID } from '@generated/proto/common';
 import type { AplLinePath } from '@sim/proto/combat_log';
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { after, constant, sequence, waitFor } from '@testing/apl/builders';
 import { withAplHost } from '@testing/storybook/fixtures/apl';
 
 import { AplLineView } from './AplLineView';
 
-const constant = (val: string) => APLValue.create({ value: { oneofKind: 'const', const: { val } } });
-const after = (val: string) =>
-	APLValue.create({ value: { oneofKind: 'cmp', cmp: { op: Op.OpGt, lhs: { value: { oneofKind: 'currentTime', currentTime: {} } }, rhs: constant(val) } } });
 const and = (...vals: Array<APLValue>) => APLValue.create({ value: { oneofKind: 'and', and: { vals } } });
 const or = (...vals: Array<APLValue>) => APLValue.create({ value: { oneofKind: 'or', or: { vals } } });
-const waitFor = (val: string, condition?: APLValue) => APLAction.create({ condition, action: { oneofKind: 'wait', wait: { duration: constant(val) } } });
 const bloodthirst = (condition?: APLValue) =>
 	APLAction.create({
 		condition,
@@ -29,11 +26,7 @@ const rotation = APLRotation.create({
 				and(or(after('1s'), after('2s'), after('3s')), or(after('4s'), after('5s'), after('6s')), or(after('7s'), after('8s'), after('9s'))),
 			),
 		},
-		{
-			action: APLAction.create({
-				action: { oneofKind: 'sequence', sequence: { name: 'opener', actions: [waitFor('1s'), waitFor('2s'), waitFor('3s')] } },
-			}),
-		},
+		{ action: sequence([waitFor('1s'), waitFor('2s'), waitFor('3s')]) },
 	],
 });
 

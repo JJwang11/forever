@@ -32,7 +32,3 @@ export function parseAplLine(text: string): AplLinePath | null {
 	}
 	return path;
 }
-
-export function aplLineKey(path: AplLinePath): string {
-	return path.map(segment => (segment.kind === 'group' ? `group ${segment.group}.${segment.index}` : `${segment.kind} ${segment.index}`)).join(' > ');
-}

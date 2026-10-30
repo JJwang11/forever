@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { warriorRotationModel } from '@testing/storybook/fixtures/results-views';
+import { withSimHost } from '@testing/storybook/fixtures/models';
+import { resultsHostParts, warriorRotationModel } from '@testing/storybook/fixtures/results-views';
 import { type ReactNode, useState } from 'react';
 
 import { DrStickySlotContext } from '../../DetailedResults/context/DrStickySlotContext';
@@ -20,7 +21,7 @@ const meta = {
 	title: 'Features/Results/Timeline/Components/RotationTrack',
 	component: RotationTrack,
 	tags: ['autodocs'],
-	args: { model: warriorRotationModel(), active: true, aplRun: null },
+	args: { model: warriorRotationModel(), active: true },
 	argTypes: { model: { control: false } },
 	decorators: [
 		Story => (
@@ -28,6 +29,8 @@ const meta = {
 				<Story />
 			</StickySlot>
 		),
+		// A cast's click reads the player's rotation, and its hover tooltip the sim's display flags.
+		withSimHost(resultsHostParts(null)),
 	],
 } satisfies Meta<typeof RotationTrack>;
 

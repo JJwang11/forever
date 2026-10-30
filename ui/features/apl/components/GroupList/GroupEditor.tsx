@@ -74,7 +74,7 @@ export const GroupEditor = ({ id, player, config, groupIndex, onCopy, onDelete }
 				/>
 			}
 			disabled={disabled}
-			revealOn={line => line[0]?.kind === 'group' && line[0].group === groupIndex}
+			revealOn={request => request.kind === 'group' && !!config.getValue(player)?.actions.includes(request.item as APLListItem)}
 			testId="apl-group-editor-root">
 			<Tree.Item.Children testId="apl-group-actions">
 				<span className="flex items-center gap-2">
@@ -115,7 +115,7 @@ export const GroupEditor = ({ id, player, config, groupIndex, onCopy, onDelete }
 										/>
 									}>
 									<Tree.Item.Body>
-										<AplRevealTarget own={[{ kind: 'group', group: groupIndex, index }]}>
+										<AplRevealTarget getItem={() => itemConfig.getValue(player)}>
 											<AplListItem player={player} config={itemConfig} actionFullWidth />
 										</AplRevealTarget>
 									</Tree.Item.Body>

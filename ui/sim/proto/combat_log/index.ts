@@ -1,6 +1,6 @@
 export { computeActionIdAsString, matchTimestampPrefix, parseAll, rawWithoutTimestamp } from './parse';
 export { buildAuraUptimes, buildCastLogs, buildDpsLogs, buildResourceGroups, buildThreatGroups, populateActiveAuras } from './derive';
-export { aplLineKey, parseAplLine } from './apl_line';
+export { parseAplLine } from './apl_line';
 export type { AplLinePath, AplLineSegment } from './apl_line';
 export {
 	Entity,

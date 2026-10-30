@@ -9,7 +9,6 @@ import { VariablesList } from '@features/apl/components/VariablesList';
 import { useAplReveal } from '@features/apl/hooks/useAplReveal';
 import type { AplPaneId } from '@features/apl/model/apl_panes';
 import { APL_PANES } from '@features/apl/model/apl_panes';
-import { aplRevealPane } from '@features/apl/model/reveal';
 import { CooldownsPicker, useAvailableCooldowns } from '@features/settings';
 import { APLRotation_Type as APLRotationType } from '@generated/proto/apl';
 import i18n from '@i18n/config';
@@ -53,12 +52,7 @@ export const RotationTabBody = ({ rotationType }: RotationTabBodyProps) => {
 
 	const [activeId, setActiveId] = useState<AplPaneId>(APL_PANES[0].id);
 	// A cast clicked in the Timeline opens the sub-tab its line sits in.
-	const reveal = useAplReveal();
-	const [revealed, setRevealed] = useState(reveal);
-	if (reveal !== revealed) {
-		setRevealed(reveal);
-		if (reveal) setActiveId(aplRevealPane(reveal.path));
-	}
+	useAplReveal(({ kind }) => setActiveId(kind === 'group' ? 'apl-action-groups' : 'apl-priority-list'));
 
 	return (
 		<>

@@ -1,9 +1,12 @@
+import { AplLineView } from '@features/apl/components/AplLineView';
 import { GroupList } from '@features/apl/components/GroupList';
 import { PriorityPane } from '@features/apl/components/PriorityPane';
+import { resolveAplLine } from '@features/apl/model/apl_line';
 import { aplClipToText } from '@features/apl/model/clipboard';
 import { requestAplReveal } from '@features/apl/model/reveal';
 import { APLAction, APLGroup, APLListItem, APLPrepullAction, APLRotation, APLValue } from '@generated/proto/apl';
 import { SimHostProvider } from '@sim/context/SimHostContext';
+import type { AplLinePath } from '@sim/proto/combat_log';
 import { dragEvent, FakeIntersectionObserver, place } from '@testing/apl/dom';
 import { makePlayer } from '@testing/apl/player';
 import { source } from '@testing/apl/source';
@@ -583,19 +586,19 @@ describe('AplList opening the line a cast was clicked for', () => {
 
 	afterEach(() => vi.useRealTimers());
 
-	it('opens the collapsed section and row on the way to a sequence step, then scrolls to it and flashes it for a moment', () => {
-		const sequence = APLListItem.create({ action: { action: { oneofKind: 'sequence', sequence: { name: 'opener', actions: [reset('a'), reset('b')] } } } });
-		setup({ priorityList: [row('x'), sequence] });
+	const reveal = (...path: AplLinePath) =>
+		act(() => {
+			requestAplReveal(player.aplRotation, path);
+		});
+
+	it('opens the collapsed section and row on the way to a nested sequence step, then scrolls to that step alone and flashes it for a moment', () => {
+		const sequence = (...actions: Array<APLAction>) => APLAction.create({ action: { oneofKind: 'sequence', sequence: { name: 'opener', actions } } });
+		setup({ priorityList: [row('x'), APLListItem.create({ action: sequence(reset('a'), sequence(reset('b'), reset('c'))) })] });
 		mount();
 		toggle(priorityRows()[1]);
 		toggle(section('apl-priority-list-picker-root'));
 
-		act(() =>
-			requestAplReveal([
-				{ kind: 'priority', index: 1 },
-				{ kind: 'step', index: 1 },
-			]),
-		);
+		reveal({ kind: 'priority', index: 1 }, { kind: 'step', index: 1 }, { kind: 'step', index: 1 });
 
 		expect(section('apl-priority-list-picker-root').hasAttribute('data-open')).toBe(true);
 		expect(priorityRows()[1].hasAttribute('data-open')).toBe(true);
@@ -604,26 +607,62 @@ describe('AplList opening the line a cast was clicked for', () => {
 		act(() => vi.advanceTimersByTime(20));
 		const steps = Array.from(document.querySelectorAll<HTMLElement>('[data-testid="apl-action-list-item"]'));
 		expect(flashed()).toHaveLength(1);
-		expect(steps[1].contains(flashed()[0])).toBe(true);
+		expect(steps[3].contains(flashed()[0])).toBe(true);
 		expect(scrolled).toEqual(flashed());
 
 		act(() => vi.advanceTimersByTime(1500));
 		expect(flashed()).toEqual([]);
 	});
 
+	it('leaves a drawn line of the same row still, since its steps are copies', () => {
+		const sequence = (...actions: Array<APLAction>) => APLAction.create({ action: { oneofKind: 'sequence', sequence: { name: 'opener', actions } } });
+		setup({ priorityList: [APLListItem.create({ action: sequence(reset('a'), reset('b')) })] });
+		const path: AplLinePath = [
+			{ kind: 'priority', index: 0 },
+			{ kind: 'step', index: 1 },
+		];
+		mount(
+			<>
+				<PriorityPane />
+				<AplLineView line={resolveAplLine(player.aplRotation, path)!} />
+			</>,
+		);
+
+		reveal(...path);
+		act(() => vi.advanceTimersByTime(20));
+
+		expect(flashed()).toHaveLength(1);
+		expect(screen.getByTestId('apl-line-view').contains(flashed()[0])).toBe(false);
+	});
+
+	it('reveals the same row again for a repeat of the same click', () => {
+		setup({ priorityList: [row('a'), row('b')] });
+		mount();
+		reveal({ kind: 'priority', index: 1 });
+		act(() => vi.advanceTimersByTime(1600));
+		toggle(priorityRows()[1]);
+		scrolled.length = 0;
+
+		reveal({ kind: 'priority', index: 1 });
+		act(() => vi.advanceTimersByTime(20));
+
+		expect(priorityRows()[1].hasAttribute('data-open')).toBe(true);
+		expect(flashed()).toHaveLength(1);
+		expect(priorityRows()[1].contains(flashed()[0])).toBe(true);
+		expect(scrolled).toEqual(flashed());
+	});
+
 	it('opens the group a group row sits in, and leaves the priority row that referenced the group alone', () => {
-		setup({ groups: [APLGroup.create({ name: 'one', actions: [row('x')] }), APLGroup.create({ name: 'two', actions: [row('y'), row('z')] })] });
+		setup({
+			priorityList: [row('ref')],
+			groups: [APLGroup.create({ name: 'one', actions: [row('x')] }), APLGroup.create({ name: 'two', actions: [row('y'), row('z')] })],
+		});
 		mount(<GroupList />);
 		const groups = () => Array.from(document.querySelectorAll<HTMLElement>('[data-testid="apl-group-editor-root"]'));
 		toggle(groups()[0]);
 		toggle(groups()[1]);
 
-		act(() =>
-			requestAplReveal([
-				{ kind: 'priority', index: 0 },
-				{ kind: 'group', group: 1, index: 1 },
-			]),
-		);
+		reveal({ kind: 'priority', index: 0 }, { kind: 'group', group: 1, index: 1 });
 		act(() => vi.advanceTimersByTime(20));
 
 		expect(groups().map(group => group.hasAttribute('data-open'))).toEqual([false, true]);
@@ -637,7 +676,7 @@ describe('AplList opening the line a cast was clicked for', () => {
 		toggle(section('apl-prepull-list-root'));
 		toggle(section('apl-priority-list-picker-root'));
 
-		act(() => requestAplReveal([{ kind: 'prepull', index: 0 }]));
+		reveal({ kind: 'prepull', index: 0 });
 		act(() => vi.advanceTimersByTime(20));
 
 		expect(section('apl-prepull-list-root').hasAttribute('data-open')).toBe(true);
@@ -648,7 +687,7 @@ describe('AplList opening the line a cast was clicked for', () => {
 
 	it('leaves the rotation as it is for a request made before it mounted', () => {
 		setup({ priorityList: [row('x')] });
-		act(() => requestAplReveal([{ kind: 'priority', index: 0 }]));
+		reveal({ kind: 'priority', index: 0 });
 		mount();
 		act(() => vi.advanceTimersByTime(20));
 
@@ -659,7 +698,7 @@ describe('AplList opening the line a cast was clicked for', () => {
 	it('does not reveal again when a row above the revealed one is deleted and the rows below shift up', () => {
 		setup({ priorityList: [row('a'), row('b'), row('c')] });
 		mount();
-		act(() => requestAplReveal([{ kind: 'priority', index: 1 }]));
+		reveal({ kind: 'priority', index: 1 });
 		act(() => vi.advanceTimersByTime(1600));
 		toggle(priorityRows()[2]);
 		scrolled.length = 0;
@@ -686,7 +725,7 @@ describe('AplList opening the line a cast was clicked for', () => {
 		});
 		mount(<GroupList />);
 		const groups = () => Array.from(document.querySelectorAll<HTMLElement>('[data-testid="apl-group-editor-root"]'));
-		act(() => requestAplReveal([{ kind: 'group', group: 1, index: 0 }]));
+		reveal({ kind: 'group', group: 1, index: 0 });
 		act(() => vi.advanceTimersByTime(1600));
 		groups().forEach(toggle);
 		scrolled.length = 0;

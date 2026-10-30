@@ -33,15 +33,15 @@ const resolve = (text: string) => resolveAplLine(rotation, parseAplLine(text)!);
 describe('resolveAplLine', () => {
 	it('names a priority row', () => {
 		const resolved = resolve('priority 2')!;
-		expect(resolved.pane).toBe('apl-priority-list');
+		expect(resolved.kind).toBe('priority');
 		expect(resolved.item).toBe(rotation.priorityList[1]);
-		expect(resolved.prepull).toBe(false);
 		expect(resolved.steps).toEqual([]);
+		expect(resolved.stepActions).toEqual([]);
 	});
 
 	it('names a group row and carries the group name in the crumbs', () => {
 		const resolved = resolve('priority 3 > group 2.2')!;
-		expect(resolved.pane).toBe('apl-action-groups');
+		expect(resolved.kind).toBe('group');
 		expect(resolved.item).toBe(rotation.groups[1].actions[1]);
 		expect(resolved.crumbs).toEqual([
 			{ kind: 'priority', index: 2 },
@@ -57,22 +57,28 @@ describe('resolveAplLine', () => {
 
 	it('names the group action holding the sequence for a group row with a step', () => {
 		const resolved = resolve('priority 3 > group 2.3 > step 3')!;
-		expect(resolved.pane).toBe('apl-action-groups');
+		expect(resolved.kind).toBe('group');
 		expect(resolved.item).toBe(rotation.groups[1].actions[2]);
 		expect(resolved.steps).toEqual([2]);
 	});
 
 	it('takes the row from a group reference that is a step of a sequence', () => {
 		const resolved = resolve('priority 3 > step 2 > group 2.2')!;
-		expect(resolved.pane).toBe('apl-action-groups');
+		expect(resolved.kind).toBe('group');
 		expect(resolved.item).toBe(rotation.groups[1].actions[1]);
 		expect(resolved.steps).toEqual([]);
+		expect(resolved.stepActions).toEqual([]);
 	});
 
-	it('walks nested sequences, outermost step first', () => {
+	it('walks nested sequences, outermost step first, naming the rotation’s own step actions', () => {
 		const resolved = resolve('priority 4 > step 2 > step 2')!;
+		const outer = rotation.priorityList[3].action!.action as { sequence: { actions: Array<APLAction> } };
+		const inner = outer.sequence.actions[1].action as { strictSequence: { actions: Array<APLAction> } };
 		expect(resolved.item).toBe(rotation.priorityList[3]);
 		expect(resolved.steps).toEqual([1, 1]);
+		expect(resolved.stepActions).toHaveLength(2);
+		expect(resolved.stepActions[0]).toBe(outer.sequence.actions[1]);
+		expect(resolved.stepActions[1]).toBe(inner.strictSequence.actions[1]);
 	});
 
 	it('walks into a sequence a Schedule wraps', () => {
@@ -86,9 +92,8 @@ describe('resolveAplLine', () => {
 
 	it('names a prepull row', () => {
 		const resolved = resolve('prepull 1')!;
-		expect(resolved.pane).toBe('apl-priority-list');
+		expect(resolved.kind).toBe('prepull');
 		expect(resolved.item).toBe(rotation.prepullActions[0]);
-		expect(resolved.prepull).toBe(true);
 	});
 
 	it.each([
@@ -124,15 +129,11 @@ describe('runRotation', () => {
 		expect(runRotation(run, unit(6))?.priorityList[0].notes).toBe('second');
 	});
 
-	it.each([APLRotation_Type.TypeAuto, APLRotation_Type.TypeSimple])('gives null for a run of type %s', type => {
-		expect(runRotation(result(ran(type, 'auto')), unit(5))).toBeNull();
+	it.each([APLRotation_Type.TypeAuto, APLRotation_Type.TypeSimple, APLRotation_Type.TypeUnknown])('takes the rotation of a run of type %s too', type => {
+		expect(runRotation(result(ran(type, 'ran')), unit(5))?.priorityList[0].notes).toBe('ran');
 	});
 
-	it('takes a rotation with no type as an APL, as the Rotation tab does', () => {
-		expect(runRotation(result(ran(APLRotation_Type.TypeUnknown, 'untyped')), unit(5))?.priorityList[0].notes).toBe('untyped');
-	});
-
-	it('gives null for a unit the request holds no player for', () => {
-		expect(runRotation(result(ran(APLRotation_Type.TypeAPL, 'only')), unit(7))).toBeNull();
+	it('gives nothing for a unit the request holds no player for', () => {
+		expect(runRotation(result(ran(APLRotation_Type.TypeAPL, 'only')), unit(7))).toBeUndefined();
 	});
 });

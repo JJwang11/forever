@@ -1,6 +1,8 @@
-import { APLAction, APLRotation, APLValue } from '@generated/proto/apl';
+import type { AplRun } from '@features/apl/model/apl_line';
+import { APLAction, APLRotation } from '@generated/proto/apl';
 import i18n from '@i18n/config';
 import type { AplLinePath } from '@sim/proto/combat_log';
+import { constant, sequence, waitFor } from '@testing/apl/builders';
 import { makePlayer } from '@testing/apl/player';
 import { renderWithHost } from '@testing/react';
 import { castLog } from '@testing/storybook/fixtures/results-views';
@@ -15,12 +17,8 @@ vi.mock('@sim/state/subscriptions', async () => {
 	return mockSubscriptions((await import('@testing/apl/source')).source.subscribe);
 });
 
-const waitFor = (val: string) =>
-	APLAction.create({ action: { oneofKind: 'wait', wait: { duration: APLValue.create({ value: { oneofKind: 'const', const: { val } } }) } } });
-const sequence = (actions: Array<APLAction>) => APLAction.create({ action: { oneofKind: 'sequence', sequence: { name: 'opener', actions } } });
-
 const rotation = APLRotation.create({
-	prepullActions: [{ action: waitFor('1s'), doAtValue: APLValue.create({ value: { oneofKind: 'const', const: { val: '-1s' } } }) }],
+	prepullActions: [{ action: waitFor('1s'), doAtValue: constant('-1s') }],
 	priorityList: [
 		...Array.from({ length: 5 }, () => ({ action: waitFor('9s') })),
 		{ action: APLAction.create({ action: { oneofKind: 'groupReference', groupReference: { groupName: 'execute', variables: [] } } }) },
@@ -28,6 +26,8 @@ const rotation = APLRotation.create({
 	],
 	groups: [{ name: 'execute', actions: [{ action: waitFor('6s') }, { action: waitFor('7s') }], variables: [] }],
 });
+
+const ran = (changed = false): AplRun => ({ rotation, changed: () => changed });
 
 const IN_GROUP: AplLinePath = [
 	{ kind: 'priority', index: 5 },
@@ -56,7 +56,7 @@ afterAll(() => {
 
 describe('CastTooltip', () => {
 	it('shows the path, the line and where a click takes it for a cast of an APL run', async () => {
-		const container = await render({ log: castLog(12, { aplLine: IN_GROUP }), aplRun: { rotation, changed: false } });
+		const container = await render({ log: castLog(12, { aplLine: IN_GROUP }), aplRun: ran() });
 
 		expect(container.textContent).toContain('Priority list #6 › Group execute › #2');
 		expect(lineInputs(container)).toEqual(['7s']);
@@ -64,7 +64,7 @@ describe('CastTooltip', () => {
 	});
 
 	it('draws the line as it ran, and says the rotation changed instead of offering the click', async () => {
-		const container = await render({ log: castLog(12, { aplLine: IN_GROUP }), aplRun: { rotation, changed: true } });
+		const container = await render({ log: castLog(12, { aplLine: IN_GROUP }), aplRun: ran(true) });
 
 		expect(lineInputs(container)).toEqual(['7s']);
 		expect(container.textContent).toContain('The rotation has changed since this run');
@@ -79,22 +79,20 @@ describe('CastTooltip', () => {
 					{ kind: 'step', index: 2 },
 				],
 			}),
-			aplRun: { rotation, changed: false },
+			aplRun: ran(),
 		});
 		expect(step.textContent).toContain('Priority list #7 › Step 3');
 
-		const prepull = await render({ log: castLog(-1, { aplLine: [{ kind: 'prepull', index: 0 }] }), aplRun: { rotation, changed: false } });
+		const prepull = await render({ log: castLog(-1, { aplLine: [{ kind: 'prepull', index: 0 }] }), aplRun: ran() });
 		expect(prepull.textContent).toContain('Prepull #1');
 		expect(lineInputs(prepull)).toEqual(['-1s', '1s']);
 	});
 
-	it('leaves the tooltip as it is for an Auto or Simple run, a cast no line launched, and a line the run cannot place', async () => {
+	it('leaves the tooltip as it is with no run rotation, for a cast no line launched (every cast of an Auto or Simple run), and for a line the run cannot place', async () => {
 		const today = (await render({ log: castLog(12) })).innerHTML;
 
 		expect((await render({ log: castLog(12, { aplLine: IN_GROUP }) })).innerHTML).toBe(today);
-		expect((await render({ log: castLog(12), aplRun: { rotation, changed: false } })).innerHTML).toBe(today);
-		expect((await render({ log: castLog(12, { aplLine: [{ kind: 'priority', index: 40 }] }), aplRun: { rotation, changed: false } })).innerHTML).toBe(
-			today,
-		);
+		expect((await render({ log: castLog(12), aplRun: ran() })).innerHTML).toBe(today);
+		expect((await render({ log: castLog(12, { aplLine: [{ kind: 'priority', index: 40 }] }), aplRun: ran() })).innerHTML).toBe(today);
 	});
 });

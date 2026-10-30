@@ -1,6 +1,7 @@
-import { APLAction, APLRotation, APLValue, APLValueCompare_ComparisonOperator as Op } from '@generated/proto/apl';
-import { type AplLinePath, Entity } from '@sim/proto/combat_log';
+import { APLAction, APLRotation } from '@generated/proto/apl';
+import { type AplLinePath, type CastLog, Entity } from '@sim/proto/combat_log';
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { after, constant, sequence, waitFor } from '@testing/apl/builders';
 import { makeAplStoryPlayer } from '@testing/storybook/fixtures/apl';
 import { withSimHost } from '@testing/storybook/fixtures/models';
 import { castLog, damageLog, resultsHostParts } from '@testing/storybook/fixtures/results-views';
@@ -55,69 +56,42 @@ export const MultipleTargets: Story = {
 	args: { log: castLog(12, { damageDealtLogs: [chainHit(0, 612.4), chainHit(1, 428.68, { outcome: 'crit' }), chainHit(2, 300.08)] }) },
 };
 
-const constant = (val: string) => APLValue.create({ value: { oneofKind: 'const', const: { val } } });
-const after = (val: string) =>
-	APLValue.create({ value: { oneofKind: 'cmp', cmp: { op: Op.OpGt, lhs: { value: { oneofKind: 'currentTime', currentTime: {} } }, rhs: constant(val) } } });
-const waitFor = (val: string, condition?: APLValue) => APLAction.create({ condition, action: { oneofKind: 'wait', wait: { duration: constant(val) } } });
-
 const rotation = APLRotation.create({
 	prepullActions: [{ action: waitFor('1s'), doAtValue: constant('-2s') }],
 	priorityList: [
 		{ action: APLAction.create({ action: { oneofKind: 'groupReference', groupReference: { groupName: 'execute', variables: [] } } }) },
-		{
-			action: APLAction.create({
-				action: { oneofKind: 'sequence', sequence: { name: 'opener', actions: [waitFor('1s'), waitFor('2s'), waitFor('3s')] } },
-			}),
-		},
+		{ action: sequence([waitFor('1s'), waitFor('2s'), waitFor('3s')]) },
 	],
 	groups: [{ name: 'execute', actions: [{ action: waitFor('1s') }, { action: waitFor('2s', after('20s')) }], variables: [] }],
 });
 
-const ranLine = (aplLine: AplLinePath, changed = false) => ({ log: castLog(12, { aplLine }), aplRun: { rotation, changed } });
+const IN_GROUP: AplLinePath = [
+	{ kind: 'priority', index: 0 },
+	{ kind: 'group', group: 0, index: 1 },
+];
+const SECOND_STEP: AplLinePath = [
+	{ kind: 'priority', index: 1 },
+	{ kind: 'step', index: 1 },
+];
+
+const ranLine = (aplLine: AplLinePath, { changed = false, ...overrides }: Partial<CastLog> & { changed?: boolean } = {}) => ({
+	log: castLog(12, { aplLine, ...overrides }),
+	aplRun: { rotation, changed: () => changed },
+});
 
 /** A cast from the second line of a group, with the path that reached it and the click hint. */
-export const AplLine: Story = {
-	args: ranLine([
-		{ kind: 'priority', index: 0 },
-		{ kind: 'group', group: 0, index: 1 },
-	]),
-};
+export const AplLine: Story = { args: ranLine(IN_GROUP) };
 
 /** The rotation was edited after the run: the line is drawn as it ran, and the hint says it changed. */
-export const AplLineChanged: Story = {
-	args: ranLine(
-		[
-			{ kind: 'priority', index: 0 },
-			{ kind: 'group', group: 0, index: 1 },
-		],
-		true,
-	),
-};
+export const AplLineChanged: Story = { args: ranLine(IN_GROUP, { changed: true }) };
 
 /** The second step of a sequence fired, so the whole sequence is drawn with that step marked. */
-export const AplSequenceStep: Story = {
-	args: ranLine([
-		{ kind: 'priority', index: 1 },
-		{ kind: 'step', index: 1 },
-	]),
-};
+export const AplSequenceStep: Story = { args: ranLine(SECOND_STEP) };
 
 /** A pre-pull line, with the time it happens at. */
 export const AplPrepull: Story = { args: ranLine([{ kind: 'prepull', index: 0 }]) };
 
 /** Sixty hits under a sequence line: the tooltip stops at 80% of the window's height and cuts off the last hits. */
 export const AplLineManyHits: Story = {
-	args: {
-		...ranLine([
-			{ kind: 'priority', index: 1 },
-			{ kind: 'step', index: 1 },
-		]),
-		log: castLog(12, {
-			aplLine: [
-				{ kind: 'priority', index: 1 },
-				{ kind: 'step', index: 1 },
-			],
-			damageDealtLogs: Array.from({ length: 60 }, (_, i) => chainHit(i % 3, 300 + i)),
-		}),
-	},
+	args: ranLine(SECOND_STEP, { damageDealtLogs: Array.from({ length: 60 }, (_, i) => chainHit(i % 3, 300 + i)) }),
 };

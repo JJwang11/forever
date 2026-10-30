@@ -1,8 +1,9 @@
 import { AplListItem } from '@features/apl/components/AplListItem';
 import { resolveAplLine } from '@features/apl/model/apl_line';
-import { APLAction, APLListItem, APLRotation, APLValue, APLValueCompare_ComparisonOperator as Op } from '@generated/proto/apl';
+import { APLListItem, APLRotation } from '@generated/proto/apl';
 import { SimHostProvider } from '@sim/context/SimHostContext';
 import type { AplLinePath } from '@sim/proto/combat_log';
+import { after, constant, sequence, waitFor } from '@testing/apl/builders';
 import { makePlayer } from '@testing/apl/player';
 import { source } from '@testing/apl/source';
 import { act, render, screen } from '@testing-library/react';
@@ -15,12 +16,6 @@ vi.mock('@sim/state/subscriptions', async () => {
 	return mockSubscriptions((await import('@testing/apl/source')).source.subscribe);
 });
 vi.mock('@i18n/config', () => ({ default: { t: (key: string) => key } }));
-
-const constant = (val: string) => APLValue.create({ value: { oneofKind: 'const', const: { val } } });
-const after = (val: string) =>
-	APLValue.create({ value: { oneofKind: 'cmp', cmp: { op: Op.OpGt, lhs: { value: { oneofKind: 'currentTime', currentTime: {} } }, rhs: constant(val) } } });
-const waitFor = (val: string) => APLAction.create({ action: { oneofKind: 'wait', wait: { duration: constant(val) } } });
-const sequence = (actions: Array<APLAction>) => APLAction.create({ action: { oneofKind: 'sequence', sequence: { name: 'opener', actions } } });
 
 /** Cast a spell once the fight is past 10 and 20 seconds: a row with an And condition. */
 const castWhen = () =>

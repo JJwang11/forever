@@ -12,7 +12,7 @@ export interface CastTooltipProps {
 	log: CastLog;
 	/** The casts drawn under this one's icon, ending with `log`; their damage is listed together. */
 	stack?: ReadonlyArray<CastLog>;
-	/** Absent for a run whose rotation was Auto or Simple. */
+	/** Absent while the run shown holds no rotation for the unit. */
 	aplRun?: AplRun;
 }
 
@@ -66,7 +66,7 @@ export const CastTooltip = ({ log, stack = [log], aplRun }: CastTooltipProps) =>
 					<span>{line.crumbs.map(crumbText).join(' › ')}</span>
 					<AplLineView line={line} />
 					<span className="text-muted">
-						{aplRun?.changed
+						{aplRun?.changed()
 							? i18n.t('results_tab.details.timeline.cast_tooltip.apl_line.changed_hint')
 							: i18n.t('results_tab.details.timeline.cast_tooltip.apl_line.open_hint')}
 					</span>

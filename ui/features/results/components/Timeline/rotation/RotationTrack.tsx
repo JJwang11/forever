@@ -1,6 +1,7 @@
-import { type AplRun, resolveAplLine } from '@features/apl/model/apl_line';
+import type { AplRun } from '@features/apl/model/apl_line';
 import { requestAplReveal } from '@features/apl/model/reveal';
 import { ROTATION_TAB_ID, useActivateTab } from '@features/hooks/useActivateTab';
+import { usePlayer } from '@sim/context/SimHostContext';
 import { observeElementRect, useVirtualizer } from '@tanstack/react-virtual';
 import { Tooltip } from '@ui-kit/Tooltip';
 import { cssVars } from '@ui-kit/utils/css';
@@ -34,8 +35,8 @@ import { DEFAULT_PPS, ZoomController } from './zoom';
 export interface RotationTrackProps {
 	model: RotationModel | null;
 	active: boolean;
-	/** Null for a run whose rotation was Auto or Simple. */
-	aplRun: AplRun | null;
+	/** Absent while the run shown holds no rotation for the unit. */
+	aplRun?: AplRun;
 }
 
 const NO_HIDDEN: ReadonlySet<string> = new Set();
@@ -384,17 +385,18 @@ export const RotationTrack = memo(({ model, active, aplRun }: RotationTrackProps
 	};
 
 	// Opens the line that launched the cast, as long as the rotation is still the one that ran and the tooltip
-	// can place the line in it. A pan's click never arrives: `onClickCapture` stops it first.
+	// can place the line in it. The line resolves in the player's rotation, which then holds the run's rows,
+	// because the editor matches its rows by identity. A pan's click never arrives: `onClickCapture` stops it first.
+	const simPlayer = usePlayer();
 	const activateTab = useActivateTab();
 	const onItemClick = (event: ReactMouseEvent<HTMLDivElement>) => {
-		if (!aplRun || aplRun.changed) return;
+		if (!aplRun || aplRun.changed()) return;
 		const element = (event.target as Element).closest<HTMLElement>('[data-item-index]');
 		const rowKey = element?.closest<HTMLElement>('[data-row-key]')?.dataset.rowKey;
 		const row = element && rowKey && model?.byKey.has(rowKey) ? rowFor(rowKey) : null;
 		const item = row && row.kind !== 'header' && row.kind !== 'separator' ? row.items[Number(element!.dataset.itemIndex)] : null;
-		if (item?.kind !== 'cast' || !item.log.aplLine || !resolveAplLine(aplRun.rotation, item.log.aplLine)) return;
-		activateTab(ROTATION_TAB_ID);
-		requestAplReveal(item.log.aplLine);
+		if (item?.kind !== 'cast' || !item.log.aplLine) return;
+		if (requestAplReveal(simPlayer.aplRotation, item.log.aplLine)) activateTab(ROTATION_TAB_ID);
 	};
 
 	// Horizontal cursor follow: a bar can be wider than the viewport, so its centre is no anchor.
@@ -485,7 +487,7 @@ export const RotationTrack = memo(({ model, active, aplRun }: RotationTrackProps
 			)}
 			{hoveredItem && (
 				<div ref={tooltipRef} data-testid="timeline-hover-tooltip" className="ui-timeline-hover-tooltip">
-					<RowItemTooltip item={hoveredItem} aplRun={aplRun ?? undefined} />
+					<RowItemTooltip item={hoveredItem} aplRun={aplRun} />
 				</div>
 			)}
 			<RotationRowsToolbar model={model} hidden={hidden} onToggle={onToggle} onShowAll={onShowAll} />
