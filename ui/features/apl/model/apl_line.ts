@@ -31,6 +31,8 @@ const stepsOf = (action: APLAction | undefined): APLAction[] | undefined => {
 	const impl = action?.action;
 	if (impl?.oneofKind === 'sequence') return impl.sequence.actions;
 	if (impl?.oneofKind === 'strictSequence') return impl.strictSequence.actions;
+	// A Schedule's inner action runs for the Schedule's own line, so the steps of a sequence inside it follow that line.
+	if (impl?.oneofKind === 'schedule') return stepsOf(impl.schedule.innerAction);
 	return undefined;
 };
 

@@ -75,6 +75,15 @@ describe('resolveAplLine', () => {
 		expect(resolved.steps).toEqual([1, 1]);
 	});
 
+	it('walks into a sequence a Schedule wraps', () => {
+		const scheduled = APLRotation.create({
+			priorityList: [item('s0', APLAction.create({ action: { oneofKind: 'schedule', schedule: { schedule: '0s', innerAction: sequence(3) } } }))],
+		});
+		const resolved = resolveAplLine(scheduled, parseAplLine('priority 1 > step 2')!)!;
+		expect(resolved.item).toBe(scheduled.priorityList[0]);
+		expect(resolved.steps).toEqual([1]);
+	});
+
 	it('names a prepull row', () => {
 		const resolved = resolve('prepull 1')!;
 		expect(resolved.pane).toBe('apl-priority-list');
