@@ -5,6 +5,7 @@
 		},
 		"SIML": {
 			"semantic_tokens": "combined",
+			"inlay_hints": { "enabled": true },
 			"tab_size": 2
 		}
 	}

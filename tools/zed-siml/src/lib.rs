@@ -1,4 +1,4 @@
-use zed_extension_api::{self as zed, LanguageServerId, Result};
+use zed_extension_api::{self as zed, serde_json, settings::LspSettings, LanguageServerId, Result};
 
 struct SimlExtension;
 
@@ -26,6 +26,26 @@ impl zed::Extension for SimlExtension {
             ],
             env: worktree.shell_env(),
         })
+    }
+
+    // The server's sim commands (a code action and a code lens that sim the rotation, and its rows' counts as inlay
+    // hints) are on, under what the user's `lsp.wowsims-siml.initialization_options` set: `simIterations`,
+    // `simSettingsFile`, or `simCommands: false`.
+    fn language_server_initialization_options(
+        &mut self,
+        language_server_id: &LanguageServerId,
+        worktree: &zed::Worktree,
+    ) -> Result<Option<serde_json::Value>> {
+        let mut options = serde_json::json!({ "simCommands": true });
+        let user = LspSettings::for_worktree(language_server_id.as_ref(), worktree)
+            .ok()
+            .and_then(|settings| settings.initialization_options);
+        if let (Some(serde_json::Value::Object(user)), Some(options)) =
+            (user, options.as_object_mut())
+        {
+            options.extend(user);
+        }
+        Ok(Some(options))
     }
 }
 

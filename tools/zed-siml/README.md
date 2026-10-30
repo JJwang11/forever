@@ -23,6 +23,20 @@ The repository's `.zed/settings.json` turns the server's semantic tokens on for 
 know on top, such as a spell, an aura, an item, an enum value or a unit. `languages/siml/semantic_token_rules.json`
 maps them to the theme.
 
+The extension starts the server with the initialization option `simCommands`, which turns the sims on. A sim reads
+the spec's `defaults.siml` and the one preset build that uses the rotation, as VS Code's does; Zed's settings may pass
+more, which the extension adds to its own:
+
+```json
+{
+	"lsp": {
+		"wowsims-siml": {
+			"initialization_options": { "simIterations": 5000, "simSettingsFile": "/path/to/exported.json" }
+		}
+	}
+}
+```
+
 A change to `src/lib.rs` or `extension.toml` takes effect after _zed: install dev extension_ again; a change to a
 query, `config.toml` or a snippet after the extension is rebuilt from the Extensions page.
 
@@ -43,9 +57,13 @@ query, `config.toml` or a snippet after the extension is rebuilt from the Extens
 - **The language server.** Diagnostics, completion, hover (a spell's row of the game files among it), go to
   definition, find references, rename, formatting (_editor: format_), code actions (`ctrl-.`), and links on `use`
   paths.
+- **Sims.** In an `.apl.siml`, `ctrl-.` offers _Sim this rotation_ and _Compare this rotation with the saved file, or
+  HEAD when nothing is unsaved_, as VS Code's Sim and Compare. A notification gives the DPS, and each row shows how
+  often it ran per fight at the end of its line until the text changes. The repository's `.zed/settings.json` turns
+  inlay hints on for SIML, which the counts are. With `"code_lens": "on"` in Zed's settings (a setting for every
+  language) the same two commands also sit above the first line, the last result in their titles.
 
-Zed extensions draw no panels, so the VS Code panel (the rotation as a tree, its forms and its sims) has no
-counterpart here. Raw JSON is not coloured as JSON: Zed lists an injected language's outline in the file's, and JSON's
+Zed extensions draw no panels, so the VS Code panel (the rotation as a tree and its forms) has no counterpart here. Raw JSON is not coloured as JSON: Zed lists an injected language's outline in the file's, and JSON's
 would list every key of a raw row.
 
 ## The grammar

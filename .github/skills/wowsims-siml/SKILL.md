@@ -49,7 +49,9 @@ send `.siml` documents (languageId `siml`). It answers completion, hover, defini
 symbols, folding, semantic tokens, formatting, code actions (quick fixes) and document links, and publishes
 diagnostics. Names complete from `sim/siml/names.json`, items from the database. In VS Code, `tools/vscode-apl`
 (built into `.vscode/extensions/wowsims-apl`) builds and starts the server itself; Zed's `tools/zed-siml` runs
-`go run ./sim/siml/lsp/launch`, which builds it and starts it in one command.
+`go run ./sim/siml/lsp/launch`, which builds it and starts it in one command. The initialization option
+`"simCommands": true` adds sims as code actions and lenses (`siml.sim`, `siml.compare`) with each row's runs per fight
+as inlay hints, for an editor with no panel (`sim/siml/lsp/commands.go`).
 
 ## Files
 

@@ -68,6 +68,14 @@ watchers dynamically, the server also watches the name table, the database and t
 The panel's `siml/*` requests (`siml/rotation`, `siml/sim`, ...) are custom and optional; a plain editor never sends
 them.
 
+An editor with no panel can sim through the protocol instead. With the initialization option `"simCommands": true`
+the server also offers, on an `.apl.siml` file, two `source` code actions and two code lenses on the first line that run
+the commands `siml.sim` and `siml.compare` (`executeCommandProvider`), as the panel's Sim and Compare run. It reports
+the run as `$/progress` where the client takes it, gives the result as a message, puts it in the lens's title, and
+shows how often each row ran per fight as an inlay hint after the row's line (`inlayHintProvider`) while the text is the
+one simmed. `simIterations` (1000) and `simSettingsFile` set what the panel's settings of those names set. The Zed
+extension turns it on; VS Code's client does not, as its panel sims.
+
 ## Highlighting
 
 An editor colours SIML in one of three ways, from the most to the least that it needs from us:
