@@ -475,47 +475,47 @@ var Spells = []Override{
 		Source:  "classic-carryover",
 	},
 
-	// Revenge's Attack Power share, the $APR its tooltip states on every rank: 0.25, or 0.225 in Defensive
-	// Stance, which is the stance's own 10% and so stays out of this value.
+	// Revenge's Attack Power share, the $APR its tooltip states: 0.225 in Defensive Stance is the stance's
+	// own 10%, which stays out of these values. Combat logs on Ranks 1 and 2 taken before that tooltip fit 0.28.
 	{
 		SpellID: 6572,
 		Field:   APCoefDirect,
-		Value:   0.25,
+		Value:   0.25, // TODO: Measure Revenge Rank 1 in game.
 		Reason:  "Revenge Rank 1: the tooltip's $APR outside Defensive Stance",
 		Source:  "tooltip",
 	},
 	{
 		SpellID: 6574,
 		Field:   APCoefDirect,
-		Value:   0.25,
+		Value:   0.25, // TODO: Measure Revenge Rank 2 in game.
 		Reason:  "Revenge Rank 2: the tooltip's $APR outside Defensive Stance",
 		Source:  "tooltip",
 	},
 	{
 		SpellID: 7379,
 		Field:   APCoefDirect,
-		Value:   0.25,
+		Value:   0.25, // TODO: Measure Revenge Rank 3 in game.
 		Reason:  "Revenge Rank 3: the tooltip's $APR outside Defensive Stance",
 		Source:  "tooltip",
 	},
 	{
 		SpellID: 11600,
 		Field:   APCoefDirect,
-		Value:   0.25,
+		Value:   0.25, // TODO: Measure Revenge Rank 4 in game.
 		Reason:  "Revenge Rank 4: the tooltip's $APR outside Defensive Stance",
 		Source:  "tooltip",
 	},
 	{
 		SpellID: 11601,
 		Field:   APCoefDirect,
-		Value:   0.25,
+		Value:   0.25, // TODO: Measure Revenge Rank 5 in game.
 		Reason:  "Revenge Rank 5: the tooltip's $APR outside Defensive Stance",
 		Source:  "tooltip",
 	},
 	{
 		SpellID: 25288,
 		Field:   APCoefDirect,
-		Value:   0.25,
+		Value:   0.25, // TODO: Measure Revenge Rank 6 in game.
 		Reason:  "Revenge Rank 6: the tooltip's $APR outside Defensive Stance",
 		Source:  "tooltip",
 	},
