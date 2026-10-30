@@ -23,6 +23,18 @@ func Format(path string, src []byte, names *Names, open Opener) ([]byte, error) 
 	}
 	var u *uses
 	if open != nil {
+		// The read and each round of the printer's read-back take the same used files: read each once.
+		texts, read := map[string][]byte{}, open
+		open = func(p string) ([]byte, error) {
+			if text, ok := texts[p]; ok {
+				return text, nil
+			}
+			text, err := read(p)
+			if err == nil {
+				texts[p] = text
+			}
+			return text, err
+		}
 		self := resolveUse("", path)
 		u = &uses{path: self, open: open, chain: []string{self}}
 	}

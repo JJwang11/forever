@@ -631,11 +631,7 @@ func (t *Names) Encode() []byte {
 		sections = append(sections, section{"icdOnlyItems", func(b *bytes.Buffer) {
 			names := slices.Sorted(maps.Keys(t.ICDOnlyItems))
 			for i, name := range names {
-				specs := slices.Sorted(slices.Values(t.ICDOnlyItems[name]))
-				for j, s := range specs {
-					specs[j] = quote(s)
-				}
-				fmt.Fprintf(b, "    %s: [%s]%s", quote(name), strings.Join(specs, ", "), comma(i, len(names)))
+				fmt.Fprintf(b, "    %s: [%s]%s", quote(name), specList(t.ICDOnlyItems[name]), comma(i, len(names)))
 			}
 		}})
 	}

@@ -39,7 +39,6 @@ type DatabaseCatalog struct {
 	spells      map[int32]string
 	spellIcons  map[int32][2]string // [name, icon], for the rotation panel.
 	itemIcons   map[int32][2]string // [name, icon]: a gear item's own over its item icon's.
-	enchants    []CatalogEnchant
 	rows        map[int32][]CatalogEnchant
 	suffixes    map[int32]CatalogSuffix
 	itemSuffix  map[int32][]int32
@@ -98,7 +97,6 @@ func ReadCatalog(root string) *DatabaseCatalog {
 				EffectID: e.EffectId, Name: e.Name, Type: e.Type, EnchantType: e.EnchantType, ExtraTypes: e.ExtraTypes,
 				SpellID: e.SpellId, ItemID: e.ItemId,
 			}
-			c.enchants = append(c.enchants, row)
 			c.rows[e.EffectId] = append(c.rows[e.EffectId], row)
 		}
 		for _, s := range db.RandomSuffixes {
@@ -149,8 +147,6 @@ func (c *DatabaseCatalog) SpellIcons() map[int32][2]string { return c.spellIcons
 
 // Item names and icons by id, [name, icon]: a gear item's own, else its item icon's.
 func (c *DatabaseCatalog) ItemIcons() map[int32][2]string { return c.itemIcons }
-
-func (c *DatabaseCatalog) Enchants() []CatalogEnchant { return c.enchants }
 
 func (c *DatabaseCatalog) Suffixes(itemID int32) []int32 { return c.itemSuffix[itemID] }
 
