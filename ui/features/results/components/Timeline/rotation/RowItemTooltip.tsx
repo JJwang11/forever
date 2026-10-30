@@ -1,4 +1,4 @@
-import type { AplRun } from '@features/apl/model/apl_line';
+import type { AplRun } from '@features/apl/model/apl_entry';
 
 import type { RowItem } from '../../../model/timeline/rotation';
 import { ResourceTooltip } from '../tooltips/ResourceTooltip';

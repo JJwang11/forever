@@ -1,5 +1,5 @@
-import { AplLineView } from '@features/apl/components/AplLineView';
-import { type AplRun, resolveAplLine, type ResolvedAplLine } from '@features/apl/model/apl_line';
+import { AplEntryView } from '@features/apl/components/AplEntryView';
+import { type AplRun, resolveAplEntry, type ResolvedAplEntry } from '@features/apl/model/apl_entry';
 import i18n from '@i18n/config';
 import { useSim } from '@sim/context/SimHostContext';
 import { useDisplayMetrics } from '@sim/hooks/useDisplayMetrics';
@@ -16,24 +16,24 @@ export interface CastTooltipProps {
 	aplRun?: AplRun;
 }
 
-const crumbText = (crumb: ResolvedAplLine['crumbs'][number]) => {
+const crumbText = (crumb: ResolvedAplEntry['crumbs'][number]) => {
 	const position = crumb.index + 1;
 	switch (crumb.kind) {
 		case 'prepull':
-			return i18n.t('results_tab.details.timeline.cast_tooltip.apl_line.prepull', { position });
+			return i18n.t('results_tab.details.timeline.cast_tooltip.apl_entry.prepull', { position });
 		case 'priority':
-			return i18n.t('results_tab.details.timeline.cast_tooltip.apl_line.priority', { position });
+			return i18n.t('results_tab.details.timeline.cast_tooltip.apl_entry.priority', { position });
 		case 'group':
-			return i18n.t('results_tab.details.timeline.cast_tooltip.apl_line.group', { group: crumb.groupName, position });
+			return i18n.t('results_tab.details.timeline.cast_tooltip.apl_entry.group', { group: crumb.groupName, position });
 		case 'step':
-			return i18n.t('results_tab.details.timeline.cast_tooltip.apl_line.step', { position });
+			return i18n.t('results_tab.details.timeline.cast_tooltip.apl_entry.step', { position });
 	}
 };
 
 export const CastTooltip = ({ log, stack = [log], aplRun }: CastTooltipProps) => {
 	const { threat: showThreatMetrics } = useDisplayMetrics(useSim());
 	const rotation = aplRun?.rotation;
-	const line = useMemo(() => (rotation && log.aplLine ? resolveAplLine(rotation, log.aplLine) : null), [rotation, log.aplLine]);
+	const entry = useMemo(() => (rotation && log.aplEntryPath ? resolveAplEntry(rotation, log.aplEntryPath) : null), [rotation, log.aplEntryPath]);
 	const travelTime = log.travelTime == 0 ? '' : ` ${i18n.t('results_tab.details.timeline.cast_tooltip.travel_time', { time: log.travelTime.toFixed(2) })}`;
 	// Two casts at the same timestamp can hand all of their damage to the later one, so the stack's
 	// damage is one list rather than one per cast.
@@ -97,16 +97,16 @@ export const CastTooltip = ({ log, stack = [log], aplRun }: CastTooltipProps) =>
 					))}
 				</ul>
 			)}
-			{line && (
+			{entry && (
 				<div className="ui-timeline-tooltip-apl">
-					<span>{line.crumbs.map(crumbText).join(' › ')}</span>
+					<span>{entry.crumbs.map(crumbText).join(' › ')}</span>
 					<div className="ui-timeline-tooltip-apl-preview">
-						<AplLineView line={line} />
+						<AplEntryView entry={entry} />
 					</div>
 					<span className="text-muted">
 						{aplRun?.changed()
-							? i18n.t('results_tab.details.timeline.cast_tooltip.apl_line.changed_hint')
-							: i18n.t('results_tab.details.timeline.cast_tooltip.apl_line.open_hint')}
+							? i18n.t('results_tab.details.timeline.cast_tooltip.apl_entry.changed_hint')
+							: i18n.t('results_tab.details.timeline.cast_tooltip.apl_entry.open_hint')}
 					</span>
 				</div>
 			)}

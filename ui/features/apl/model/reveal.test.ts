@@ -46,14 +46,14 @@ describe('requestAplReveal', () => {
 		expect(sent[0].item).toBe(rotation.groups[0].actions[0]);
 	});
 
-	it('sends a repeat of the same line again', () => {
+	it('sends a repeat of the same entry again', () => {
 		requestAplReveal(rotation, [{ kind: 'priority', index: 0 }]);
 		requestAplReveal(rotation, [{ kind: 'priority', index: 0 }]);
 
 		expect(sent).toHaveLength(2);
 	});
 
-	it('sends nothing for a line the rotation no longer holds', () => {
+	it('sends nothing for an entry the rotation no longer holds', () => {
 		expect(requestAplReveal(rotation, [{ kind: 'priority', index: 5 }])).toBe(false);
 		expect(sent).toEqual([]);
 	});

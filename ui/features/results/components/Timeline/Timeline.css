@@ -46,7 +46,7 @@
 			@apply flex items-center gap-2 whitespace-nowrap;
 		}
 
-		/* The hits give way to the APL line below them, so a cast with many hits still shows its line. */
+		/* The hits give way to the APL entry below them, so a cast with many hits still shows its entry. */
 		& .ui-timeline-tooltip-hits {
 			@apply flex min-h-0 flex-col overflow-hidden;
 		}

@@ -2,7 +2,7 @@ import { AplListItem, type HideableAction } from '@features/apl/components/AplLi
 import { doAtConfig } from '@features/apl/components/PrePullList/do_at';
 import { ValuePicker } from '@features/apl/components/ValuePicker';
 import { AplProvider } from '@features/apl/context/AplContext';
-import type { ResolvedAplLine } from '@features/apl/model/apl_line';
+import type { ResolvedAplEntry } from '@features/apl/model/apl_entry';
 import type { InputConfig } from '@features/inputs/input';
 import { APLListItem, APLPrepullAction } from '@generated/proto/apl';
 import { usePlayer } from '@sim/context/SimHostContext';
@@ -15,13 +15,13 @@ const neverChanges = () => never;
 const ignore = () => {};
 
 /**
- * One APL line as the editor draws it, at full contrast, that nothing can change. The pickers write to a clone of
- * the line, and some of their paths still call `touchRotation` or write `valueVariables`; `inert`, with the
+ * One APL entry as the editor draws it, at full contrast, that nothing can change. The pickers write to a clone of
+ * the entry, and some of their paths still call `touchRotation` or write `valueVariables`; `inert`, with the
  * tooltip's `pointer-events-none`, keeps every picker shut so the rotation it came from stays as it ran.
  * The height is capped at three picker rows and starts at the marked step of a sequence, so the step that fired
- * shows; only a line cut off below fades out at the bottom.
+ * shows; only an entry cut off below fades out at the bottom.
  */
-const AplLineViewImpl = ({ line }: { line: ResolvedAplLine }) => {
+const AplEntryViewImpl = ({ entry }: { entry: ResolvedAplEntry }) => {
 	const player = usePlayer();
 	const root = useRef<HTMLDivElement>(null);
 	const [clipped, setClipped] = useState(false);
@@ -38,13 +38,13 @@ const AplLineViewImpl = ({ line }: { line: ResolvedAplLine }) => {
 		observer.observe(element);
 		return () => observer.disconnect();
 	}, []);
-	const prepull = line.kind === 'prepull';
+	const prepull = entry.kind === 'prepull';
 	const { item, doAt } = useMemo(() => {
-		const clone = prepull ? APLPrepullAction.clone(line.item as APLPrepullAction) : APLListItem.clone(line.item as APLListItem);
+		const clone = prepull ? APLPrepullAction.clone(entry.item as APLPrepullAction) : APLListItem.clone(entry.item as APLListItem);
 		const item: InputConfig<Player<any>, HideableAction> = { getValue: () => clone, setValue: ignore };
 		const doAt = prepull ? <ValuePicker player={player} config={doAtConfig(() => (clone as APLPrepullAction).doAtValue, ignore)} /> : undefined;
 		return { item, doAt };
-	}, [line.item, prepull, player]);
+	}, [entry.item, prepull, player]);
 
 	return (
 		<div
@@ -52,13 +52,16 @@ const AplLineViewImpl = ({ line }: { line: ResolvedAplLine }) => {
 			inert
 			data-clipped={clipped ? '' : undefined}
 			className="max-h-24 overflow-hidden data-clipped:mask-linear-180 data-clipped:mask-linear-from-16 data-clipped:mask-linear-to-24"
-			data-testid="apl-line-view">
-			<AplProvider changeSource={neverChanges} isPrepull={prepull} isGroup={line.kind === 'group'} markedSteps={line.steps}>
+			data-testid="apl-entry-view">
+			<AplProvider changeSource={neverChanges} isPrepull={prepull} isGroup={entry.kind === 'group'} markedSteps={entry.steps}>
 				<AplListItem player={player} config={item} leading={doAt} />
 			</AplProvider>
 		</div>
 	);
 };
 
-// A line resolved again for the same cast is a new object around the same row of the run's rotation.
-export const AplLineView = memo(AplLineViewImpl, (prev, next) => prev.line.item === next.line.item && shallowArrayEquals(prev.line.steps, next.line.steps));
+// An entry resolved again for the same cast is a new object around the same row of the run's rotation.
+export const AplEntryView = memo(
+	AplEntryViewImpl,
+	(prev, next) => prev.entry.item === next.entry.item && shallowArrayEquals(prev.entry.steps, next.entry.steps),
+);

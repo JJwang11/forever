@@ -1,5 +1,5 @@
 import { APLAction, APLRotation } from '@generated/proto/apl';
-import { type AplLinePath, type CastLog, Entity } from '@sim/proto/combat_log';
+import { type AplEntryPath, type CastLog, Entity } from '@sim/proto/combat_log';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { after, constant, sequence, waitFor } from '@testing/apl/builders';
 import { makeAplStoryPlayer } from '@testing/storybook/fixtures/apl';
@@ -20,7 +20,7 @@ const meta = {
 				<Story />
 			</div>
 		),
-		// The APL player answers the reads the drawn line's pickers make.
+		// The APL player answers the reads the drawn entry's pickers make.
 		withSimHost({ ...resultsHostParts(null), player: makeAplStoryPlayer() }),
 	],
 } satisfies Meta<typeof CastTooltip>;
@@ -65,33 +65,33 @@ const rotation = APLRotation.create({
 	groups: [{ name: 'execute', actions: [{ action: waitFor('1s') }, { action: waitFor('2s', after('20s')) }], variables: [] }],
 });
 
-const IN_GROUP: AplLinePath = [
+const IN_GROUP: AplEntryPath = [
 	{ kind: 'priority', index: 0 },
 	{ kind: 'group', group: 0, index: 1 },
 ];
-const SECOND_STEP: AplLinePath = [
+const SECOND_STEP: AplEntryPath = [
 	{ kind: 'priority', index: 1 },
 	{ kind: 'step', index: 1 },
 ];
 
-const ranLine = (aplLine: AplLinePath, { changed = false, ...overrides }: Partial<CastLog> & { changed?: boolean } = {}) => ({
-	log: castLog(12, { aplLine, ...overrides }),
+const ranEntry = (aplEntryPath: AplEntryPath, { changed = false, ...overrides }: Partial<CastLog> & { changed?: boolean } = {}) => ({
+	log: castLog(12, { aplEntryPath, ...overrides }),
 	aplRun: { rotation, changed: () => changed },
 });
 
-/** A cast from the second line of a group, with the path that reached it and the click hint. */
-export const AplLine: Story = { args: ranLine(IN_GROUP) };
+/** A cast from the second entry of a group, with the path that reached it and the click hint. */
+export const AplEntry: Story = { args: ranEntry(IN_GROUP) };
 
-/** The rotation was edited after the run: the line is drawn as it ran, and the hint says it changed. */
-export const AplLineChanged: Story = { args: ranLine(IN_GROUP, { changed: true }) };
+/** The rotation was edited after the run: the entry is drawn as it ran, and the hint says it changed. */
+export const AplEntryChanged: Story = { args: ranEntry(IN_GROUP, { changed: true }) };
 
 /** The second step of a sequence fired, so the whole sequence is drawn with that step marked. */
-export const AplSequenceStep: Story = { args: ranLine(SECOND_STEP) };
+export const AplSequenceStep: Story = { args: ranEntry(SECOND_STEP) };
 
-/** A pre-pull line, with the time it happens at. */
-export const AplPrepull: Story = { args: ranLine([{ kind: 'prepull', index: 0 }]) };
+/** A pre-pull entry, with the time it happens at. */
+export const AplPrepull: Story = { args: ranEntry([{ kind: 'prepull', index: 0 }]) };
 
-/** Sixty hits under a sequence line: the tooltip stops at 80% of the window's height and cuts off the last hits. */
-export const AplLineManyHits: Story = {
-	args: ranLine(SECOND_STEP, { damageDealtLogs: Array.from({ length: 60 }, (_, i) => chainHit(i % 3, 300 + i)) }),
+/** Sixty hits under a sequence entry: the tooltip stops at 80% of the window's height and cuts off the last hits. */
+export const AplEntryManyHits: Story = {
+	args: ranEntry(SECOND_STEP, { damageDealtLogs: Array.from({ length: 60 }, (_, i) => chainHit(i % 3, 300 + i)) }),
 };

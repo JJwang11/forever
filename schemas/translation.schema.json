@@ -8916,7 +8916,7 @@
 										"total": {
 											"type": "string"
 										},
-										"apl_line": {
+										"apl_entry": {
 											"type": "object",
 											"properties": {
 												"prepull": {
@@ -8951,7 +8951,7 @@
 										"stack_at",
 										"stack_range",
 										"total",
-										"apl_line"
+										"apl_entry"
 									],
 									"additionalProperties": false
 								},

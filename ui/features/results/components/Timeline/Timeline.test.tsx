@@ -1,4 +1,4 @@
-import type { AplRun } from '@features/apl/model/apl_line';
+import type { AplRun } from '@features/apl/model/apl_entry';
 import { RaidSimRequest } from '@generated/proto/api';
 import { APLRotation, APLRotation_Type } from '@generated/proto/apl';
 import type { AplTestPlayer } from '@testing/apl/player';

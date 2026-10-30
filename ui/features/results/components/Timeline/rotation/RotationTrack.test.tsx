@@ -1,10 +1,10 @@
-import type { AplRun } from '@features/apl/model/apl_line';
+import type { AplRun } from '@features/apl/model/apl_entry';
 import { type AplRevealRequest, aplReveals } from '@features/apl/model/reveal';
 import { TabActivationContext } from '@features/hooks/useActivateTab';
 import type { RowItem } from '@features/results/model/timeline/rotation';
 import { APLListItem, APLRotation } from '@generated/proto/apl';
 import { SimHostProvider } from '@sim/context/SimHostContext';
-import type { AplLinePath } from '@sim/proto/combat_log';
+import type { AplEntryPath } from '@sim/proto/combat_log';
 import { fakeHost } from '@testing/sim/fake_host';
 import { mockSubscriptions } from '@testing/sim/subscriptions';
 import { castItem, castRow, rotationModel } from '@testing/timeline_rotation';
@@ -174,13 +174,15 @@ describe('RotationTrack', () => {
 	});
 
 	describe('clicking a cast', () => {
-		const LINE: AplLinePath = [{ kind: 'priority', index: 2 }];
-		const lined = (start: number, end: number, aplLine: AplLinePath | null): RowItem => {
+		const ENTRY_PATH: AplEntryPath = [{ kind: 'priority', index: 2 }];
+		const withEntryPath = (start: number, end: number, aplEntryPath: AplEntryPath | null): RowItem => {
 			const item = castItem(start, end) as Extract<RowItem, { kind: 'cast' }>;
-			return { ...item, log: { ...item.log, aplLine } } as RowItem;
+			return { ...item, log: { ...item.log, aplEntryPath } } as RowItem;
 		};
-		const UNPLACED: AplLinePath = [{ kind: 'priority', index: 7 }];
-		const LINED = rotationModel([castRow('cast:a', 'Alpha', [lined(0, 1, LINE), lined(2, 3, null), lined(4, 5, UNPLACED)])]);
+		const UNPLACED: AplEntryPath = [{ kind: 'priority', index: 7 }];
+		const WITH_ENTRY_PATHS = rotationModel([
+			castRow('cast:a', 'Alpha', [withEntryPath(0, 1, ENTRY_PATH), withEntryPath(2, 3, null), withEntryPath(4, 5, UNPLACED)]),
+		]);
 		const run = (changed: boolean): AplRun => ({ rotation: ROTATION, changed: () => changed });
 		const casts = (container: HTMLElement) => container.querySelectorAll('[data-row-key="cast:a"] [data-testid="rotation-item-cast"]');
 		let revealed: Array<AplRevealRequest>;
@@ -194,8 +196,8 @@ describe('RotationTrack', () => {
 
 		afterEach(() => off());
 
-		it('opens the Rotation tab on the line that cast it', async () => {
-			const { container } = await mount(LINED, run(false));
+		it('opens the Rotation tab on the entry that cast it', async () => {
+			const { container } = await mount(WITH_ENTRY_PATHS, run(false));
 
 			fireEvent.click(casts(container)[0]);
 
@@ -204,8 +206,8 @@ describe('RotationTrack', () => {
 			expect(revealed[0].item).toBe(ROTATION.priorityList[2]);
 		});
 
-		it('does nothing for a cast no line launched, a rotation changed since the run, or the end of a pan', async () => {
-			const unchanged = await mount(LINED, run(false));
+		it('does nothing for a cast no entry launched, a rotation changed since the run, or the end of a pan', async () => {
+			const unchanged = await mount(WITH_ENTRY_PATHS, run(false));
 			fireEvent.click(casts(unchanged.container)[1]);
 
 			const cast = casts(unchanged.container)[0];
@@ -215,15 +217,15 @@ describe('RotationTrack', () => {
 			fireEvent.click(cast);
 			unchanged.unmount();
 
-			const changed = await mount(LINED, run(true));
+			const changed = await mount(WITH_ENTRY_PATHS, run(true));
 			fireEvent.click(casts(changed.container)[0]);
 
 			expect(activateTab).not.toHaveBeenCalled();
 			expect(revealed).toEqual([]);
 		});
 
-		it('does nothing for a cast whose line the run rotation cannot place, as its tooltip shows none', async () => {
-			const { container } = await mount(LINED, run(false));
+		it('does nothing for a cast whose entry the run rotation cannot place, as its tooltip shows none', async () => {
+			const { container } = await mount(WITH_ENTRY_PATHS, run(false));
 
 			fireEvent.click(casts(container)[2]);
 

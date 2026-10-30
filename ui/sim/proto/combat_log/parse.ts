@@ -3,7 +3,7 @@ import type { SpellSchool } from '@generated/proto/common';
 
 import { ActionId } from '../action_id';
 import { stringToResourceType } from '../names';
-import { parseAplLine } from './apl_line';
+import { parseAplEntryPath } from './apl_entry_path';
 import {
 	AuraLog,
 	AuraStacksLog,
@@ -176,7 +176,7 @@ function buildCastBeganLog(log: PendingLog, match: RegExpExecArray): CastBeganLo
 	out.castTime = parseDuration(match[3], match[4]);
 	out.gcd = parseDuration(match[5], match[6]);
 	out.effectiveTime = parseDuration(match[7], match[8]);
-	out.aplLine = match[9] ? parseAplLine(match[9]) : null;
+	out.aplEntryPath = match[9] ? parseAplEntryPath(match[9]) : null;
 	return out;
 }
 

@@ -131,7 +131,7 @@ describes: a new selector with no source change behind it is a class leaking in 
 
 happy-dom applies the `inert` attribute to focus only. A click inside an inert subtree still reaches its handlers in a
 unit test, so such a test asserts `inert` and the refused focus, and a real browser checks that clicks are blocked.
-`AplLineView` (`ui/features/apl/components/AplLineView/`) is the case that hit it.
+`AplEntryView` (`ui/features/apl/components/AplEntryView/`) is the case that hit it.
 
 ## A fresh checkout needs generated files first
 

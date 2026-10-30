@@ -1,15 +1,15 @@
 import { AplListItem } from '@features/apl/components/AplListItem';
-import { resolveAplLine } from '@features/apl/model/apl_line';
+import { resolveAplEntry } from '@features/apl/model/apl_entry';
 import { APLListItem, APLRotation } from '@generated/proto/apl';
 import { SimHostProvider } from '@sim/context/SimHostContext';
-import type { AplLinePath } from '@sim/proto/combat_log';
+import type { AplEntryPath } from '@sim/proto/combat_log';
 import { after, constant, sequence, waitFor } from '@testing/apl/builders';
 import { makePlayer } from '@testing/apl/player';
 import { source } from '@testing/apl/source';
 import { act, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
 
-import { AplLineView } from './AplLineView';
+import { AplEntryView } from './AplEntryView';
 
 vi.mock('@sim/state/subscriptions', async () => {
 	const { mockSubscriptions } = await import('@testing/sim/subscriptions');
@@ -35,14 +35,14 @@ const setup = (rotation: APLRotation) => {
 	player = makePlayer(rotation, notify);
 };
 
-const mount = (path: AplLinePath) =>
+const mount = (path: AplEntryPath) =>
 	render(
 		<SimHostProvider host={{ player, rootElem: document.body } as never}>
-			<AplLineView line={resolveAplLine(player.aplRotation, path)!} />
+			<AplEntryView entry={resolveAplEntry(player.aplRotation, path)!} />
 		</SimHostProvider>,
 	);
 
-const view = () => screen.getByTestId('apl-line-view');
+const view = () => screen.getByTestId('apl-entry-view');
 const rowText = (root: ParentNode) => root.querySelector('[data-testid="apl-list-item-picker-root"]')!.textContent;
 const inputValues = (root: Element) => Array.from(root.querySelectorAll('input')).map(input => input.value);
 
@@ -50,7 +50,7 @@ beforeEach(() => {
 	document.body.innerHTML = '';
 });
 
-describe('AplLineView', () => {
+describe('AplEntryView', () => {
 	it('draws a Cast Spell row with an And condition as the editor row draws it', async () => {
 		setup(APLRotation.create({ priorityList: [castWhen()] }));
 		const editor = render(

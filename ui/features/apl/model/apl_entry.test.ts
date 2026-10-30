@@ -1,10 +1,10 @@
 import { RaidSimRequest } from '@generated/proto/api';
 import { APLAction, APLListItem, APLRotation, APLRotation_Type } from '@generated/proto/apl';
-import { parseAplLine } from '@sim/proto/combat_log';
+import { parseAplEntryPath } from '@sim/proto/combat_log';
 import type { SimResult, UnitMetrics } from '@sim/proto/sim_result';
 import { describe, expect, it } from 'vitest';
 
-import { resolveAplLine, runRotation } from './apl_line';
+import { resolveAplEntry, runRotation } from './apl_entry';
 
 const item = (notes: string, action?: APLAction) => APLListItem.create({ notes, action });
 const sequence = (count: number, nested?: APLAction): APLAction =>
@@ -28,9 +28,9 @@ const rotation = APLRotation.create({
 	],
 });
 
-const resolve = (text: string) => resolveAplLine(rotation, parseAplLine(text)!);
+const resolve = (text: string) => resolveAplEntry(rotation, parseAplEntryPath(text)!);
 
-describe('resolveAplLine', () => {
+describe('resolveAplEntry', () => {
 	it('names a priority row', () => {
 		const resolved = resolve('priority 2')!;
 		expect(resolved.kind).toBe('priority');
@@ -85,7 +85,7 @@ describe('resolveAplLine', () => {
 		const scheduled = APLRotation.create({
 			priorityList: [item('s0', APLAction.create({ action: { oneofKind: 'schedule', schedule: { schedule: '0s', innerAction: sequence(3) } } }))],
 		});
-		const resolved = resolveAplLine(scheduled, parseAplLine('priority 1 > step 2')!)!;
+		const resolved = resolveAplEntry(scheduled, parseAplEntryPath('priority 1 > step 2')!)!;
 		expect(resolved.item).toBe(scheduled.priorityList[0]);
 		expect(resolved.steps).toEqual([1]);
 	});

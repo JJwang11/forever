@@ -1,4 +1,4 @@
-import { type AplRun, runRotation } from '@features/apl/model/apl_line';
+import { type AplRun, runRotation } from '@features/apl/model/apl_entry';
 import { APLRotation } from '@generated/proto/apl';
 import i18n from '@i18n/config';
 import { usePlayer } from '@sim/context/SimHostContext';

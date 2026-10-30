@@ -1,5 +1,5 @@
 import type { APLAction, APLListItem, APLPrepullAction, APLRotation } from '@generated/proto/apl';
-import type { AplLinePath, AplLineSegment } from '@sim/proto/combat_log';
+import type { AplEntryPath, AplEntrySegment } from '@sim/proto/combat_log';
 import type { SimResult, UnitMetrics } from '@sim/proto/sim_result';
 import { MAX_PARTY_SIZE } from '@sim/raid/party';
 
@@ -13,26 +13,26 @@ export interface AplRun {
 	readonly changed: () => boolean;
 }
 
-/** The rotation the run's request carried for `player`. An Auto or Simple run carries one too, but its casts name no line. */
+/** The rotation the run's request carried for `player`. An Auto or Simple run carries one too, but its casts name no entry path. */
 export function runRotation(result: SimResult, player: UnitMetrics): APLRotation | undefined {
 	return result.request.raid?.parties[Math.floor(player.index / MAX_PARTY_SIZE)]?.players[player.index % MAX_PARTY_SIZE]?.rotation;
 }
 
-export interface ResolvedAplLine {
-	readonly kind: Exclude<AplLineSegment['kind'], 'step'>;
+export interface ResolvedAplEntry {
+	readonly kind: Exclude<AplEntrySegment['kind'], 'step'>;
 	readonly item: APLListItem | APLPrepullAction;
 	/** The indexes of the steps after the row, outermost first. */
 	readonly steps: ReadonlyArray<number>;
 	/** The actions those steps name, in the same order. */
 	readonly stepActions: ReadonlyArray<APLAction>;
-	readonly crumbs: ReadonlyArray<AplLineSegment & { readonly groupName?: string }>;
+	readonly crumbs: ReadonlyArray<AplEntrySegment & { readonly groupName?: string }>;
 }
 
 const stepsOf = (action: APLAction | undefined): APLAction[] | undefined => {
 	const impl = action?.action;
 	if (impl?.oneofKind === 'sequence') return impl.sequence.actions;
 	if (impl?.oneofKind === 'strictSequence') return impl.strictSequence.actions;
-	// A Schedule's inner action runs for the Schedule's own line, so the steps of a sequence inside it follow that line.
+	// A Schedule's inner action runs for the Schedule's own entry path, so the steps of a sequence inside it follow that entry path.
 	if (impl?.oneofKind === 'schedule') return stepsOf(impl.schedule.innerAction);
 	return undefined;
 };
@@ -41,8 +41,8 @@ const stepsOf = (action: APLAction | undefined): APLAction[] | undefined => {
  * The editor row a cast's path names, taken from the last segment that is not a step, with the steps after it.
  * Null when any segment no longer fits the rotation, a step included.
  */
-export function resolveAplLine(rotation: APLRotation, path: AplLinePath): ResolvedAplLine | null {
-	let row: { item: APLListItem | APLPrepullAction; kind: ResolvedAplLine['kind'] } | undefined;
+export function resolveAplEntry(rotation: APLRotation, path: AplEntryPath): ResolvedAplEntry | null {
+	let row: { item: APLListItem | APLPrepullAction; kind: ResolvedAplEntry['kind'] } | undefined;
 	let action: APLAction | undefined;
 	let steps: number[] = [];
 	let stepActions: APLAction[] = [];

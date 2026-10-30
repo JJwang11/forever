@@ -1,1 +1,1 @@
-export { AplLineView } from './AplLineView';
+export { AplEntryView } from './AplEntryView';

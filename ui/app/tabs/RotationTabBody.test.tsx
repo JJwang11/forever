@@ -61,7 +61,7 @@ describe('RotationTabBody APL sub-tabs', () => {
 	const panes = (container: HTMLElement) => [...container.querySelectorAll<HTMLElement>('[data-testid="tab-pane"]')];
 	const openPane = (container: HTMLElement) => panes(container).find(pane => !pane.hidden)?.id;
 
-	it('opens Action Groups for a group line and Priority List for a priority line', async () => {
+	it('opens Action Groups for a group entry and Priority List for a priority entry', async () => {
 		const { container } = renderWithHost(<RotationTabBody rotationType={APLRotationType.TypeAPL} />, {
 			player: { aplRotation: rotation, hasSimpleRotationGenerator: () => false },
 		});

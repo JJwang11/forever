@@ -1,12 +1,12 @@
 import type { APLAction, APLListItem, APLPrepullAction, APLRotation } from '@generated/proto/apl';
-import type { AplLinePath } from '@sim/proto/combat_log';
+import type { AplEntryPath } from '@sim/proto/combat_log';
 import { Emitter } from '@sim/state/events';
 
-import { resolveAplLine, type ResolvedAplLine } from './apl_line';
+import { resolveAplEntry, type ResolvedAplEntry } from './apl_entry';
 
-/** A cast's line to open in the Rotation tab: its row and the steps down to the one that fired, as objects of the live rotation. */
+/** A cast's entry to open in the Rotation tab: its row and the steps down to the one that fired, as objects of the live rotation. */
 export interface AplRevealRequest {
-	readonly kind: ResolvedAplLine['kind'];
+	readonly kind: ResolvedAplEntry['kind'];
 	readonly item: APLListItem | APLPrepullAction;
 	readonly steps: ReadonlyArray<APLAction>;
 }
@@ -15,12 +15,12 @@ export interface AplRevealRequest {
 export const aplReveals = new Emitter<AplRevealRequest>();
 
 /**
- * Sends the line `path` names in `rotation`, the player's own, to the Rotation tab, whose rows find themselves
+ * Sends the entry `path` names in `rotation`, the player's own, to the Rotation tab, whose rows find themselves
  * in it by identity. False, with nothing sent, when the path no longer fits the rotation.
  */
-export function requestAplReveal(rotation: APLRotation, path: AplLinePath): boolean {
-	const line = resolveAplLine(rotation, path);
-	if (!line) return false;
-	aplReveals.emit({ kind: line.kind, item: line.item, steps: line.stepActions });
+export function requestAplReveal(rotation: APLRotation, path: AplEntryPath): boolean {
+	const entry = resolveAplEntry(rotation, path);
+	if (!entry) return false;
+	aplReveals.emit({ kind: entry.kind, item: entry.item, steps: entry.stepActions });
 	return true;
 }

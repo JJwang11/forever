@@ -2517,7 +2517,7 @@
 					"stack_at": "{{casts}} casts at {{time}}s",
 					"stack_range": "{{casts}} casts from {{start}}s to {{end}}s",
 					"total": "Total: {{total}} ({{dpet}} DPET)",
-					"apl_line": {
+					"apl_entry": {
 						"prepull": "Prepull #{{position}}",
 						"priority": "Priority list #{{position}}",
 						"group": "Group {{group}} › #{{position}}",

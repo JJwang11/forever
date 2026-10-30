@@ -1,7 +1,7 @@
 export { computeActionIdAsString, matchTimestampPrefix, parseAll, rawWithoutTimestamp } from './parse';
 export { buildAuraUptimes, buildCastLogs, buildDpsLogs, buildResourceGroups, buildThreatGroups, populateActiveAuras } from './derive';
-export { parseAplLine } from './apl_line';
-export type { AplLinePath, AplLineSegment } from './apl_line';
+export { parseAplEntryPath } from './apl_entry_path';
+export type { AplEntryPath, AplEntrySegment } from './apl_entry_path';
 export {
 	Entity,
 	formattedTimestamp,

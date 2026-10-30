@@ -1,12 +1,12 @@
-import { AplLineView } from '@features/apl/components/AplLineView';
+import { AplEntryView } from '@features/apl/components/AplEntryView';
 import { GroupList } from '@features/apl/components/GroupList';
 import { PriorityPane } from '@features/apl/components/PriorityPane';
-import { resolveAplLine } from '@features/apl/model/apl_line';
+import { resolveAplEntry } from '@features/apl/model/apl_entry';
 import { aplClipToText } from '@features/apl/model/clipboard';
 import { requestAplReveal } from '@features/apl/model/reveal';
 import { APLAction, APLGroup, APLListItem, APLPrepullAction, APLRotation, APLValue } from '@generated/proto/apl';
 import { SimHostProvider } from '@sim/context/SimHostContext';
-import type { AplLinePath } from '@sim/proto/combat_log';
+import type { AplEntryPath } from '@sim/proto/combat_log';
 import { dragEvent, FakeIntersectionObserver, place } from '@testing/apl/dom';
 import { makePlayer } from '@testing/apl/player';
 import { source } from '@testing/apl/source';
@@ -568,7 +568,7 @@ describe('AplList on the action groups pane', () => {
 	});
 });
 
-describe('AplList opening the line a cast was clicked for', () => {
+describe('AplList opening the entry a cast was clicked for', () => {
 	const toggle = (element: HTMLElement) =>
 		act(() => {
 			fireEvent.click(within(element).getAllByRole('button', { name: TOGGLE })[0]);
@@ -586,7 +586,7 @@ describe('AplList opening the line a cast was clicked for', () => {
 
 	afterEach(() => vi.useRealTimers());
 
-	const reveal = (...path: AplLinePath) =>
+	const reveal = (...path: AplEntryPath) =>
 		act(() => {
 			requestAplReveal(player.aplRotation, path);
 		});
@@ -614,17 +614,17 @@ describe('AplList opening the line a cast was clicked for', () => {
 		expect(flashed()).toEqual([]);
 	});
 
-	it('leaves a drawn line of the same row still, since its steps are copies', () => {
+	it('leaves a drawn entry of the same row still, since its steps are copies', () => {
 		const sequence = (...actions: Array<APLAction>) => APLAction.create({ action: { oneofKind: 'sequence', sequence: { name: 'opener', actions } } });
 		setup({ priorityList: [APLListItem.create({ action: sequence(reset('a'), reset('b')) })] });
-		const path: AplLinePath = [
+		const path: AplEntryPath = [
 			{ kind: 'priority', index: 0 },
 			{ kind: 'step', index: 1 },
 		];
 		mount(
 			<>
 				<PriorityPane />
-				<AplLineView line={resolveAplLine(player.aplRotation, path)!} />
+				<AplEntryView entry={resolveAplEntry(player.aplRotation, path)!} />
 			</>,
 		);
 
@@ -632,7 +632,7 @@ describe('AplList opening the line a cast was clicked for', () => {
 		act(() => vi.advanceTimersByTime(20));
 
 		expect(flashed()).toHaveLength(1);
-		expect(screen.getByTestId('apl-line-view').contains(flashed()[0])).toBe(false);
+		expect(screen.getByTestId('apl-entry-view').contains(flashed()[0])).toBe(false);
 	});
 
 	it('reveals the same row again for a repeat of the same click', () => {

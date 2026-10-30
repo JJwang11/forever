@@ -82,7 +82,7 @@ export interface AplListEntryProps {
 	disabled?: boolean;
 	/** A row the eye has switched off: its handle and title fade with its body. */
 	muted?: boolean;
-	/** For a section or a group: whether a line a cast's click opens sits under it, so the item opens. */
+	/** For a section or a group: whether an entry a cast's click opens sits under it, so the item opens. */
 	revealOn?: (request: AplRevealRequest) => boolean;
 	testId?: string;
 	/** The item's `Tree.Item.Body` and/or `Tree.Item.Children`. */
@@ -174,8 +174,8 @@ export interface AplRevealTargetProps {
 }
 
 /**
- * The body of a row or a sequence step, inside its `Tree.Item.Body`. When a cast's click opens a line
- * through it, it opens its item; when the line is this one, it scrolls into view and flashes. The
+ * The body of a row or a sequence step, inside its `Tree.Item.Body`. When a cast's click opens an entry
+ * through it, it opens its item; when the entry is this one, it scrolls into view and flashes. The
  * scroll waits a frame, for the tab, the sub-tab and the items above it to have opened.
  */
 export const AplRevealTarget = ({ getItem, children }: AplRevealTargetProps) => {

@@ -14,7 +14,7 @@ export interface AplScope {
 	inSequence: boolean;
 	/** The `Tree.Root` group a list field below names its list with, from `valueListGroup`/`actionListGroup`. */
 	listGroup: string | undefined;
-	/** In a drawn APL line, the step indexes down to the step that fired, outermost first; empty where no step below is marked. */
+	/** In a drawn APL entry, the step indexes down to the step that fired, outermost first; empty where no step below is marked. */
 	markedSteps: ReadonlyArray<number>;
 }
 

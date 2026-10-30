@@ -51,7 +51,7 @@ export const RotationTabBody = ({ rotationType }: RotationTabBodyProps) => {
 	const hasCooldowns = !config.hideSimpleCooldowns && availableCooldowns.length > 0;
 
 	const [activeId, setActiveId] = useState<AplPaneId>(APL_PANES[0].id);
-	// A cast clicked in the Timeline opens the sub-tab its line sits in.
+	// A cast clicked in the Timeline opens the sub-tab its entry sits in.
 	useAplReveal(({ kind }) => setActiveId(kind === 'group' ? 'apl-action-groups' : 'apl-priority-list'));
 
 	return (
