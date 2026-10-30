@@ -4,7 +4,7 @@
 // binary the extension built and keeps the documents in memory open in it, as VS Code's client does.
 
 import { spawn } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import Module from 'node:module';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -385,9 +385,18 @@ const bundled = (async () => {
 // Where the extension builds the server in the tests: kept between runs, so a build after the first relinks nothing.
 const storage = join(tmpdir(), 'wowsims-apl-test-storage');
 
+// A folder the extension is installed at for the tests, holding an empty panel bundle: no test builds the real one.
+const stubInstall = (() => {
+	const dir = mkdtempSync(join(tmpdir(), 'wowsims-apl-installed-'));
+	mkdirSync(join(dir, 'out'));
+	writeFileSync(join(dir, 'out', 'webview.js'), '');
+	process.on('exit', () => rmSync(dir, { recursive: true, force: true }));
+	return dir;
+})();
+
 // Loads the extension with the stand-in and activates it as installed at `installed`; the module, whose deactivate
 // stops the servers it started.
-export async function activateBuilt(stand, installed = fileURLToPath(new URL('../../../.vscode/extensions/wowsims-apl', import.meta.url))) {
+export async function activateBuilt(stand, installed = stubInstall) {
 	const built = await bundled;
 	const load = Module._load;
 	Module._load = function (request, ...rest) {
@@ -396,7 +405,8 @@ export async function activateBuilt(stand, installed = fileURLToPath(new URL('..
 		return load.call(this, request, ...rest);
 	};
 	try {
-		delete require.cache[built];
+		// The cache is keyed by the real path, which on macOS is not the tmpdir() path.
+		delete require.cache[require.resolve(built)];
 		const extension = require(built);
 		extension.activate({ subscriptions: [], extensionUri: Uri.file(installed), globalStorageUri: Uri.file(storage) });
 		return extension;
@@ -405,8 +415,6 @@ export async function activateBuilt(stand, installed = fileURLToPath(new URL('..
 	}
 }
 
-// Waits for the stand-in's first server to run, which the first .siml document opened builds and starts; fails as soon
-// as the extension reports that it did not build.
 // Waits for condition to hold, up to ms, and gives what it gave.
 export async function until(condition, ms = 30000) {
 	const end = Date.now() + ms;
@@ -418,6 +426,8 @@ export async function until(condition, ms = 30000) {
 	}
 }
 
+// Waits for the stand-in's first server to run, which the first .siml document opened builds and starts; fails as soon
+// as the extension reports that it did not build.
 export async function serverRunning(stand) {
 	const end = Date.now() + 600000;
 	while (!stand.state.clients[0]?.running) {

@@ -57,8 +57,8 @@ test('a cancelled sim stops in the server and says nothing', async () => {
 	stand.state.config.simIterations = 100000;
 	const messages = stand.state.messages.length;
 	const sim = stand.state.commands.get('wowsims-apl.sim')(document.uri);
-	// The sim's own progress: a panel build the first test started may still be running beside it.
-	const simming = () => stand.state.progress.find(p => p.title.startsWith('Simming'));
+	// The sim's progress is the only one running: the server is built, and the tests install a panel bundle.
+	const simming = () => stand.state.progress[0];
 	await untilSimmed(() => simming());
 	await new Promise(resolve => setTimeout(resolve, 300));
 	const started = Date.now();
