@@ -258,8 +258,8 @@ func (spell *Spell) castForRotation(sim *Simulation, target *Unit, channelAction
 // such as the one that queues it for the next swing, credits it here.
 func (spell *Spell) CountManualCast(target *Unit) {
 	spell.SpellMetrics[target.UnitIndex].ManualCasts++
-	// The press's line goes with its credit. The line is set only while the sim logs. A line other than the
-	// rotation cast's running now, such as a walk picked at a hardcast's end, is not the press of that cast.
+	// The press's line goes with its credit. The line is set only while the sim logs. A walk picked at a
+	// hardcast's end runs its own line, so it takes no line from the hardcast.
 	if cast := &spell.Unit.rotationCast; cast.line != "" && spell != cast.spell {
 		if running := spell.Unit.runningAPLLine(); running == "" || running == cast.line {
 			spell.swingLine = cast.line
