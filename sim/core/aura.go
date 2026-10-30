@@ -799,7 +799,6 @@ func (aura *Aura) Activate(sim *Simulation) {
 	if aura.OnGain != nil {
 		aura.OnGain(aura, sim)
 	}
-	aura.Unit.AutoAttacks.resumeEligibleRangedSwing(sim)
 }
 
 // Remove an aura by its ID
@@ -959,7 +958,6 @@ func (aura *Aura) Deactivate(sim *Simulation) {
 	if aura.OnExpire != nil {
 		aura.OnExpire(aura, sim)
 	}
-	aura.Unit.AutoAttacks.resumeEligibleRangedSwing(sim)
 }
 
 // Constant-time removal from slice by swapping with the last element before removing.
