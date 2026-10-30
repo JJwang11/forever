@@ -18,7 +18,8 @@ const ignore = () => {};
  * One APL line as the editor draws it, at full contrast, that nothing can change. The pickers write to a clone of
  * the line, and some of their paths still call `touchRotation` or write `valueVariables`; `inert`, with the
  * tooltip's `pointer-events-none`, keeps every picker shut so the rotation it came from stays as it ran.
- * The height is capped at three picker rows, and only a line the cap cuts off fades out at the bottom.
+ * The height is capped at three picker rows and starts at the marked step of a sequence, so the step that fired
+ * shows; only a line cut off below fades out at the bottom.
  */
 const AplLineViewImpl = ({ line }: { line: ResolvedAplLine }) => {
 	const player = usePlayer();
@@ -27,7 +28,11 @@ const AplLineViewImpl = ({ line }: { line: ResolvedAplLine }) => {
 	useLayoutEffect(() => {
 		const element = root.current;
 		if (!element) return;
-		const measure = () => setClipped(element.scrollHeight > element.clientHeight + 1);
+		const measure = () => {
+			const marked = element.querySelector<HTMLElement>('[data-marked]');
+			element.scrollTop = marked ? marked.getBoundingClientRect().top - element.getBoundingClientRect().top + element.scrollTop : 0;
+			setClipped(element.scrollHeight - element.scrollTop > element.clientHeight + 1);
+		};
 		measure();
 		const observer = new ResizeObserver(measure);
 		observer.observe(element);

@@ -204,7 +204,10 @@ export const AplRevealTarget = ({ getItem, children }: AplRevealTargetProps) => 
 		};
 	}, [reveals]);
 	return (
-		<div ref={ref} data-flash={flash ? '' : undefined} className="outline-2 outline-solid outline-transparent transition-[background-color,outline-color] duration-500 data-flash:bg-primary-dampened data-flash:outline-primary">
+		<div
+			ref={ref}
+			data-flash={flash ? '' : undefined}
+			className="outline-2 outline-transparent transition-[background-color,outline-color] duration-500 outline-solid data-flash:bg-primary-dampened data-flash:outline-primary">
 			{children}
 		</div>
 	);
