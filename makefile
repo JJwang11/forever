@@ -16,7 +16,7 @@ UI_SRC := $(shell find ui -name '*.ts' -o -name '*.tsx' -o -name '*.css' -o -nam
 # and --git-dir names a worktree's own folder.
 GIT_DIR := $(shell git rev-parse --git-dir 2>/dev/null)
 AUTO_GEN_FILES_TS := ui/sim/player/classes/capabilities_auto_gen.ts ui/sim/bulk/constants_auto_gen.ts ui/sim/wasm/bulk_sim/constants_auto_gen.ts ui/sim/proto/sim_tables_auto_gen.ts ui/sim/wasm/stat_weights_constants_auto_gen.ts
-AUTO_GEN_FILES_TS_DEPS := sim/core/base_stats.go sim/core/bulk/candidates.go sim/core/bulk/statistics.go sim/core/consumes_imbues.go sim/core/database.go sim/core/statweight.go tools/database/gen_character_constants_ts.go tools/database/gen_bulksim_constants.ts.go tools/database/gen_sim_tables_ts.go tools/database/gen_stat_weight_constants_ts.go sim/core/proto/api.pb.go
+AUTO_GEN_FILES_TS_DEPS := sim/core/base_stats.go sim/core/bulk/candidates.go sim/core/bulk/statistics.go sim/core/consumes_imbues.go sim/core/database.go sim/core/itemfit/itemfit.go sim/core/statweight.go tools/database/gen_character_constants_ts.go tools/database/gen_bulksim_constants.ts.go tools/database/gen_sim_tables_ts.go tools/database/gen_stat_weight_constants_ts.go sim/core/proto/api.pb.go
 
 $(OUT_DIR)/.dirstamp: \
   $(OUT_DIR)/lib.wasm.gz \
@@ -109,7 +109,8 @@ bin/wowsimcli$(BIN_EXT): sim/core/proto/api.pb.go sim/siml/forms.json sim/siml/l
 	go build --tags=with_db -o $@ ./cmd/wowsimcli
 
 # Run before committing, and after a change to proto/apl.proto: refresh the SIML name table and the wowsims-siml
-# skill, then check the files under ui/specs read and are canonical.
+# skill, then check the files under ui/specs read and are canonical. When the skill changes, npm run skills:install
+# records its hash in skills-lock.json, which is committed with it.
 .PHONY: siml
 siml: siml-names
 	go run ./cmd/wowsimcli siml llm -o .github/skills/wowsims-siml/SKILL.md
@@ -428,7 +429,11 @@ vscode-spelldata:
 # The SIML extension: its panel bundles the site's APL model with the generated protos and tables and the root
 # packages, and wowsimcli writes its grammar. The language server it starts, `wowsimcli siml lsp`, reads the name
 # table at run time.
+tools/vscode-apl/node_modules: tools/vscode-apl/package-lock.json
+	cd tools/vscode-apl && npm ci --no-audit --no-fund
+	touch $@
+
 .PHONY: vscode-apl
-vscode-apl: ui/generated/proto/api.ts $(AUTO_GEN_FILES_TS) sim/siml/names.json node_modules
-	cd tools/vscode-apl && npm ci --no-audit --no-fund && npm run build
+vscode-apl: ui/generated/proto/api.ts $(AUTO_GEN_FILES_TS) sim/siml/names.json node_modules tools/vscode-apl/node_modules
+	cd tools/vscode-apl && npm run build
 	go run ./cmd/wowsimcli siml grammar -o .vscode/extensions/wowsims-apl/syntaxes/siml.tmLanguage.json

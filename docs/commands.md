@@ -117,8 +117,9 @@ make spelldata
 # Needs no game files database and no sim that builds; make sim/core/proto/api.pb.go runs it before protoc
 go run ./tools/gen_buffs_proto
 
-# Run one sim from a RaidSimRequest in protojson, or from an x.siml (the request built as the site builds it;
-# with no encounter, against one default target), and print the RaidSimResult
+# Run one sim from a RaidSimRequest in protojson, or from an x.siml (the request built as the site builds it, without
+# the potions and conjured items the site adds for its APL; with no encounter, against one default target), and print
+# the RaidSimResult
 # A preset build, which names no race, is loaded over its spec's defaults.siml as the site loads it, and the command
 # says so; an auto or simple rotation, which the site builds into an APL, sims only the APL rows the file holds
 # Nothing migrates an input file: export the settings from the UI again after a proto change

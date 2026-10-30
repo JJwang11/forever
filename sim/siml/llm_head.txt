@@ -36,6 +36,8 @@ protos, so a change to `proto/apl.proto` shows up here once `make siml` runs. Ed
 - `siml verify x.json x.siml`: does `x.siml` read back as `x.json`.
 - `siml sim < request.json`: sims an `.apl.siml` text (the editor's sim).
 - `siml lsp`: the language server on stdin and stdout (LSP 3.17, JSON-RPC with Content-Length).
+- `sim --infile x.siml`: sims a full setup, or a preset build over its spec's defaults.siml, with the request built
+  as the site builds it, without the potions and conjured items the site adds for its APL.
 - `make siml`: writes `names.json` and this skill again, then runs `siml fmt -check ui/specs`. Run it before
   committing and after any change to `proto/apl.proto`.
 
