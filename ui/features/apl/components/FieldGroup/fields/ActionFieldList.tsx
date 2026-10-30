@@ -28,7 +28,9 @@ const MarkedStep = ({ markedSteps, index, children }: MarkedStepProps) => {
 	const below = useMemo(() => (onPath ? markedSteps.slice(1) : UNMARKED), [onPath, markedSteps]);
 	return (
 		<AplProvider markedSteps={below}>
-			<div data-marked={onPath && markedSteps.length === 1 ? '' : undefined} className="rounded-sm data-marked:bg-primary-dampened">
+			<div
+				data-marked={onPath && markedSteps.length === 1 ? '' : undefined}
+				className="data-marked:bg-primary-dampened data-marked:outline-2 data-marked:-outline-offset-2 data-marked:outline-primary data-marked:outline-solid">
 				{children}
 			</div>
 		</AplProvider>
