@@ -19,12 +19,13 @@ const ignore = () => {};
  * the entry, and some of their paths still call `touchRotation` or write `valueVariables`; `inert`, with the
  * tooltip's `pointer-events-none`, keeps every picker shut so the rotation it came from stays as it ran.
  * The height is capped at three picker rows and starts at the marked step of a sequence, so the step that fired
- * shows; only an entry cut off below fades out at the bottom.
+ * shows; it fades at the top when scrolled to that step and at the bottom when cut off below.
  */
 const AplEntryViewImpl = ({ entry }: { entry: ResolvedAplEntry }) => {
 	const player = usePlayer();
 	const root = useRef<HTMLDivElement>(null);
 	const [clipped, setClipped] = useState(false);
+	const [scrolled, setScrolled] = useState(false);
 	useLayoutEffect(() => {
 		const element = root.current;
 		if (!element) return;
@@ -32,6 +33,7 @@ const AplEntryViewImpl = ({ entry }: { entry: ResolvedAplEntry }) => {
 			const marked = element.querySelector<HTMLElement>('[data-marked]');
 			element.scrollTop = marked ? marked.getBoundingClientRect().top - element.getBoundingClientRect().top + element.scrollTop : 0;
 			setClipped(element.scrollHeight - element.scrollTop > element.clientHeight + 1);
+			setScrolled(element.scrollTop > 0);
 		};
 		measure();
 		const observer = new ResizeObserver(measure);
@@ -51,7 +53,8 @@ const AplEntryViewImpl = ({ entry }: { entry: ResolvedAplEntry }) => {
 			ref={root}
 			inert
 			data-clipped={clipped ? '' : undefined}
-			className="max-h-24 overflow-hidden data-clipped:mask-linear-180 data-clipped:mask-linear-from-16 data-clipped:mask-linear-to-24"
+			data-scrolled={scrolled ? '' : undefined}
+			className="ui-apl-entry-view"
 			data-testid="apl-entry-view">
 			<AplProvider changeSource={neverChanges} isPrepull={prepull} isGroup={entry.kind === 'group'} markedSteps={entry.stepIndexes}>
 				<AplListItem player={player} config={item} leading={doAt} />
