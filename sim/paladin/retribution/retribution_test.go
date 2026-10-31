@@ -104,7 +104,7 @@ var DefaultSpecOptions = &proto.Player_RetributionPaladin{
 }
 
 var HolyShockTalents = "05025210221021--0523330110130033"
-var UnsealedWrathTalents = "050250002-5-05233301101301351"
+var UnsealedWrathTalents = "050250002-501-05233011201301351"
 
 var DefaultConsumables = &proto.ConsumesSpec{
 	ConjuredId: 12662, // Demonic Rune
@@ -124,4 +124,5 @@ var DefaultConsumables = &proto.ConsumesSpec{
 	ExtraIds:       []int32{8410, 10646, 12217, 18269}, // R.O.I.D.S, Goblin Sapper Charge, Dragonbreath Chili, Gordok Green Grog
 	MhImbueId:      20749,                              // Brilliant Wizard Oil
 	OffensivePotId: 250937,                             // Major Spellblasting Potion
+	ResourcePotId:  13444,                              // Major Mana Potion
 }

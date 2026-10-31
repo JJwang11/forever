@@ -67,7 +67,12 @@ export const RotationIconInputs = [
 		getValue: player => {
 			const seal = player.getSimpleRotation().seal;
 			if (seal === PaladinSeal.SealUnknown) {
-				return player.getTalents().sealOfCommand ? PaladinSeal.SealOfCommand : PaladinSeal.SealOfRighteousness;
+				const talents = player.getTalents();
+				return talents.holyShock
+					? PaladinSeal.SealOfRighteousness
+					: talents.sealOfCommand
+						? PaladinSeal.SealOfCommand
+						: PaladinSeal.SealOfRighteousness;
 			}
 
 			return seal;

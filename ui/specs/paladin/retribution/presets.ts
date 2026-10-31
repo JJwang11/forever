@@ -6,7 +6,6 @@ import { ConsumesSpec, Profession, PseudoStat, Race, Spec, Stat, TristateEffect 
 import {
 	PaladinAura,
 	PaladinJudgement,
-	PaladinSeal,
 	RetributionPaladin_Options as RetributionPaladinOptions,
 	RetributionPaladin_Rotation as RetributionPaladinRotation,
 } from '@generated/proto/paladin';
@@ -27,7 +26,6 @@ export const DefaultAplPreset = PresetUtils.makePresetAPLRotation('Default', Def
 export const DefaultSimpleRotation = RetributionPaladinRotation.create({
 	aura: PaladinAura.RetributionAura,
 	assignedJudgement: PaladinJudgement.JudgementOfTheCrusader,
-	seal: PaladinSeal.SealOfCommand,
 	pullRange: 25,
 });
 export const SimpleRotation = PresetUtils.makePresetSimpleRotation('Simple', Spec.SpecRetributionPaladin, DefaultSimpleRotation);
@@ -49,7 +47,7 @@ export const DefaultOptions = RetributionPaladinOptions.create({
 });
 
 export const HolyShockTalents = PresetUtils.makePresetTalents('Holy Shock', SavedTalents.create({ talentsString: '05025210221021--0523330110130033' }));
-export const UnsealedWrathTalents = PresetUtils.makePresetTalents('Unsealed Wrath', SavedTalents.create({ talentsString: '050250002-5-05233301101301351' }));
+export const UnsealedWrathTalents = PresetUtils.makePresetTalents('Unsealed Wrath', SavedTalents.create({ talentsString: '050250002-501-05233011201301351' }));
 
 export const HolyShockEpWeights = PresetUtils.makePresetEpWeights(
 	'Holy Shock',
@@ -101,6 +99,7 @@ export const UnsealedWrathEpWeights = PresetUtils.makePresetEpWeights(
 
 export const DefaultConsumables = ConsumesSpec.create({
 	offensivePotId: Consumables.MajorSpellblastingPotion.id,
+	resourcePotId: Consumables.MajorManaPotion.id,
 	flaskId: Consumables.FlaskOfSupremePower.id,
 	foodId: Consumables.LobsterStew.id,
 	conjuredId: Consumables.DemonicRune.id,
@@ -132,6 +131,7 @@ export const DefaultRaidBuffs = RaidBuffs.create({
 	prayerOfFortitude: true,
 	strengthOfEarthTotem: true,
 	windfuryTotem: true,
+	graceOfAirTotem: true,
 	battleShout: 1, // Rank 6
 	leaderOfThePack: true,
 });

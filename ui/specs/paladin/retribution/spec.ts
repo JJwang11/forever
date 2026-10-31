@@ -108,7 +108,7 @@ export default defineSpec<Spec.SpecRetributionPaladin>({
 	// IconInputs to include in the 'Player' section on the settings tab.
 	playerIconInputs: [],
 	// Buff and Debuff inputs to include/exclude, overriding the EP-based defaults.
-	includeBuffDebuffInputs: [Stat.StatDefenseRating, Stat.StatMP5, Stat.StatHolyDamage],
+	includeBuffDebuffInputs: [Stat.StatDefenseRating, Stat.StatMP5, Stat.StatHolyDamage, Stat.StatSpirit],
 	excludeBuffDebuffInputs: [
 		BuffDebuffInputs.AtieshDruid,
 		BuffDebuffInputs.AtieshMage,
@@ -157,7 +157,7 @@ export default defineSpec<Spec.SpecRetributionPaladin>({
 	// its aura and seal groups. With no assigned seal, Has assigned seal is false and the APL never
 	// reaches Cast assigned seal.
 	simpleRotation: (player: Player<Spec.SpecRetributionPaladin>, simple: SpecRotation<Spec.SpecRetributionPaladin>, cooldowns: Cooldowns): APLRotation => {
-		const { holyShock, unsealedWrath, sealOfCommand } = player.getTalents();
+		const { unsealedWrath, sealOfCommand } = player.getTalents();
 		const actions = AplUtils.simpleCooldownActions(cooldowns);
 		const rotation = APLRotation.clone(aplFor(player));
 		const aura = Inputs.AURA_SPELLS[simple.aura];
@@ -169,10 +169,8 @@ export default defineSpec<Spec.SpecRetributionPaladin>({
 			'Delay Major CDs': `${simple.delayMajorCds}s`,
 		};
 
-		if (!holyShock) {
-			values['Use Seal of Command'] = String(sealOfCommand && (unsealedWrath || simple.seal === PaladinSeal.SealOfCommand));
-			values['Use Seal of Righteousness'] = String(unsealedWrath || simple.seal === PaladinSeal.SealOfRighteousness);
-		}
+		values['Use Seal of Command'] = String(sealOfCommand && (unsealedWrath || simple.seal === PaladinSeal.SealOfCommand));
+		values['Use Seal of Righteousness'] = String(unsealedWrath || !sealOfCommand || simple.seal === PaladinSeal.SealOfRighteousness);
 
 		rotation.valueVariables = rotation.valueVariables.map(variable =>
 			variable.name in values ? APLValueVariable.fromJson({ name: variable.name, value: { const: { val: values[variable.name] } } }) : variable,

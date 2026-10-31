@@ -54,6 +54,7 @@ export const DefaultRaidBuffs = RaidBuffs.create({
 	prayerOfFortitude: true,
 	prayerOfShadowProtection: true,
 	windfuryTotem: true,
+	graceOfAirTotem: true,
 	battleShout: 1, // Rank 6
 	leaderOfThePack: true,
 });
