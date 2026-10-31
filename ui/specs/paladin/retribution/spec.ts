@@ -154,8 +154,8 @@ export default defineSpec<Spec.SpecRetributionPaladin>({
 	autoRotation: aplFor,
 
 	// The talents pick the APL, as for the Auto rotation; the options set its variables and the spells of
-	// its aura and seal groups. With no assigned seal, Has assigned seal is false and the APL never
-	// reaches Cast assigned seal.
+	// its aura and judgement groups. With no assigned judgement, Has assigned judgement is false and the
+	// APL never reaches Cast assigned judgement.
 	simpleRotation: (player: Player<Spec.SpecRetributionPaladin>, simple: SpecRotation<Spec.SpecRetributionPaladin>, cooldowns: Cooldowns): APLRotation => {
 		const { unsealedWrath, sealOfCommand } = player.getTalents();
 		const actions = AplUtils.simpleCooldownActions(cooldowns);
