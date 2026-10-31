@@ -304,7 +304,7 @@
       }
     },
     {
-      "notes": "With 2/2 Blood Frenzy, Bite spare combo points while Rip has time remaining",
+      "notes": "With Predatory Discipline, Bite spare combo points while Rip has time remaining",
       "action": {
         "condition": {
           "variableRef": {
@@ -593,7 +593,7 @@
       "name": "Rip minimum fight left",
       "value": {
         "const": {
-          "val": "6s"
+          "val": "8s"
         }
       }
     },
@@ -601,7 +601,7 @@
       "name": "Shifting Power energy ceiling",
       "value": {
         "const": {
-          "val": "57"
+          "val": "50"
         }
       }
     },
@@ -689,15 +689,15 @@
       "name": "Midfight Bite minimum Rip remaining",
       "value": {
         "const": {
-          "val": "5s"
+          "val": "4s"
         }
       }
     },
     {
-      "name": "Midfight Bite energy ceiling",
+      "name": "Midfight Bite minimum Rip remaining below five CP",
       "value": {
         "const": {
-          "val": "40"
+          "val": "6s"
         }
       }
     },
@@ -1365,16 +1365,27 @@
               }
             },
             {
-              "cmp": {
-                "op": "OpLe",
-                "lhs": {
-                  "currentEnergy": {}
-                },
-                "rhs": {
-                  "variableRef": {
-                    "name": "Fight-end Bite energy ceiling"
+              "or": {
+                "vals": [
+                  {
+                    "variableRef": {
+                      "name": "Predatory Discipline keeps Bite energy"
+                    }
+                  },
+                  {
+                    "cmp": {
+                      "op": "OpLe",
+                      "lhs": {
+                        "currentEnergy": {}
+                      },
+                      "rhs": {
+                        "variableRef": {
+                          "name": "Fight-end Bite energy ceiling"
+                        }
+                      }
+                    }
                   }
-                }
+                ]
               }
             },
             {
@@ -1917,7 +1928,7 @@
           "vals": [
             {
               "variableRef": {
-                "name": "Two Blood Frenzy points with Shifting Power"
+                "name": "Predatory Discipline keeps Bite energy"
               }
             },
             {
@@ -1954,46 +1965,81 @@
               }
             },
             {
-              "cmp": {
-                "op": "OpGe",
-                "lhs": {
-                  "currentComboPoints": {}
-                },
-                "rhs": {
-                  "variableRef": {
-                    "name": "Midfight Bite CP"
-                  }
-                }
-              }
-            },
-            {
-              "cmp": {
-                "op": "OpGe",
-                "lhs": {
-                  "dotRemainingTime": {
-                    "spellId": {
-                      "spellId": 9896
+              "or": {
+                "vals": [
+                  {
+                    "and": {
+                      "vals": [
+                        {
+                          "cmp": {
+                            "op": "OpGe",
+                            "lhs": {
+                              "currentComboPoints": {}
+                            },
+                            "rhs": {
+                              "const": {
+                                "val": "5"
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "cmp": {
+                            "op": "OpGe",
+                            "lhs": {
+                              "dotRemainingTime": {
+                                "spellId": {
+                                  "spellId": 9896
+                                }
+                              }
+                            },
+                            "rhs": {
+                              "variableRef": {
+                                "name": "Midfight Bite minimum Rip remaining"
+                              }
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "and": {
+                      "vals": [
+                        {
+                          "cmp": {
+                            "op": "OpGe",
+                            "lhs": {
+                              "currentComboPoints": {}
+                            },
+                            "rhs": {
+                              "variableRef": {
+                                "name": "Midfight Bite CP"
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "cmp": {
+                            "op": "OpGe",
+                            "lhs": {
+                              "dotRemainingTime": {
+                                "spellId": {
+                                  "spellId": 9896
+                                }
+                              }
+                            },
+                            "rhs": {
+                              "variableRef": {
+                                "name": "Midfight Bite minimum Rip remaining below five CP"
+                              }
+                            }
+                          }
+                        }
+                      ]
                     }
                   }
-                },
-                "rhs": {
-                  "variableRef": {
-                    "name": "Midfight Bite minimum Rip remaining"
-                  }
-                }
-              }
-            },
-            {
-              "cmp": {
-                "op": "OpLe",
-                "lhs": {
-                  "currentEnergy": {}
-                },
-                "rhs": {
-                  "variableRef": {
-                    "name": "Midfight Bite energy ceiling"
-                  }
-                }
+                ]
               }
             }
           ]
@@ -2016,6 +2062,16 @@
             "const": {
               "val": "0"
             }
+          }
+        }
+      }
+    },
+    {
+      "name": "Predatory Discipline keeps Bite energy",
+      "value": {
+        "talentIsKnown": {
+          "talentId": {
+            "spellId": 1328613
           }
         }
       }

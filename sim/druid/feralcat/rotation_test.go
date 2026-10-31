@@ -40,9 +40,9 @@ func TestMonocatStaysInCatForm(t *testing.T) {
 	}
 }
 
-// Ferocious Bite spends the combo points only once a Rip would not tick out, in the last 10 seconds.
+// Without Predatory Discipline, Ferocious Bite spends the combo points only once a Rip would not tick out.
 func TestMonocatBitesOnlyAtTheEnd(t *testing.T) {
-	request := catPowershiftRequest(powershiftTalents, defaultCatRotation(), false)
+	request := catPowershiftRequest(withFeralDigit(powershiftTalents, 12, '0'), defaultCatRotation(), false)
 	request.SimOptions.Debug = true
 	result := core.RunSim(request, nil, simsignals.CreateSignals())
 	if result.Error != nil {
@@ -64,6 +64,15 @@ func TestMonocatBitesOnlyAtTheEnd(t *testing.T) {
 	}
 	if bites == 0 {
 		t.Error("Ferocious Bite was never cast at the end")
+	}
+}
+
+// With Predatory Discipline, the extra combo points two points of Blood Frenzy give go to Ferocious Bite while Rip ticks.
+func TestMonocatBitesSpareComboPointsWithBloodFrenzy(t *testing.T) {
+	spare := runCat(t, sweepRequest(catTalents, defaultCatRotation(), false, 100))
+	endOnly := runCat(t, sweepRequest(withFeralDigit(catTalents, 13, '0'), defaultCatRotation(), false, 100))
+	if got, want := castsOf(spare.Actions, 22829), castsOf(endOnly.Actions, 22829); got <= want {
+		t.Errorf("Ferocious Bite casts = %d with Blood Frenzy, %d without, want more with it", got, want)
 	}
 }
 
