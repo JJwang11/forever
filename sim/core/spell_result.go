@@ -367,8 +367,8 @@ func (spell *Spell) CalcOutcome(sim *Simulation, target *Unit, outcomeApplier Ou
 // A bleed on a bleed-immune target, or a stun on a stun-immune one: the target is immune to the whole
 // spell, its damage included.
 func (spell *Spell) missesImmune(target *Unit) bool {
-	return target.BleedImmune && spell.Flags.Matches(SpellFlagBleed) ||
-		target.StunImmune && spell.Flags.Matches(SpellFlagStun)
+	return spell.Flags.Matches(SpellFlagBleed) && target.BleedImmune ||
+		spell.Flags.Matches(SpellFlagStun) && target.stunImmune()
 }
 
 // A miss with no hit or crit roll, as a full resist or a bleed on a bleed-immune target is.

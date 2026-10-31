@@ -196,10 +196,7 @@ func (spell *Spell) makeCastFunc(config CastConfig) CastSuccessFunc {
 			}
 		}
 
-		// Starting an explosive's cast drops the attack queued for the next swing, which the rotation
-		// queues again: dynamite, grenades and bombs. The instant sapper charge keeps it. A combat log
-		// does not show the queue, but no swing that lands during the cast is a queued attack.
-		if spell.Flags.Matches(SpellFlagExplosive) && spell.CurCast.CastTime > 0 {
+		if spell.Flags.Matches(SpellFlagDropsQueuedSwing) {
 			spell.Unit.AutoAttacks.CancelQueuedSwing(sim)
 		}
 

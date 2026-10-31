@@ -106,6 +106,10 @@ func cloudDamageSpell(character *core.Character, itemID int32, row, cloud, damag
 // in Forever combat logs the next swing lands on its old schedule after dynamite, copper bombs and
 // iron grenades alike, and a swing due during the 1 sec cast lands in it.
 //
+// Starting the cast drops the attack queued for the next swing, which can be queued again once the
+// cast ends: dynamite, grenades and bombs. The instant sapper charge keeps it. A combat log does not
+// show the queue, but no swing that lands during the cast is a queued attack.
+//
 // A bomb or grenade whose row's mechanic is stun is a stun as a whole: a stun-immune target, such as a
 // raid boss, is immune to its damage too. Dynamite and sapper charges state no mechanic and hit it.
 func NewSpellDataExplosive(itemID int32) {
@@ -121,10 +125,13 @@ func NewSpellDataExplosive(itemID int32) {
 			config := consumableDamageSpell(character, itemID, row)
 			config.ActionID = core.ActionID{ItemID: itemID}
 			config.Flags |= core.SpellFlagExplosive | core.SpellFlagKeepsSwingTimer
-			if row.Mechanic == dbcenums.MECHANIC_STUN {
+			if row.IsStun() {
 				config.Flags |= core.SpellFlagStun
 			}
 			config.Cast = consumableCast(character, itemEffect, row)
+			if config.Cast.DefaultCast.CastTime > 0 {
+				config.Flags |= core.SpellFlagDropsQueuedSwing
+			}
 			if self := row.CasterDamageEffect(); self != spelldata.NilEffect {
 				selfSpell := registerCasterDamageSpell(character, core.SpellConfig{
 					ActionID:         config.ActionID,
