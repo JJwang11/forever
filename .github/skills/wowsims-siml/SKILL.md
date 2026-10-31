@@ -183,6 +183,7 @@ Written from `proto/apl.proto`, but for the accessors below.
 - `encounter_in_area(forest_grassland|mountainous|snowy|desert|swamp|wasteland|haunted|cavernous|…)`
 - `[unit.]boss_current_target`
 - `target_is_mob_type(beast|demon|dragonkin|elemental|giant|humanoid|mechanical|undead, target_unit: unit)`
+- `[unit.]target_is_bleed_immune`
 - `[unit.]current_health`
 - `[unit.]current_health_percent`
 - `[unit.]current_mana`

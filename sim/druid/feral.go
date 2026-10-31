@@ -71,8 +71,11 @@ func (druid *Druid) BehindTarget() bool {
 }
 
 // Whether the target is bleeding, for Rend and Tear and the Bleed Is Active APL value: one of the
-// druid's bleeds is up on it, or the druid assumes another raid member's.
+// druid's bleeds is up on it, or the druid assumes another raid member's. A bleed-immune target never is.
 func (druid *Druid) targetIsBleeding(target *core.Unit) bool {
+	if target.BleedImmune {
+		return false
+	}
 	if druid.AssumeBleedActive {
 		return true
 	}
