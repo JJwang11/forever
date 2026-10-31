@@ -205,7 +205,7 @@ func TestFirstLacerateHitsForNothing(t *testing.T) {
 	}
 }
 
-func TestLacerateLeavesNoDotOnABleedImmuneTarget(t *testing.T) {
+func TestLacerateMissesABleedImmuneTarget(t *testing.T) {
 	sim, bear := newBear(t)
 	target := bear.CurrentTarget
 	target.BleedImmune = true
@@ -217,6 +217,9 @@ func TestLacerateLeavesNoDotOnABleedImmuneTarget(t *testing.T) {
 	}
 	if bear.Lacerate.Dot(target).IsActive() {
 		t.Fatal("lacerate left a bleed on a bleed-immune target")
+	}
+	if got := bear.Lacerate.SpellMetrics[target.UnitIndex].TotalDamage; got != 0 {
+		t.Errorf("lacerate dealt %v to a bleed-immune target", got)
 	}
 }
 

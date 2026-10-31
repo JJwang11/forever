@@ -37,10 +37,7 @@ func (druid *Druid) registerLacerateSpell() {
 		result := spell.CalcAndDealDamage(sim, target, damage, spell.OutcomeMeleeWeaponSpecialHitAndCrit)
 		if result.Landed() {
 			dot.Apply(sim)
-			// A bleed-immune target takes the hit and no Dot.
-			if dot.IsActive() {
-				dot.SetStacks(sim, stacks)
-			}
+			dot.SetStacks(sim, stacks)
 		}
 		druid.refundOnMiss(sim, spell, result)
 	}

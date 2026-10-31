@@ -200,6 +200,35 @@ func TestCatStealthOpenersRun(t *testing.T) {
 
 // Rend and Tear raises Shred on a bleeding target, by the same amount under each of the cat's own
 // bleeds. With the bleed assumed, a target with no bleed of the cat's own takes the same raised Shred.
+func TestBleedImmuneTargetTakesNoRakeAndNoAssumedBleed(t *testing.T) {
+	const rendAndTear5 = "0000000000000000-00000000000100005000-0000000000000000"
+	sim, cat := newCat(t, rendAndTear5, nil)
+	target := cat.CurrentTarget
+	target.BleedImmune = true
+	fillResource(sim, cat)
+	cat.Rake.Cast(sim, target)
+	if cat.Rake.Dot(target).IsActive() || cat.Rake.SpellMetrics[target.UnitIndex].TotalDamage != 0 || cat.ComboPoints() != 0 {
+		t.Fatal("rake landed on a bleed-immune target")
+	}
+
+	shred := func(assume, immune bool) float64 {
+		sim, cat := newCat(t, rendAndTear5, nil)
+		cat.AssumeBleedActive = assume
+		cat.CurrentTarget.BleedImmune = immune
+		fillResource(sim, cat)
+		cat.AddStatDynamic(sim, stats.PhysicalCritPercent, -100)
+		cat.AddStatDynamic(sim, stats.PhysicalHitPercent, 100)
+		cat.CurrentTarget.PseudoStats.BaseDodgeChance = 0
+		if !cat.Shred.Cast(sim, cat.CurrentTarget) {
+			t.Fatal("shred did not cast")
+		}
+		return cat.Shred.SpellMetrics[cat.CurrentTarget.UnitIndex].TotalDamage
+	}
+	if plain, assumed, immune := shred(false, false), shred(true, false), shred(true, true); assumed <= plain*1.01 || immune != plain {
+		t.Fatalf("shred %g plain, %g with an assumed bleed, %g on a bleed-immune target", plain, assumed, immune)
+	}
+}
+
 func TestAssumedBleedRaisesShredLikeOwnBleed(t *testing.T) {
 	const rendAndTear5 = "0000000000000000-00000000000100005000-0000000000000000"
 	shred := func(assume bool, bleed func(*FeralDruid) *druid.DruidSpell) float64 {

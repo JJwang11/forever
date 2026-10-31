@@ -1701,6 +1701,10 @@
 					"label": "Target Is Mob Type",
 					"tooltip": "True if the target is the chosen creature type"
 				},
+				"target_is_bleed_immune": {
+					"label": "Target Is Bleed Immune",
+					"tooltip": "True if Takes Bleeds is off for the target in the encounter settings"
+				},
 				"encounter_in_area": {
 					"label": "In Area",
 					"tooltip": "True if the encounter's areas include the chosen area type"

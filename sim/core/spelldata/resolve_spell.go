@@ -132,6 +132,9 @@ func SpellConfig(unit *core.Unit, s *Spell, opts ...SpellOpt) core.SpellConfig {
 	if s.AppliesBleed() {
 		config.Flags |= core.SpellFlagBleed
 	}
+	if s.IsBleed() {
+		config.Flags |= core.SpellFlagBleedHit
+	}
 
 	// The row first, the caller's options on top, so an option sees what the row filled; the reach is
 	// settled after the options.
