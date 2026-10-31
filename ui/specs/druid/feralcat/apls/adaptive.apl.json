@@ -304,7 +304,7 @@
       }
     },
     {
-      "notes": "With Predatory Discipline, Bite spare combo points while Rip has time remaining",
+      "notes": "With Predatory Discipline, pool for Bite while Rip has time left; use the smaller pool at five combo points",
       "action": {
         "condition": {
           "variableRef": {
@@ -402,16 +402,31 @@
           "and": {
             "vals": [
               {
-                "auraIsActive": {
-                  "auraId": {
-                    "spellId": 768
-                  }
+                "and": {
+                  "vals": [
+                    {
+                      "auraIsActive": {
+                        "auraId": {
+                          "spellId": 768
+                        }
+                      }
+                    },
+                    {
+                      "auraIsActive": {
+                        "auraId": {
+                          "spellId": 16870
+                        }
+                      }
+                    }
+                  ]
                 }
               },
               {
-                "auraIsActive": {
-                  "auraId": {
-                    "spellId": 16870
+                "not": {
+                  "val": {
+                    "variableRef": {
+                      "name": "Pool energy for Bite"
+                    }
                   }
                 }
               }
@@ -482,29 +497,44 @@
       }
     },
     {
-      "notes": "Shred with spare energy",
+      "notes": "Build combo points when affordable unless pooling for Bite",
       "action": {
         "condition": {
           "and": {
             "vals": [
               {
-                "auraIsActive": {
-                  "auraId": {
-                    "spellId": 768
-                  }
+                "and": {
+                  "vals": [
+                    {
+                      "auraIsActive": {
+                        "auraId": {
+                          "spellId": 768
+                        }
+                      }
+                    },
+                    {
+                      "cmp": {
+                        "op": "OpGe",
+                        "lhs": {
+                          "currentEnergy": {}
+                        },
+                        "rhs": {
+                          "spellCurrentCost": {
+                            "spellId": {
+                              "spellId": 9830
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
                 }
               },
               {
-                "cmp": {
-                  "op": "OpGe",
-                  "lhs": {
-                    "druidExcessEnergy": {}
-                  },
-                  "rhs": {
-                    "spellCurrentCost": {
-                      "spellId": {
-                        "spellId": 9830
-                      }
+                "not": {
+                  "val": {
+                    "variableRef": {
+                      "name": "Pool energy for Bite"
                     }
                   }
                 }
@@ -520,27 +550,42 @@
       }
     },
     {
-      "notes": "Use Claw when Shred cannot land, with the same bleed reserve",
+      "notes": "Use Claw when Shred cannot land, unless pooling for Bite",
       "action": {
         "condition": {
           "and": {
             "vals": [
               {
-                "variableRef": {
-                  "name": "Claw can replace Shred"
+                "and": {
+                  "vals": [
+                    {
+                      "variableRef": {
+                        "name": "Claw can replace Shred"
+                      }
+                    },
+                    {
+                      "cmp": {
+                        "op": "OpGe",
+                        "lhs": {
+                          "currentEnergy": {}
+                        },
+                        "rhs": {
+                          "spellCurrentCost": {
+                            "spellId": {
+                              "spellId": 9850
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
                 }
               },
               {
-                "cmp": {
-                  "op": "OpGe",
-                  "lhs": {
-                    "druidExcessEnergy": {}
-                  },
-                  "rhs": {
-                    "spellCurrentCost": {
-                      "spellId": {
-                        "spellId": 9850
-                      }
+                "not": {
+                  "val": {
+                    "variableRef": {
+                      "name": "Pool energy for Bite"
                     }
                   }
                 }
@@ -571,7 +616,6 @@
       }
     }
   ],
-  "groups": [],
   "valueVariables": [
     {
       "name": "Rip target CP",
@@ -601,7 +645,7 @@
       "name": "Shifting Power energy ceiling",
       "value": {
         "const": {
-          "val": "50"
+          "val": "57"
         }
       }
     },
@@ -609,7 +653,7 @@
       "name": "Tea energy ceiling",
       "value": {
         "const": {
-          "val": "30"
+          "val": "20"
         }
       }
     },
@@ -678,14 +722,6 @@
       }
     },
     {
-      "name": "Midfight Bite full CP",
-      "value": {
-        "const": {
-          "val": "5"
-        }
-      }
-    },
-    {
       "name": "Midfight Bite CP",
       "value": {
         "const": {
@@ -697,15 +733,7 @@
       "name": "Midfight Bite minimum Rip remaining",
       "value": {
         "const": {
-          "val": "4s"
-        }
-      }
-    },
-    {
-      "name": "Midfight Bite minimum Rip remaining below five CP",
-      "value": {
-        "const": {
-          "val": "6s"
+          "val": "2s"
         }
       }
     },
@@ -714,6 +742,38 @@
       "value": {
         "const": {
           "val": "25"
+        }
+      }
+    },
+    {
+      "name": "Bite energy target",
+      "value": {
+        "const": {
+          "val": "85"
+        }
+      }
+    },
+    {
+      "name": "Bite energy target with Clearcasting",
+      "value": {
+        "const": {
+          "val": "60"
+        }
+      }
+    },
+    {
+      "name": "Five-point Bite energy target",
+      "value": {
+        "const": {
+          "val": "70"
+        }
+      }
+    },
+    {
+      "name": "Five-point Bite energy target with Clearcasting",
+      "value": {
+        "const": {
+          "val": "50"
         }
       }
     },
@@ -1608,12 +1668,12 @@
             },
             {
               "auraIsActive": {
+                "sourceUnit": {
+                  "type": "CurrentTarget"
+                },
                 "auraId": {
                   "spellId": 9907,
                   "tag": -1
-                },
-                "sourceUnit": {
-                  "type": "CurrentTarget"
                 }
               }
             },
@@ -1882,8 +1942,18 @@
                   "remainingTime": {}
                 },
                 "rhs": {
-                  "const": {
-                    "val": "9s"
+                  "math": {
+                    "op": "OpAdd",
+                    "lhs": {
+                      "variableRef": {
+                        "name": "Rip minimum fight left"
+                      }
+                    },
+                    "rhs": {
+                      "const": {
+                        "val": "1s"
+                      }
+                    }
                   }
                 }
               }
@@ -1936,76 +2006,69 @@
           "vals": [
             {
               "variableRef": {
-                "name": "Predatory Discipline keeps Bite energy"
-              }
-            },
-            {
-              "auraIsActive": {
-                "auraId": {
-                  "spellId": 768
-                }
-              }
-            },
-            {
-              "cmp": {
-                "op": "OpGe",
-                "lhs": {
-                  "currentMana": {}
-                },
-                "rhs": {
-                  "spellCurrentCost": {
-                    "spellId": {
-                      "spellId": 1322605
-                    }
-                  }
-                }
-              }
-            },
-            {
-              "not": {
-                "val": {
-                  "auraIsActive": {
-                    "auraId": {
-                      "spellId": 16870
-                    }
-                  }
-                }
+                "name": "Bite combo points and Rip window"
               }
             },
             {
               "or": {
                 "vals": [
                   {
-                    "and": {
+                    "or": {
                       "vals": [
                         {
-                          "cmp": {
-                            "op": "OpGe",
-                            "lhs": {
-                              "currentComboPoints": {}
-                            },
-                            "rhs": {
-                              "variableRef": {
-                                "name": "Midfight Bite full CP"
+                          "and": {
+                            "vals": [
+                              {
+                                "auraIsActive": {
+                                  "auraId": {
+                                    "spellId": 16870
+                                  }
+                                }
+                              },
+                              {
+                                "cmp": {
+                                  "op": "OpGe",
+                                  "lhs": {
+                                    "currentEnergy": {}
+                                  },
+                                  "rhs": {
+                                    "variableRef": {
+                                      "name": "Bite energy target with Clearcasting"
+                                    }
+                                  }
+                                }
                               }
-                            }
+                            ]
                           }
                         },
                         {
-                          "cmp": {
-                            "op": "OpGe",
-                            "lhs": {
-                              "dotRemainingTime": {
-                                "spellId": {
-                                  "spellId": 9896
+                          "and": {
+                            "vals": [
+                              {
+                                "not": {
+                                  "val": {
+                                    "auraIsActive": {
+                                      "auraId": {
+                                        "spellId": 16870
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "cmp": {
+                                  "op": "OpGe",
+                                  "lhs": {
+                                    "currentEnergy": {}
+                                  },
+                                  "rhs": {
+                                    "variableRef": {
+                                      "name": "Bite energy target"
+                                    }
+                                  }
                                 }
                               }
-                            },
-                            "rhs": {
-                              "variableRef": {
-                                "name": "Midfight Bite minimum Rip remaining"
-                              }
-                            }
+                            ]
                           }
                         }
                       ]
@@ -2021,27 +2084,72 @@
                               "currentComboPoints": {}
                             },
                             "rhs": {
-                              "variableRef": {
-                                "name": "Midfight Bite CP"
+                              "const": {
+                                "val": "5"
                               }
                             }
                           }
                         },
                         {
-                          "cmp": {
-                            "op": "OpGe",
-                            "lhs": {
-                              "dotRemainingTime": {
-                                "spellId": {
-                                  "spellId": 9896
+                          "or": {
+                            "vals": [
+                              {
+                                "and": {
+                                  "vals": [
+                                    {
+                                      "not": {
+                                        "val": {
+                                          "auraIsActive": {
+                                            "auraId": {
+                                              "spellId": 16870
+                                            }
+                                          }
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "cmp": {
+                                        "op": "OpGe",
+                                        "lhs": {
+                                          "currentEnergy": {}
+                                        },
+                                        "rhs": {
+                                          "variableRef": {
+                                            "name": "Five-point Bite energy target"
+                                          }
+                                        }
+                                      }
+                                    }
+                                  ]
+                                }
+                              },
+                              {
+                                "and": {
+                                  "vals": [
+                                    {
+                                      "auraIsActive": {
+                                        "auraId": {
+                                          "spellId": 16870
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "cmp": {
+                                        "op": "OpGe",
+                                        "lhs": {
+                                          "currentEnergy": {}
+                                        },
+                                        "rhs": {
+                                          "variableRef": {
+                                            "name": "Five-point Bite energy target with Clearcasting"
+                                          }
+                                        }
+                                      }
+                                    }
+                                  ]
                                 }
                               }
-                            },
-                            "rhs": {
-                              "variableRef": {
-                                "name": "Midfight Bite minimum Rip remaining below five CP"
-                              }
-                            }
+                            ]
                           }
                         }
                       ]
@@ -2075,6 +2183,80 @@
       }
     },
     {
+      "name": "Bite combo points and Rip window",
+      "value": {
+        "and": {
+          "vals": [
+            {
+              "variableRef": {
+                "name": "Predatory Discipline keeps Bite energy"
+              }
+            },
+            {
+              "auraIsActive": {
+                "auraId": {
+                  "spellId": 768
+                }
+              }
+            },
+            {
+              "cmp": {
+                "op": "OpGe",
+                "lhs": {
+                  "currentComboPoints": {}
+                },
+                "rhs": {
+                  "variableRef": {
+                    "name": "Midfight Bite CP"
+                  }
+                }
+              }
+            },
+            {
+              "cmp": {
+                "op": "OpGe",
+                "lhs": {
+                  "dotRemainingTime": {
+                    "spellId": {
+                      "spellId": 9896
+                    }
+                  }
+                },
+                "rhs": {
+                  "variableRef": {
+                    "name": "Midfight Bite minimum Rip remaining"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Pool energy for Bite",
+      "value": {
+        "and": {
+          "vals": [
+            {
+              "variableRef": {
+                "name": "Bite combo points and Rip window"
+              }
+            },
+            {
+              "not": {
+                "val": {
+                  "variableRef": {
+                    "name": "Midfight Bite is worthwhile"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
       "name": "Predatory Discipline keeps Bite energy",
       "value": {
         "talentIsKnown": {
@@ -2084,5 +2266,6 @@
         }
       }
     }
-  ]
+  ],
+  "groups": []
 }
