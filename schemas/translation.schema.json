@@ -1100,6 +1100,19 @@
 					"additionalProperties": false,
 					"required": ["default_text", "copied", "manual_copy"]
 				},
+				"code_text_area": {
+					"type": "object",
+					"properties": {
+						"position_one": {
+							"type": "string"
+						},
+						"position_other": {
+							"type": "string"
+						}
+					},
+					"additionalProperties": false,
+					"required": ["position_one", "position_other"]
+				},
 				"list_picker": {
 					"type": "object",
 					"properties": {
@@ -1684,6 +1697,7 @@
 				"stats",
 				"currency",
 				"copy_button",
+				"code_text_area",
 				"list_picker",
 				"precision",
 				"preset",
@@ -3994,6 +4008,19 @@
 							"additionalProperties": false,
 							"required": ["label", "tooltip"]
 						},
+						"bleed_immune": {
+							"type": "object",
+							"properties": {
+								"label": {
+									"type": "string"
+								},
+								"tooltip": {
+									"type": "string"
+								}
+							},
+							"additionalProperties": false,
+							"required": ["label", "tooltip"]
+						},
 						"can_crush": {
 							"type": "object",
 							"properties": {
@@ -4068,6 +4095,7 @@
 						"dual_wield",
 						"dual_wield_penalty",
 						"parry_haste",
+						"bleed_immune",
 						"can_crush",
 						"spell_school",
 						"damage_spread",
@@ -5992,6 +6020,19 @@
 									"additionalProperties": false,
 									"required": ["label", "tooltip"]
 								},
+								"target_is_bleed_immune": {
+									"type": "object",
+									"properties": {
+										"label": {
+											"type": "string"
+										},
+										"tooltip": {
+											"type": "string"
+										}
+									},
+									"additionalProperties": false,
+									"required": ["label", "tooltip"]
+								},
 								"target_is_mob_type": {
 									"type": "object",
 									"properties": {
@@ -7452,6 +7493,7 @@
 								"boss_cast",
 								"boss_cast_time_to_ready",
 								"boss_current_target",
+								"target_is_bleed_immune",
 								"target_is_mob_type",
 								"encounter_in_area",
 								"unit_is_moving",
