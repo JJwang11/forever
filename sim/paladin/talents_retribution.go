@@ -124,7 +124,8 @@ func (paladin *Paladin) applyVindication() {
 // the Mana cost of the judged seal.
 //
 // Judgement fires no on-cast callbacks, so the trigger hears the judgement the seal unleashes: one
-// per Judgement, and it refunds whether or not that judgement lands.
+// per Judgement, and it refunds whether or not that judgement lands. Swift Judgement unleashes the
+// same judgements and refunds too.
 //
 // The refund is a share of the seal's base cost, and the seal's percent cost cut goes on top of it
 // instead of coming off: Benediction 5/5 makes a 90 mana seal cost 81 and refund 60% of 99, measured

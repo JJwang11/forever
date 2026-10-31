@@ -199,9 +199,9 @@ func (paladin *Paladin) applyConsecratedGround() {
 
 // Holy Power - Increases the critical strike healing bonus of your Holy spells by 10/20/30/40/50%.
 //
-// The row is A_MOD_CRITICAL_HEALING_AMOUNT on the Holy school, which scales the heal's base crit
-// multiplier as aura 50 does in CritDamageMultiplier: 5/5 makes a 150% heal crit 225%. Every paladin
-// heal is Holy.
+// The row is A_MOD_CRITICAL_HEALING_AMOUNT on the Holy school. That aura multiplies the whole
+// critical heal, the 150% included, so 5/5 makes a heal crit 225%. A SPELLMOD_CRIT_DAMAGE_BONUS
+// modifier such as the druid's Vengeance scales only the 50% bonus. Every paladin heal is Holy.
 func (paladin *Paladin) applyHolyPower() {
 	if paladin.Talents.HolyPower == 0 {
 		return
