@@ -175,12 +175,14 @@ func (druid *Druid) registerBearAura(form *spelldata.Spell, passive *spelldata.S
 			// A swing replacement also asks the rotation to queue an attack before the swing.
 			// Only Bear forms can queue Maul.
 			druid.AutoAttacks.SetReplaceMHSwing(druid.TryMaul)
+			druid.AutoAttacks.SetQueuedSwingCanceler(druid.cancelMaulQueue)
 		}
 		druid.PseudoStats.ThreatMultiplier *= bearFormThreatMultiplier
 	})
 	aura.ApplyOnExpire(func(_ *core.Aura, sim *core.Simulation) {
 		druid.PseudoStats.ThreatMultiplier /= bearFormThreatMultiplier
 		druid.AutoAttacks.SetReplaceMHSwing(nil)
+		druid.AutoAttacks.SetQueuedSwingCanceler(nil)
 		if druid.maulQueueAura != nil {
 			druid.maulQueueAura.Deactivate(sim)
 		}

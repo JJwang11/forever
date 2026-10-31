@@ -196,6 +196,12 @@ func (spell *Spell) makeCastFunc(config CastConfig) CastSuccessFunc {
 			}
 		}
 
+		// Throwing an explosive drops the attack queued for the next swing, which the rotation queues
+		// again (a player's report; a combat log does not show the queue).
+		if spell.Flags.Matches(SpellFlagExplosive) {
+			spell.Unit.AutoAttacks.CancelQueuedSwing(sim)
+		}
+
 		if unshift {
 			spell.Unit.AutoUnshift(sim)
 		}

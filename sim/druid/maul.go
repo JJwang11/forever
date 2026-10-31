@@ -25,6 +25,12 @@ func (druid *Druid) registerMaulSpell() {
 	druid.Maul = druid.makeMaulQueueSpellAndAura(damage)
 }
 
+func (druid *Druid) cancelMaulQueue(sim *core.Simulation) {
+	if druid.maulQueueAura != nil {
+		druid.maulQueueAura.Deactivate(sim)
+	}
+}
+
 func (druid *Druid) makeMaulQueueSpellAndAura(maulSpell *DruidSpell) *DruidSpell {
 	isMaulQueued := false
 

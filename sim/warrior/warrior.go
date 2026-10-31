@@ -162,6 +162,11 @@ func NewWarrior(character *core.Character, options *proto.WarriorOptions, talent
 		AutoSwingMelee: true,
 		ReplaceMHSwing: warrior.TryHSOrCleave,
 	})
+	warrior.AutoAttacks.SetQueuedSwingCanceler(func(sim *core.Simulation) {
+		if warrior.curQueueAura != nil {
+			warrior.curQueueAura.Deactivate(sim)
+		}
+	})
 
 	warrior.PseudoStats.CanParry = true
 
