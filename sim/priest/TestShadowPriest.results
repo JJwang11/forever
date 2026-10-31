@@ -225,7 +225,7 @@ dps_results: {
  key: "TestShadowPriest-AllItems-DreadmistRaiment"
  value: {
   dps: 689.9008
-  tps: 495.00872
+  tps: 496.18272
   dtps: 4.95746
   hps: 7.83039
  }
