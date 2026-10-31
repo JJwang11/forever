@@ -191,6 +191,41 @@ func TestDynamiteLandsAfterItsCastAndFlight(t *testing.T) {
 	}
 }
 
+// Throwing the dynamite half a second before a swing is due leaves the swing timer running: the swing
+// lands on time inside the cast, and the one after it a swing later.
+func TestDynamiteLeavesTheSwingTimerRunning(t *testing.T) {
+	player := shaman("Thrower", nil)
+	player.Consumables = &proto.ConsumesSpec{ExplosiveId: testDynamiteID}
+	sim := newAuraSim(player)
+	thrower := auraTesterAt(sim, 0)
+	target := sim.Encounter.ActiveTargetUnits[0]
+	dynamite := thrower.GetSpell(core.ActionID{ItemID: testDynamiteID})
+	if dynamite == nil {
+		t.Fatalf("the dynamite registered no on-use spell")
+	}
+	if dynamite.DefaultCast.CastTime < time.Second {
+		t.Fatalf("the dynamite casts in %v, want a cast that covers the swing", dynamite.DefaultCast.CastTime)
+	}
+
+	thrower.AutoAttacks.EnableAutoSwing(sim)
+	stepPast(t, sim, sim.CurrentTime+time.Millisecond)
+	due := thrower.AutoAttacks.MainhandSwingAt()
+	swings := &thrower.AutoAttacks.MHAuto().SpellMetrics[target.UnitIndex]
+	landed := swings.Casts
+
+	stepPast(t, sim, due-500*time.Millisecond)
+	if !dynamite.Cast(sim, target) {
+		t.Fatalf("the dynamite could not be thrown")
+	}
+	stepPast(t, sim, due+time.Millisecond)
+	if swings.Casts != landed+1 {
+		t.Errorf("%d swings landed by the time one was due inside the cast, want %d", swings.Casts, landed+1)
+	}
+	if got, want := thrower.AutoAttacks.MainhandSwingAt(), due+thrower.AutoAttacks.MainhandSwingSpeed(); got != want {
+		t.Errorf("the next swing is due at %v, want %v, a swing after the one due inside the cast", got, want)
+	}
+}
+
 // An instant copy of 15239 flying at 14 yards a second: from 14 yards the charge lands 1 s after it is
 // used.
 func TestCrystalChargeLandsAfterItsFlight(t *testing.T) {

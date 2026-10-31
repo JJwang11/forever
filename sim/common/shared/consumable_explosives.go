@@ -101,6 +101,10 @@ func cloudDamageSpell(character *core.Character, itemID int32, row, cloud, damag
 // An explosive used from the bar: the damage its on-use spell deals, on the item's cooldown and the
 // category cooldown every explosive shares, and the damage the spell deals to the thrower where the
 // row states one. Only a character with the profession and skill the item requires can use it.
+//
+// Throwing one leaves the melee swing timer running, though no row states Do Not Reset Combat Timers:
+// in Forever combat logs the next swing lands on its old schedule after dynamite, copper bombs and
+// iron grenades alike, and a swing due during the 1 sec cast lands in it.
 func NewSpellDataExplosive(itemID int32) {
 	core.NewSpellDataConsumableEffect(itemID, func(agent core.Agent) {
 		character := agent.GetCharacter()
@@ -113,7 +117,7 @@ func NewSpellDataExplosive(itemID int32) {
 			row := spelldata.MustFind(itemEffect.BuffId)
 			config := consumableDamageSpell(character, itemID, row)
 			config.ActionID = core.ActionID{ItemID: itemID}
-			config.Flags |= core.SpellFlagExplosive
+			config.Flags |= core.SpellFlagExplosive | core.SpellFlagKeepsSwingTimer
 			config.Cast = consumableCast(character, itemEffect, row)
 			if self := row.CasterDamageEffect(); self != spelldata.NilEffect {
 				selfSpell := registerCasterDamageSpell(character, core.SpellConfig{
