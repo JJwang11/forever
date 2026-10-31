@@ -735,50 +735,64 @@ func TestHeroicStrikeCountsItsQueuingPressAsAManualCast(t *testing.T) {
 	t.Fatal("the result has no Heroic Strike action")
 }
 
-// Throwing an explosive drops a Heroic Strike or Cleave queued for the next swing.
+// Throwing an explosive with a cast drops a Heroic Strike or Cleave queued for the next swing; the
+// instant sapper charge keeps it.
 func TestExplosiveDropsTheQueuedCleave(t *testing.T) {
-	player := &proto.Player{
-		Name:          "Thrower",
-		Race:          proto.Race_RaceOrc,
-		Class:         proto.Class_ClassWarrior,
-		Equipment:     core.GetGearSet("../../ui/specs/warrior/dps/gear_sets", "p1_fury").GearSet,
-		TalentsString: furyTalents,
-		Spec:          dpsOptions,
-		Consumables:   &proto.ConsumesSpec{ExplosiveId: 18588}, // Ez-Thro Dynamite II
-		Rotation:      &proto.APLRotation{},
-	}
-	sim := core.NewSim(&proto.RaidSimRequest{
-		Raid:       core.SinglePlayerRaidProto(player, &proto.PartyBuffs{}, &proto.RaidBuffs{}, &proto.Debuffs{}),
-		Encounter:  core.MakeSingleTargetEncounter(0),
-		SimOptions: &proto.SimOptions{RandomSeed: 1},
-	}, simsignals.CreateSignals())
-	sim.Reset()
-	war := sim.Raid.Parties[0].Players[0].(*dps.DpsWarrior)
-	war.AutoAttacks.CancelAutoSwing(sim)
-	war.AddRage(sim, 100, war.NewRageMetrics(core.ActionID{OtherID: proto.OtherAction_OtherActionRageGain}))
+	for _, tc := range []struct {
+		name       string
+		itemID     int32
+		consumes   *proto.ConsumesSpec
+		wantQueued bool
+	}{
+		{"Ez-Thro Dynamite II drops it", 18588, &proto.ConsumesSpec{ExplosiveId: 18588}, false},
+		{"Goblin Sapper Charge keeps it", 10646, &proto.ConsumesSpec{ExtraIds: []int32{10646}}, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			player := &proto.Player{
+				Name:          "Thrower",
+				Race:          proto.Race_RaceOrc,
+				Class:         proto.Class_ClassWarrior,
+				Equipment:     core.GetGearSet("../../ui/specs/warrior/dps/gear_sets", "p1_fury").GearSet,
+				TalentsString: furyTalents,
+				Spec:          dpsOptions,
+				Profession1:   proto.Profession_Engineering,
+				Consumables:   tc.consumes,
+				Rotation:      &proto.APLRotation{},
+			}
+			sim := core.NewSim(&proto.RaidSimRequest{
+				Raid:       core.SinglePlayerRaidProto(player, &proto.PartyBuffs{}, &proto.RaidBuffs{}, &proto.Debuffs{}),
+				Encounter:  core.MakeSingleTargetEncounter(0),
+				SimOptions: &proto.SimOptions{RandomSeed: 1},
+			}, simsignals.CreateSignals())
+			sim.Reset()
+			war := sim.Raid.Parties[0].Players[0].(*dps.DpsWarrior)
+			war.AutoAttacks.CancelAutoSwing(sim)
+			war.AddRage(sim, 100, war.NewRageMetrics(core.ActionID{OtherID: proto.OtherAction_OtherActionRageGain}))
 
-	queueCleave := war.GetSpell(war.Cleave.ActionID.WithTag(1))
-	queue := war.GetAura("HS/Cleave Queue Aura-" + war.Cleave.ActionID.String())
-	dynamite := war.GetSpell(core.ActionID{ItemID: 18588})
-	if queueCleave == nil || queue == nil || dynamite == nil {
-		t.Fatalf("queue spell %v, queue aura %v, dynamite %v; want all registered", queueCleave, queue, dynamite)
-	}
-	if !queueCleave.Cast(sim, war.CurrentTarget) {
-		t.Fatal("Cleave could not be queued")
-	}
-	for range 100 {
-		if queue.IsActive() {
-			break
-		}
-		sim.Step()
-	}
-	if !queue.IsActive() {
-		t.Fatal("Cleave never queued")
-	}
-	if !dynamite.Cast(sim, war.CurrentTarget) {
-		t.Fatal("the dynamite could not be thrown")
-	}
-	if queue.IsActive() {
-		t.Error("Cleave is still queued after the dynamite was thrown")
+			queueCleave := war.GetSpell(war.Cleave.ActionID.WithTag(1))
+			queue := war.GetAura("HS/Cleave Queue Aura-" + war.Cleave.ActionID.String())
+			explosive := war.GetSpell(core.ActionID{ItemID: tc.itemID})
+			if queueCleave == nil || queue == nil || explosive == nil {
+				t.Fatalf("queue spell %v, queue aura %v, explosive %v; want all registered", queueCleave, queue, explosive)
+			}
+			if !queueCleave.Cast(sim, war.CurrentTarget) {
+				t.Fatal("Cleave could not be queued")
+			}
+			for range 100 {
+				if queue.IsActive() {
+					break
+				}
+				sim.Step()
+			}
+			if !queue.IsActive() {
+				t.Fatal("Cleave never queued")
+			}
+			if !explosive.Cast(sim, war.CurrentTarget) {
+				t.Fatal("the explosive could not be thrown")
+			}
+			if got := queue.IsActive(); got != tc.wantQueued {
+				t.Errorf("Cleave queued after the throw = %v, want %v", got, tc.wantQueued)
+			}
+		})
 	}
 }
