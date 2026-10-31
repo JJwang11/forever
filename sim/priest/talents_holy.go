@@ -178,47 +178,34 @@ func (priest *Priest) applySearingLight() {
 	})
 }
 
-// The self heal Holy Binding casts. Its row states a placeholder of 1; the talent's share sets the amount.
-const holyBindingHealID = 1328570
-
-// Each time you heal a target other than yourself with Flash Heal, you are healed for 50% as much.
+// Each time you heal a target other than yourself with Flash Heal, you are healed for X% as much.
 // This healing generates no threat.
 //
-// The talent is off in Shadowform, as its row states.
+// The talent's row is off in Shadowform, and every Flash Heal row refuses that form already.
 func (priest *Priest) applyHolyBinding() {
 	if !priest.Talents.HolyBinding {
 		return
 	}
 
-	share := spellData.HolyBinding.Rank(1).EffectN(1).Percent()
-	shadowform := spellData.Shadowform.Highest().ShapeshiftForm()
+	talent := spellData.HolyBinding.Rank(1)
+	share := talent.EffectN(1).Percent()
 
-	var amount float64
-	selfHeal := priest.RegisterSpell(core.SpellConfig{
-		ActionID:         core.ActionID{SpellID: holyBindingHealID},
-		SpellSchool:      core.SpellSchoolHoly,
-		DefenseType:      core.DefenseTypeMagic,
-		ProcMask:         core.ProcMaskSpellHealing,
-		Flags:            core.SpellFlagHelpful | core.SpellFlagPassiveSpell | core.SpellFlagIgnoreModifiers,
-		DamageMultiplier: 1,
-		ApplyEffects: func(sim *core.Simulation, target *core.Unit, spell *core.Spell) {
-			spell.CalcAndDealHealing(sim, target, amount, spell.OutcomeHealing)
-		},
-	})
+	// The heal's row states a placeholder of 1; the talent's share sets the amount. The heal lacks Not a
+	// Proc. The share already carries the caster's healing mods, so only the priest's own healing taken
+	// mods apply to it.
+	selfHeal := priest.RegisterSpell(spelldata.SpellConfig(&priest.Unit, spelldata.MustFind(1328570),
+		spelldata.Magic(core.ProcMaskSpellHealing), spelldata.Proc(),
+		spelldata.Flags(core.SpellFlagProc|core.SpellFlagIgnoreAttackerModifiers)))
 
-	priest.MakeProcTriggerAura(core.ProcTrigger{
-		Name:               "Holy Binding",
-		Callback:           core.CallbackOnHealDealt,
-		ClassSpellMask:     PriestSpellFlashHeal,
-		TriggerImmediately: true,
-		ExtraCondition: func(_ *core.Simulation, _ *core.Spell, result *core.SpellResult) bool {
-			return result.Target != &priest.Unit && priest.ShapeshiftForm != shadowform
-		},
-		Handler: func(sim *core.Simulation, _ *core.Spell, result *core.SpellResult) {
-			amount = result.Damage * share
-			selfHeal.Cast(sim, &priest.Unit)
-		},
+	trigger := spelldata.ProcTrigger(&priest.Character, talent, func(sim *core.Simulation, _ *core.Spell, result *core.SpellResult) {
+		selfHeal.CalcAndDealHealing(sim, &priest.Unit, result.Damage*share, selfHeal.OutcomeHealing)
 	})
+	// The row's listener names no spell; the tooltip limits it to Flash Heal on another target.
+	trigger.ClassSpellMask = PriestSpellFlashHeal
+	trigger.ExtraCondition = func(_ *core.Simulation, _ *core.Spell, result *core.SpellResult) bool {
+		return result.Target != &priest.Unit
+	}
+	priest.MakeProcTriggerAura(trigger)
 }
 
 // When you cast a healing spell, gain Mana equal to 20% of the base cost of the spell if your previous heal was a different spell.

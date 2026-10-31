@@ -37259,6 +37259,10 @@ var generatedSpells = []Spell{
 		Effects: []Effect{
 			{ID: 1367667, SpellID: 1328569, Type: dbcenums.E_APPLY_AURA, Aura: dbcenums.A_DUMMY, BasePoints: 50, BaseLevel: 60, PvpMult: 1, ChainAmp: 1, Target: [2]dbcenums.ImplicitTarget{1, 0}},
 		}},
+	{ID: 1328570, Name: "Holy Binding", School: 2, Attr: [17]uint32{0: 0x40010, 1: 0x400, 2: 0x20000000, 15: 0x2000}, SpellLevel: 1, BaseLevel: 1, ClassFlags: core.ClassFlags{Family: 6}, Labels: []int16{18},
+		Effects: []Effect{
+			{ID: 1367668, SpellID: 1328570, Type: dbcenums.E_HEAL, BasePoints: 1, BaseLevel: 1, PvpMult: 1, ChainAmp: 1, Target: [2]dbcenums.ImplicitTarget{1, 0}},
+		}},
 	{ID: 1328613, Name: "Predatory Discipline", School: 1, Attr: [17]uint32{0: 0xc0, 2: 0x100, 8: 0x1000, 15: 0x2000}, SpellLevel: 1, BaseLevel: 1, ClassFlags: core.ClassFlags{Family: 3}, Labels: []int16{21}, ProcHint: core.ProcHintNamedAbility,
 		Effects: []Effect{
 			{ID: 1367715, SpellID: 1328613, Type: dbcenums.E_APPLY_AURA, Aura: dbcenums.A_DUMMY, BasePoints: 20, BaseLevel: 1, PvpMult: 1, ChainAmp: 1, Target: [2]dbcenums.ImplicitTarget{1, 0}},
