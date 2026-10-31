@@ -79,8 +79,8 @@ export default defineSpec<Spec.SpecFeralCatDruid>({
 		aplRotation: Presets.JVMES_APL.rotation.rotation!,
 		encounter: Presets.DefaultEncounter,
 		// Genesis, nature's majesty, nature's reach, ferocity, furor, feral swiftness, shredding attacks,
-		// savage fury, feral charge, sharpened claws, predatory strikes, predatory discipline, leader of
-		// the pack, natural instinct, rend and tear, primal bite, shifting power, heart of the wild, naturalist.
+		// savage fury, feral charge, sharpened claws, predatory strikes, predatory discipline, blood frenzy, leader of
+		// the pack, natural instinct, rend and tear, shifting power, heart of the wild, naturalist.
 		// Shifting Power is absent until that talent is taken.
 		talents: Presets.CatTalents.data,
 		// Default spec-specific settings.

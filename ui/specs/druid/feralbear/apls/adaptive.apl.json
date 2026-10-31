@@ -954,6 +954,38 @@
       }
     },
     {
+      "notes": "Swipe with more than one target once one bleeds, so Rend and Tear applies",
+      "action": {
+        "condition": {
+          "and": {
+            "vals": [
+              {
+                "cmp": {
+                  "op": "OpGe",
+                  "lhs": {
+                    "numberTargets": {}
+                  },
+                  "rhs": {
+                    "const": {
+                      "val": "2"
+                    }
+                  }
+                }
+              },
+              {
+                "druidBleedIsActive": {}
+              }
+            ]
+          }
+        },
+        "castSpell": {
+          "spellId": {
+            "spellId": 9908
+          }
+        }
+      }
+    },
+    {
       "notes": "Build or refresh Lacerate when no higher-priority attack needs the global",
       "action": {
         "castSpell": {

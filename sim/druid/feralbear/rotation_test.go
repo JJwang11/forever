@@ -135,11 +135,21 @@ func TestBearStartingRageDoesNotTriggerFuror(t *testing.T) {
 	}
 }
 
+// Five points of Furor make its rage certain.
+func withFurorFive(talents string) string {
+	trees := strings.Split(talents, "-")
+	feral := []byte(trees[1])
+	feral[1] = '5'
+	trees[1] = string(feral)
+	return strings.Join(trees, "-")
+}
+
 func TestBearPrepullEnrage(t *testing.T) {
 	rotation := selectedAdaptiveBearAPL()
 	rotation.PriorityList = nil
 	req := bearNakedRequest()
 	req.Raid.Parties[0].Players[0].Rotation = rotation
+	req.Raid.Parties[0].Players[0].TalentsString = withFurorFive(bearTalents)
 	req.Raid.Tanks = nil
 	sim := core.NewSim(req, simsignals.CreateSignals())
 	for iteration := 0; iteration < 2; iteration++ {
@@ -564,6 +574,31 @@ func bearAPLWarnings(t *testing.T, req *proto.RaidSimRequest) map[int][]string {
 		add(-2, uuid.Validations)
 	}
 	return warnings
+}
+
+// One target keeps the Lacerate stacks; more than one takes Swipe in its place once one bleeds.
+func TestAdaptiveBearSwipesOnlyWithMoreThanOneTarget(t *testing.T) {
+	for _, check := range []struct {
+		targets int
+		swipes  bool
+	}{{1, false}, {2, true}} {
+		req := bearRequest(selectedAdaptiveBearAPL(), 20)
+		req.Encounter.Targets = make([]*proto.Target, check.targets)
+		for i := range req.Encounter.Targets {
+			req.Encounter.Targets[i] = core.NewDefaultTarget()
+		}
+		result := core.RunSim(req, nil, simsignals.CreateSignals())
+		if result.Error != nil {
+			t.Fatal(result.Error.Message)
+		}
+		actions := result.RaidMetrics.Parties[0].Players[0].Actions
+		if got := bearCastsOf(actions, spellSwipe) > 0; got != check.swipes {
+			t.Errorf("%d targets: Swipe cast = %t, want %t", check.targets, got, check.swipes)
+		}
+		if bearCastsOf(actions, spellLacerate) == 0 {
+			t.Errorf("%d targets: Lacerate was never cast, so nothing bleeds", check.targets)
+		}
+	}
 }
 
 // Omitted utility items and debuffs produce availability warnings, not malformed rotation branches.
