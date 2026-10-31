@@ -205,6 +205,24 @@ func TestFirstLacerateHitsForNothing(t *testing.T) {
 	}
 }
 
+func TestLacerateMissesABleedImmuneTarget(t *testing.T) {
+	sim, bear := newBear(t)
+	target := bear.CurrentTarget
+	target.BleedImmune = true
+	metrics := bear.NewRageMetrics(core.ActionID{SpellID: 1})
+	for range 20 {
+		bear.AddRage(sim, 50, metrics)
+		bear.Lacerate.Cast(sim, target)
+		sim.CurrentTime += 2 * time.Second
+	}
+	if bear.Lacerate.Dot(target).IsActive() {
+		t.Fatal("lacerate left a bleed on a bleed-immune target")
+	}
+	if got := bear.Lacerate.SpellMetrics[target.UnitIndex].TotalDamage; got != 0 {
+		t.Errorf("lacerate dealt %v to a bleed-immune target", got)
+	}
+}
+
 func TestLacerateStacksToFive(t *testing.T) {
 	sim, bear := newBear(t)
 	if !bear.InForm(druid.Bear) {

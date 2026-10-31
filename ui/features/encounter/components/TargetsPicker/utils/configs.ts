@@ -294,6 +294,15 @@ const BOOLEAN_FIELDS: Array<BooleanField> = [
 		},
 	},
 	{
+		name: 'bleed-immune',
+		key: 'bleed_immune',
+		label: 'bleed_immune',
+		get: target => target.bleedImmune,
+		set: (target, value) => {
+			target.bleedImmune = value;
+		},
+	},
+	{
 		name: 'can-crush',
 		key: 'can_crush',
 		label: 'can_crush',
