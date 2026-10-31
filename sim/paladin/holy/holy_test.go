@@ -44,7 +44,7 @@ func TestHolyPaladin(t *testing.T) {
 }
 
 // 35/16: Illumination, Divine Favor, Oath of Light, Holy Shock, Boundless Light, Holy Power and
-// Light's Vigil, with Divine Intellect, Precision, Sacred Duty and Toughness behind them.
+// Light's Vigil, with Divine Intellect, Precision, Sacred Duty, Toughness and Anticipation behind them.
 var StandardTalents = "55320015022101251-503020005001"
 
 var FullConsumes = &proto.ConsumesSpec{

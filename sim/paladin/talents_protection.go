@@ -145,9 +145,10 @@ func (paladin *Paladin) applyShieldSpecialization() {
 	manaMetrics := paladin.NewManaMetrics(core.ActionID{SpellID: rank.ID})
 	manaMetrics.NoThreat = rank.GeneratesNoThreat()
 
-	trigger := spelldata.ProcTrigger(&paladin.Character, spellData.ShieldSpecialization.Rank(paladin.Talents.ShieldSpecialization), func(sim *core.Simulation, _ *core.Spell, _ *core.SpellResult) {
+	restoreMana := func(sim *core.Simulation, _ *core.Spell, _ *core.SpellResult) {
 		paladin.AddMana(sim, paladin.MaxMana()*manaShare, manaMetrics)
-	})
+	}
+	trigger := spelldata.ProcTrigger(&paladin.Character, spellData.ShieldSpecialization.Rank(paladin.Talents.ShieldSpecialization), restoreMana)
 	trigger.Name = "Shield Specialization" + paladin.Label
 	trigger.Outcome = core.OutcomeBlock
 	// The tooltip's "your blocks" counts a block that stops the whole hit.
@@ -163,9 +164,7 @@ func (paladin *Paladin) applyShieldSpecialization() {
 			Outcome:            core.OutcomeLanded,
 			ProcChance:         trigger.ProcChance,
 			TriggerImmediately: true,
-			Handler: func(sim *core.Simulation, _ *core.Spell, _ *core.SpellResult) {
-				paladin.AddMana(sim, paladin.MaxMana()*manaShare, manaMetrics)
-			},
+			Handler:            restoreMana,
 		})
 	}
 }

@@ -11,12 +11,28 @@ import (
 // Unleash the energy of a Seal spell upon an enemy. Does not consume the Seal. Refer to individual
 // Seals for Judgement effect.
 func (paladin *Paladin) registerJudgement() {
-	rank := spellData.Judgement.Highest()
+	paladin.Judgement = paladin.RegisterSpell(paladin.judgementConfig(spellData.Judgement.Highest(), SpellMaskJudgement))
 
+	// Every melee strike that lands refreshes the judgement debuffs on its target.
+	paladin.MakeProcTriggerAura(core.ProcTrigger{
+		Name:               "Judgement Refresh" + paladin.Label,
+		Callback:           core.CallbackOnSpellHitDealt,
+		ProcMask:           core.ProcMaskMelee,
+		Outcome:            core.OutcomeLanded,
+		TriggerImmediately: true,
+		Handler: func(sim *core.Simulation, _ *core.Spell, result *core.SpellResult) {
+			paladin.refreshJudgements(sim, result.Target)
+		},
+	})
+}
+
+// A cast that unleashes the active seal's judgement, the one Judgement and Swift Judgement share. It
+// fires no on-cast callbacks, so listeners hear the judgement it unleashes.
+func (paladin *Paladin) judgementConfig(rank *spelldata.Spell, classMask int64) core.SpellConfig {
 	config := spelldata.SpellConfig(&paladin.Unit, rank,
 		spelldata.Flags(core.SpellFlagAPL|core.SpellFlagPassiveSpell|core.SpellFlagNoOnCastComplete))
 	config.ProcMask = core.ProcMaskEmpty
-	config.ClassSpellMask = SpellMaskJudgement
+	config.ClassSpellMask = classMask
 	config.DamageMultiplier = 1
 	config.ThreatMultiplier = 1
 
@@ -36,17 +52,5 @@ func (paladin *Paladin) registerJudgement() {
 		sim.AddPendingAction(pa)
 	}
 
-	paladin.Judgement = paladin.RegisterSpell(config)
-
-	// Every melee strike that lands refreshes the judgement debuffs on its target.
-	paladin.MakeProcTriggerAura(core.ProcTrigger{
-		Name:               "Judgement Refresh" + paladin.Label,
-		Callback:           core.CallbackOnSpellHitDealt,
-		ProcMask:           core.ProcMaskMelee,
-		Outcome:            core.OutcomeLanded,
-		TriggerImmediately: true,
-		Handler: func(sim *core.Simulation, _ *core.Spell, result *core.SpellResult) {
-			paladin.refreshJudgements(sim, result.Target)
-		},
-	})
+	return config
 }

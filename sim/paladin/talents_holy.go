@@ -208,7 +208,7 @@ func (paladin *Paladin) applyHolyPower() {
 	}
 
 	paladin.AddStaticMod(core.SpellModConfig{
-		ClassMask:  SpellMaskHealingSpells | SpellMaskLightsVigilHeal,
+		ClassMask:  SpellMaskHealingSpells | SpellMaskLightsVigilHeal | SpellMaskLayOnHands,
 		Kind:       core.SpellMod_CritMultiplier_Pct,
 		FloatValue: spellData.HolyPower.FractionAt(paladin.Talents.HolyPower),
 	})
