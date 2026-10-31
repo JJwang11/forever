@@ -181,9 +181,7 @@ func (druid *Druid) registerBearAura(form *spelldata.Spell, passive *spelldata.S
 	aura.ApplyOnExpire(func(_ *core.Aura, sim *core.Simulation) {
 		druid.PseudoStats.ThreatMultiplier /= bearFormThreatMultiplier
 		druid.AutoAttacks.SetReplaceMHSwing(nil)
-		if druid.maulQueueAura != nil {
-			druid.maulQueueAura.Deactivate(sim)
-		}
+		druid.cancelMaulQueue(sim)
 		if druid.HasEnergyBar() && !druid.Env.MeasuringStats {
 			druid.EnergyPerTick = druid.furorEnergyPerTick
 			druid.rememberCatEnergy(sim, druid.furorStoredEnergy)
