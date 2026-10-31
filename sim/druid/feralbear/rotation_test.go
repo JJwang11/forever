@@ -567,6 +567,28 @@ func bearAPLWarnings(t *testing.T, req *proto.RaidSimRequest) map[int][]string {
 }
 
 // Omitted utility items and debuffs produce availability warnings, not malformed rotation branches.
+// One target keeps the Lacerate stacks; more than one takes Swipe in its place once one bleeds.
+func TestAdaptiveBearSwipesOnlyWithMoreThanOneTarget(t *testing.T) {
+	const spellSwipe int32 = 9908
+	for _, check := range []struct {
+		targets int
+		swipes  bool
+	}{{1, false}, {2, true}} {
+		req := bearRequest(selectedAdaptiveBearAPL(), 20)
+		req.Encounter.Targets = make([]*proto.Target, check.targets)
+		for i := range req.Encounter.Targets {
+			req.Encounter.Targets[i] = core.NewDefaultTarget()
+		}
+		result := core.RunSim(req, nil, simsignals.CreateSignals())
+		if result.Error != nil {
+			t.Fatal(result.Error.Message)
+		}
+		if got := bearCastsOf(result.RaidMetrics.Parties[0].Players[0].Actions, spellSwipe) > 0; got != check.swipes {
+			t.Errorf("%d targets: Swipe cast = %t, want %t", check.targets, got, check.swipes)
+		}
+	}
+}
+
 func TestAdaptiveBearAvailabilityWarnings(t *testing.T) {
 	for _, consumes := range []bool{true, false} {
 		req := bearRequest(selectedAdaptiveBearAPL(), 20)

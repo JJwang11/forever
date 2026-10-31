@@ -11,7 +11,7 @@ import AdaptiveApl from './apls/adaptive.apl.json';
 import Level60GearJson from './gear_sets/default.gear.json';
 export const ROTATION_ADAPTIVE = PresetUtils.makePresetAPLRotation('Adaptive Bear', AdaptiveApl);
 
-export const BearTalents = PresetUtils.makePresetTalents('Bear', SavedTalents.create({ talentsString: '050022-25200302123102125010-055' }));
+export const BearTalents = PresetUtils.makePresetTalents('Bear', SavedTalents.create({ talentsString: '050022-2322030212310212501-055' }));
 export const HybridTalents = PresetUtils.makePresetTalents('Hybrid', SavedTalents.create({ talentsString: '050022-50220332123112125011-05' }));
 
 export const Level60Gear = PresetUtils.makePresetGear('Level 60', Level60GearJson, {
