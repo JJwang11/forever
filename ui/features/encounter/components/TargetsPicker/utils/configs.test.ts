@@ -5,16 +5,16 @@ import { describe, expect, it } from 'vitest';
 import { booleanConfigs } from './configs';
 
 describe('booleanConfigs', () => {
-	it('shows Takes Bleeds on by default and stores the inverse', () => {
+	it('shows Immune to Bleeds off by default', () => {
 		const target = TargetProto.create();
 		const encounter = {
 			modifyTarget: (_: number, modify: (target: TargetProto) => void) => modify(target),
 		} as unknown as Encounter;
-		const takesBleeds = booleanConfigs({ encounter, targetIndex: 0, getTarget: () => target }).find(config => config.id.endsWith('takes-bleeds'))!;
+		const bleedImmune = booleanConfigs({ encounter, targetIndex: 0, getTarget: () => target }).find(config => config.id.endsWith('bleed-immune'))!;
 
-		expect(takesBleeds.getValue?.(null)).toBe(true);
-		takesBleeds.setValue?.(null, false);
+		expect(bleedImmune.getValue?.(null)).toBe(false);
+		bleedImmune.setValue?.(null, true);
 		expect(target.bleedImmune).toBe(true);
-		expect(takesBleeds.getValue?.(null)).toBe(false);
+		expect(bleedImmune.getValue?.(null)).toBe(true);
 	});
 });

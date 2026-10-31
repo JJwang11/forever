@@ -12,7 +12,7 @@ func (druid *Druid) registerRakeSpell() {
 	// The initial hit is not reduced by armor in game, as a tester's report on PR #149 states, although
 	// only the periodic effect states the bleed mechanic. The ticks are periodic physical damage, which
 	// core keeps out of armor anyway.
-	config.Flags |= core.SpellFlagIgnoreResists | core.SpellFlagBleedHit
+	config.Flags |= core.SpellFlagIgnoreResists
 	config.Dot = spelldata.DotConfig(rank, rank.PeriodicDamageEffect())
 	tick := rank.PeriodicDamageEffect()
 	// TODO: Verify whether changing attack power after application changes subsequent ticks.

@@ -172,7 +172,7 @@ func TestBleedHitMissesAnImmuneTarget(t *testing.T) {
 	if result := fa.Spell.CalcDamage(sim, target, 100, always); !result.Landed() {
 		t.Fatal("a spell with no bleed hit missed a bleed-immune target")
 	}
-	fa.Spell.Flags |= SpellFlagBleedHit
+	fa.Spell.Flags |= SpellFlagBleed
 	if result := fa.Spell.CalcDamage(sim, target, 100, always); result.Landed() || result.Damage != 0 {
 		t.Fatalf("a bleed hit landed for %v on a bleed-immune target", result.Damage)
 	}

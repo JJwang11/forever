@@ -4008,7 +4008,7 @@
 							"additionalProperties": false,
 							"required": ["label", "tooltip"]
 						},
-						"takes_bleeds": {
+						"bleed_immune": {
 							"type": "object",
 							"properties": {
 								"label": {
@@ -4095,7 +4095,7 @@
 						"dual_wield",
 						"dual_wield_penalty",
 						"parry_haste",
-						"takes_bleeds",
+						"bleed_immune",
 						"can_crush",
 						"spell_school",
 						"damage_spread",

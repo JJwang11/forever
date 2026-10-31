@@ -365,7 +365,7 @@ func (spell *Spell) CalcOutcome(sim *Simulation, target *Unit, outcomeApplier Ou
 }
 
 func (spell *Spell) missesBleedImmune(target *Unit) bool {
-	return target.BleedImmune && spell.Flags.Matches(SpellFlagBleedHit)
+	return target.BleedImmune && spell.Flags.Matches(SpellFlagBleed)
 }
 
 // A miss with no hit or crit roll, as a full resist or a bleed on a bleed-immune target is.

@@ -1119,9 +1119,9 @@
 				"label": "Parry Haste",
 				"tooltip": "Whether this enemy will gain parry haste when parrying attacks."
 			},
-			"takes_bleeds": {
-				"label": "Takes Bleeds",
-				"tooltip": "Whether bleeds land on this enemy. Turn it off for enemies immune to them, such as many elementals and mechanical units. The sim does not set this from the enemy's type."
+			"bleed_immune": {
+				"label": "Immune to Bleeds",
+				"tooltip": "Whether this enemy is immune to bleeds, as many elementals and mechanical units are. The sim does not set this from the enemy's type."
 			},
 			"can_crush": {
 				"label": "Can Crush",
@@ -1703,7 +1703,7 @@
 				},
 				"target_is_bleed_immune": {
 					"label": "Target Is Bleed Immune",
-					"tooltip": "True if Takes Bleeds is off for the target in the encounter settings"
+					"tooltip": "True if Immune to Bleeds is on for the target in the encounter settings"
 				},
 				"encounter_in_area": {
 					"label": "In Area",

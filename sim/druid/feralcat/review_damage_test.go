@@ -198,8 +198,6 @@ func TestCatStealthOpenersRun(t *testing.T) {
 	}
 }
 
-// Rend and Tear raises Shred on a bleeding target, by the same amount under each of the cat's own
-// bleeds. With the bleed assumed, a target with no bleed of the cat's own takes the same raised Shred.
 func TestBleedImmuneTargetTakesNoRakeAndNoAssumedBleed(t *testing.T) {
 	const rendAndTear5 = "0000000000000000-00000000000100005000-0000000000000000"
 	sim, cat := newCat(t, rendAndTear5, nil)
@@ -229,6 +227,8 @@ func TestBleedImmuneTargetTakesNoRakeAndNoAssumedBleed(t *testing.T) {
 	}
 }
 
+// Rend and Tear raises Shred on a bleeding target, by the same amount under each of the cat's own
+// bleeds. With the bleed assumed, a target with no bleed of the cat's own takes the same raised Shred.
 func TestAssumedBleedRaisesShredLikeOwnBleed(t *testing.T) {
 	const rendAndTear5 = "0000000000000000-00000000000100005000-0000000000000000"
 	shred := func(assume bool, bleed func(*FeralDruid) *druid.DruidSpell) float64 {

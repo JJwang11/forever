@@ -294,12 +294,12 @@ const BOOLEAN_FIELDS: Array<BooleanField> = [
 		},
 	},
 	{
-		name: 'takes-bleeds',
-		key: 'takes_bleeds',
-		label: 'takes_bleeds',
-		get: target => !target.bleedImmune,
+		name: 'bleed-immune',
+		key: 'bleed_immune',
+		label: 'bleed_immune',
+		get: target => target.bleedImmune,
 		set: (target, value) => {
-			target.bleedImmune = !value;
+			target.bleedImmune = value;
 		},
 	},
 	{
