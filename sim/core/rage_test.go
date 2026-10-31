@@ -181,8 +181,8 @@ func TestAutoAttackRageGeneration(t *testing.T) {
 }
 
 func TestTwoHandAutoAttackRageGeneration(t *testing.T) {
-	// A two-hand MH swing at 2.6 speed: 2.6 * 4.5 = 11.7. A crit adds the swing's rage before the two-hand
-	// multiplier, 2.6 * 3.46 = 8.996, for 20.696.
+	// A two-hand MH swing at 2.6 speed: 2.6 * 4.5 = 11.7. A crit doubles it, two-hand multiplier included,
+	// for 23.4.
 	const swingDamage = 500.0
 
 	sim := SetupFakeRageSim()
@@ -195,8 +195,8 @@ func TestTwoHandAutoAttackRageGeneration(t *testing.T) {
 	}
 
 	critRage := rageFromAutoAttack(sim, fw, fw.AutoAttacks.MHAuto(), OutcomeCrit, swingDamage)
-	if !WithinToleranceFloat64(20.696, critRage, 0.001) {
-		t.Fatalf("Incorrect Rage generated on 2H crit: Expected: %0.3f, Actual: %0.3f", 20.696, critRage)
+	if !WithinToleranceFloat64(23.4, critRage, 0.001) {
+		t.Fatalf("Incorrect Rage generated on 2H crit: Expected: %0.3f, Actual: %0.3f", 23.4, critRage)
 	}
 }
 
