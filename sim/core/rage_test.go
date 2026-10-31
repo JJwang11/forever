@@ -201,7 +201,7 @@ func TestTwoHandAutoAttackRageGeneration(t *testing.T) {
 }
 
 func TestOffHandAutoAttackRageGeneration(t *testing.T) {
-	// An OH swing at 1.8 speed: 1.8 * 3.46 * 0.5 = 3.114.
+	// An OH swing at 1.8 speed: 1.8 * 3.46 * 0.5 = 3.114. A crit doubles the halved share, for 6.228.
 	const swingDamage = 500.0
 
 	sim := SetupFakeRageSim()
@@ -211,6 +211,11 @@ func TestOffHandAutoAttackRageGeneration(t *testing.T) {
 	hitRage := rageFromAutoAttack(sim, fw, ohAuto, OutcomeHit, swingDamage)
 	if !WithinToleranceFloat64(3.114, hitRage, 0.01) {
 		t.Fatalf("Incorrect Rage generated on OH hit: Expected: %0.3f, Actual: %0.3f", 3.114, hitRage)
+	}
+
+	critRage := rageFromAutoAttack(sim, fw, ohAuto, OutcomeCrit, swingDamage)
+	if !WithinToleranceFloat64(6.228, critRage, 0.01) {
+		t.Fatalf("Incorrect Rage generated on OH crit: Expected: %0.3f, Actual: %0.3f", 6.228, critRage)
 	}
 
 	dodgeRage := rageFromAutoAttack(sim, fw, ohAuto, OutcomeDodge, swingDamage)
