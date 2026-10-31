@@ -105,6 +105,9 @@ func cloudDamageSpell(character *core.Character, itemID int32, row, cloud, damag
 // Throwing one leaves the melee swing timer running, though no row states Do Not Reset Combat Timers:
 // in Forever combat logs the next swing lands on its old schedule after dynamite, copper bombs and
 // iron grenades alike, and a swing due during the 1 sec cast lands in it.
+//
+// A bomb or grenade whose row's mechanic is stun is a stun as a whole: a stun-immune target, such as a
+// raid boss, is immune to its damage too. Dynamite and sapper charges state no mechanic and hit it.
 func NewSpellDataExplosive(itemID int32) {
 	core.NewSpellDataConsumableEffect(itemID, func(agent core.Agent) {
 		character := agent.GetCharacter()
@@ -118,6 +121,9 @@ func NewSpellDataExplosive(itemID int32) {
 			config := consumableDamageSpell(character, itemID, row)
 			config.ActionID = core.ActionID{ItemID: itemID}
 			config.Flags |= core.SpellFlagExplosive | core.SpellFlagKeepsSwingTimer
+			if row.Mechanic == dbcenums.MECHANIC_STUN {
+				config.Flags |= core.SpellFlagStun
+			}
 			config.Cast = consumableCast(character, itemEffect, row)
 			if self := row.CasterDamageEffect(); self != spelldata.NilEffect {
 				selfSpell := registerCasterDamageSpell(character, core.SpellConfig{

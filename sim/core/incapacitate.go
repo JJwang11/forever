@@ -166,7 +166,7 @@ func (unit *Unit) BreakFear(sim *Simulation) {
 
 var stunKind = &incapacitateKind{
 	tag:                StunAuraTag,
-	isImmune:           func(unit *Unit) bool { return unit.PseudoStats.StunImmune },
+	isImmune:           func(unit *Unit) bool { return unit.StunImmune || unit.PseudoStats.StunImmune },
 	setImmune:          func(unit *Unit, immune bool) { unit.PseudoStats.StunImmune = immune },
 	durationMultiplier: func(unit *Unit) float64 { return unit.PseudoStats.StunDurationMultiplier },
 }
