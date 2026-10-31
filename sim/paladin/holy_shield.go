@@ -49,12 +49,13 @@ func (paladin *Paladin) registerHolyShield(_ int32, rank *spelldata.Spell) {
 		},
 	}).AttachStatBuff(stats.BlockPercent, blockPercent)
 
-	// Shieldsworn: a Holy Strike that lands deals the shield's damage and spends no charge.
+	// Shieldsworn: a Holy Strike that lands with a shield deals the shield's damage and spends no charge.
 	if paladin.Talents.Shieldsworn {
 		holyShieldAura.AttachProcTrigger(core.ProcTrigger{
 			Callback:           core.CallbackOnSpellHitDealt,
 			ClassSpellMask:     SpellMaskHolyStrike,
 			Outcome:            core.OutcomeLanded,
+			ExtraCondition:     paladin.strikesWithShield,
 			TriggerImmediately: true,
 			Handler: func(sim *core.Simulation, _ *core.Spell, result *core.SpellResult) {
 				procSpell.Cast(sim, result.Target)
