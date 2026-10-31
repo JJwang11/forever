@@ -79,7 +79,7 @@ func (paladin *Paladin) registerSealOfCommand(_ int32, rank *spelldata.Spell) {
 	// ICD, so a spend of several copies procs Seal of Command once at most.
 	// TODO: Ingame test needed -- whether Unsealed Wrath's stored copies skip the ICD, as the tooltip's
 	// "its normal chance to activate once per stack" reads; a log of a spend of several Command stacks decides.
-	dpm :=paladin.NewLegacyPPMManager(7, core.ProcMaskMeleeWhiteHit)
+	dpm := paladin.NewLegacyPPMManager(7, core.ProcMaskMeleeWhiteHit)
 	icd := core.Cooldown{Timer: paladin.NewTimer(), Duration: time.Second}
 	tryProc := func(sim *core.Simulation, target *core.Unit) {
 		if icd.IsReady(sim) && dpm.Proc(sim, core.ProcMaskMeleeMHAuto, "Seal of Command") {
