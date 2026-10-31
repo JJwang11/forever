@@ -23,7 +23,7 @@ func currentEnergy() *proto.APLValue {
 	return &proto.APLValue{Value: &proto.APLValue_CurrentEnergy{CurrentEnergy: &proto.APLValueCurrentEnergy{}}}
 }
 
-// Sets one feral-tree digit. Index 8 is Feral Charge, 19 is Shifting Power.
+// Sets one feral-tree digit. Index 8 is Feral Charge, 12 Predatory Discipline, 19 Shifting Power.
 func withFeralDigit(talents string, index int, digit byte) string {
 	parts := []byte(talents)
 	start := 0

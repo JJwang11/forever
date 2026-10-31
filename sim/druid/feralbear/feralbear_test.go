@@ -102,8 +102,8 @@ func BenchmarkSimulate(b *testing.B) {
 }
 
 // Fixed allocations for the class benchmark.
-const DefaultTalents = "050022-25200302123102125010-055"
-const HybridTalents = "050022-50220332123112125011-05"
+const DefaultTalents = "050022-2322030212310212501-055"
+const HybridTalents = "050022-50230332123110121011-055"
 
 var DefaultSpecOptions = &proto.Player_FeralBearDruid{
 	FeralBearDruid: &proto.FeralBearDruid{

@@ -4,6 +4,7 @@ package feralcat
 
 import (
 	"math"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -40,9 +41,9 @@ func TestMonocatStaysInCatForm(t *testing.T) {
 	}
 }
 
-// Ferocious Bite spends the combo points only once a Rip would not tick out, in the last 10 seconds.
+// Without Predatory Discipline, Ferocious Bite spends the combo points only once a Rip would not tick out.
 func TestMonocatBitesOnlyAtTheEnd(t *testing.T) {
-	request := catPowershiftRequest(powershiftTalents, defaultCatRotation(), false)
+	request := catPowershiftRequest(withFeralDigit(powershiftTalents, 12, '0'), defaultCatRotation(), false)
 	request.SimOptions.Debug = true
 	result := core.RunSim(request, nil, simsignals.CreateSignals())
 	if result.Error != nil {
@@ -64,6 +65,19 @@ func TestMonocatBitesOnlyAtTheEnd(t *testing.T) {
 	}
 	if bites == 0 {
 		t.Error("Ferocious Bite was never cast at the end")
+	}
+}
+
+// With Predatory Discipline, the extra combo points two points of Blood Frenzy give go to Ferocious Bite while Rip ticks.
+func TestMonocatBitesSpareComboPointsWithBloodFrenzy(t *testing.T) {
+	endOnly := defaultCatRotation()
+	endOnly.PriorityList = slices.DeleteFunc(endOnly.PriorityList, func(item *proto.APLListItem) bool {
+		return item.Action.GetCondition().GetVariableRef().GetName() == "Midfight Bite is worthwhile"
+	})
+	spare := runCat(t, sweepRequest(catTalents, defaultCatRotation(), false, 100))
+	without := runCat(t, sweepRequest(catTalents, endOnly, false, 100))
+	if got, want := castsOf(spare.Actions, 22829), castsOf(without.Actions, 22829); got <= want {
+		t.Errorf("Ferocious Bite casts = %d with the midfight line, %d without it, want more with it", got, want)
 	}
 }
 
@@ -743,7 +757,6 @@ func TestAdaptiveCatAvailabilityWarnings(t *testing.T) {
 			req.Raid.Parties[0].Players[0].Consumables = &proto.ConsumesSpec{}
 		}
 		expected := map[string]bool{
-			"Cat (#1) does not know talent {SpellID: 16958}":    true,
 			"Cat (#1) does not know spell {SpellID: 1259705}":   true,
 			"No aura found on Cat (#1) for: {SpellID: 1270842}": true,
 			"Cat (#1) does not know spell {SpellID: 1259686}":   true,
@@ -826,5 +839,94 @@ func TestAdaptiveInnervateWaitsForEnergized(t *testing.T) {
 				t.Errorf("race=%s Energized=%v: Innervate casts=%d, want %d", race, active, casts, want)
 			}
 		}
+	}
+}
+
+func TestAdaptiveBitePoolsByComboPointsAndClearcasting(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		cp        int32
+		energy    float64
+		clearcast bool
+		ripLeft   time.Duration
+		want      int32
+	}{
+		{"four points below pool", 4, 84, false, 3 * time.Second, 0},
+		{"four points funded", 4, 85, false, 3 * time.Second, 1},
+		{"five points below pool", 5, 69, false, 3 * time.Second, 0},
+		{"five points funded", 5, 70, false, 3 * time.Second, 1},
+		{"four points clearcast below pool", 4, 59, true, 3 * time.Second, 0},
+		{"four points clearcast funded", 4, 60, true, 3 * time.Second, 1},
+		{"five points clearcast below pool", 5, 49, true, 3 * time.Second, 0},
+		{"five points clearcast funded", 5, 50, true, 3 * time.Second, 1},
+		{"Rip window too short", 5, 100, false, 1500 * time.Millisecond, 0},
+		{"Rip window funded", 5, 100, false, 2 * time.Second, 1},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			rotation := defaultCatRotation()
+			rotation.PrepullActions = nil
+			rotation.PriorityList = slices.DeleteFunc(rotation.PriorityList, func(item *proto.APLListItem) bool {
+				return item.Action.GetCondition().GetVariableRef().GetName() != "Midfight Bite is worthwhile"
+			})
+			if len(rotation.PriorityList) != 1 {
+				t.Fatal("expected one midfight Bite action")
+			}
+			sim := core.NewSim(sweepRequest(catTalents, rotation, false, 1), simsignals.CreateSignals())
+			sim.Reset()
+			cat := sim.Raid.Parties[0].Players[0].(*FeralDruid)
+			cat.AutoAttacks.CancelAutoSwing(sim)
+			sim.CurrentTime = 10 * time.Second
+			fillResource(sim, cat)
+			cat.SpendEnergy(sim, cat.CurrentEnergy()-tc.energy, cat.NewEnergyMetrics(core.ActionID{SpellID: 1}))
+			cat.AddComboPoints(sim, tc.cp, cat.NewComboPointMetrics(core.ActionID{SpellID: 1}))
+			dot := cat.GetSpell(core.ActionID{SpellID: spellRip}).Dot(cat.CurrentTarget)
+			dot.Apply(sim)
+			dot.UpdateExpires(sim.CurrentTime + tc.ripLeft)
+			if tc.clearcast {
+				cat.GetAuraByID(core.ActionID{SpellID: spellClear}).Activate(sim)
+			}
+			cat.SetGCDTimer(sim, sim.CurrentTime)
+			cat.Rotation.DoNextAction(sim)
+			bite := cat.GetSpell(core.ActionID{SpellID: spellBite})
+			if got := bite.SpellMetrics[cat.CurrentTarget.UnitIndex].Casts; got != tc.want {
+				t.Fatalf("Bite casts = %d, want %d", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestAdaptiveRipBuildLeavesTimeForNextGlobal(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		left time.Duration
+		want int32
+	}{
+		{"too late for Rip", 7500 * time.Millisecond, 0},
+		{"Rip now before the window closes", 8500 * time.Millisecond, 1},
+		{"time to build then Rip", 9500 * time.Millisecond, 0},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			rotation := defaultCatRotation()
+			rotation.PrepullActions = nil
+			rotation.PriorityList = slices.DeleteFunc(rotation.PriorityList, func(item *proto.APLListItem) bool {
+				return item.Action.GetCastSpell().GetSpellId().GetSpellId() != spellRip
+			})
+			if len(rotation.PriorityList) != 1 {
+				t.Fatal("expected one Rip action")
+			}
+			sim := core.NewSim(sweepRequest(catTalents, rotation, false, 1), simsignals.CreateSignals())
+			sim.Reset()
+			cat := sim.Raid.Parties[0].Players[0].(*FeralDruid)
+			cat.AutoAttacks.CancelAutoSwing(sim)
+			sim.CurrentTime = sim.Duration - tc.left
+			fillResource(sim, cat)
+			cat.AddComboPoints(sim, 4, cat.NewComboPointMetrics(core.ActionID{SpellID: 1}))
+			cat.SetGCDTimer(sim, sim.CurrentTime)
+			cat.Rotation.DoNextAction(sim)
+			rip := cat.GetSpell(core.ActionID{SpellID: spellRip})
+			if got := rip.SpellMetrics[cat.CurrentTarget.UnitIndex].Casts; got != tc.want {
+				t.Fatalf("Rip casts = %d with %s left, want %d", got, tc.left, tc.want)
+			}
+		})
 	}
 }
