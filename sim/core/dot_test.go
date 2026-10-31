@@ -138,6 +138,39 @@ func expectDotTickDamage(t *testing.T, sim *Simulation, dot *Dot, expectedDamage
 	}
 }
 
+func TestBleedDoesNotLandOnAnImmuneTarget(t *testing.T) {
+	sim := SetupFakeSim()
+	fa := sim.Raid.Parties[0].Players[0].(*FakeAgent)
+	fa.Dot.Unit.BleedImmune = true
+
+	fa.Dot.Apply(sim)
+	if !fa.Dot.IsActive() {
+		t.Fatal("a Dot that is not a bleed did not land on a bleed-immune target")
+	}
+	fa.Dot.Deactivate(sim)
+
+	fa.Spell.Flags |= SpellFlagBleed
+	fa.Dot.Apply(sim)
+	if fa.Dot.IsActive() {
+		t.Fatal("a bleed landed on a bleed-immune target")
+	}
+
+	fa.Dot.Unit.BleedImmune = false
+	fa.Dot.Apply(sim)
+	if !fa.Dot.IsActive() {
+		t.Fatal("a bleed did not land on a target that takes bleeds")
+	}
+}
+
+func TestTargetReadsBleedImmunity(t *testing.T) {
+	if !NewTarget(&proto.Target{BleedImmune: true}, 0).BleedImmune {
+		t.Fatal("the target setting did not reach the unit")
+	}
+	if NewTarget(&proto.Target{}, 0).BleedImmune {
+		t.Fatal("a target is bleed-immune by default")
+	}
+}
+
 func TestDotSnapshot(t *testing.T) {
 	sim := SetupFakeSim()
 	fa := sim.Raid.Parties[0].Players[0].(*FakeAgent)
