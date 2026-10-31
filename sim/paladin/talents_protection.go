@@ -176,7 +176,11 @@ func (paladin *Paladin) applySacredDuty() {
 		return
 	}
 
-	spelldata.ParseStatic(&paladin.Character, spellData.SacredDuty.Rank(paladin.Talents.SacredDuty))
+	rank := spellData.SacredDuty.Rank(paladin.Talents.SacredDuty)
+	// Forbearance is an aura built by hand, which no spell modifier reaches, so it reads the
+	// duration cut as Initialize registers it. The cooldown cut parses.
+	paladin.forbearanceReduction -= rank.Effect(dbcenums.A_ADD_FLAT_MODIFIER, int32(dbcenums.SPELLMOD_DURATION)).TimeValue()
+	spelldata.ParseStatic(&paladin.Character, rank, spelldata.Effects(2))
 }
 
 // Reckoning - Gives you a 8/16/24/32/40% chance after Blocking and a 20/40/60/80/100% chance after
