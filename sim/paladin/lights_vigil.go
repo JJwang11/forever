@@ -65,11 +65,7 @@ func (paladin *Paladin) registerLightsVigilRank(rank *spelldata.Spell) {
 	config.ApplyEffects = func(sim *core.Simulation, target *core.Unit, _ *core.Spell) {
 		// One vigil per paladin: a new one replaces whatever was up.
 		for _, other := range paladin.lightsVigils {
-			for _, aura := range other.auras {
-				if aura != nil && aura.IsActive() {
-					aura.Deactivate(sim)
-				}
-			}
+			other.auras.DeactivateAll(sim)
 		}
 		vigil.auras.Get(target).Activate(sim)
 	}
@@ -81,19 +77,17 @@ func (paladin *Paladin) registerLightsVigilRank(rank *spelldata.Spell) {
 // in no party.
 func (paladin *Paladin) consumeLightsVigil(sim *core.Simulation, target *core.Unit) bool {
 	for _, vigil := range paladin.lightsVigils {
-		if !vigil.auras.Get(target).IsActive() {
+		aura := vigil.auras.Get(target)
+		if !aura.IsActive() {
 			continue
 		}
-		vigil.auras.Get(target).Deactivate(sim)
-		var party *core.Party
-		if agent := paladin.Env.Raid.GetPlayerFromUnit(target); agent != nil {
-			party = agent.GetCharacter().Party
-		}
-		if party == nil {
+		aura.Deactivate(sim)
+		agent := paladin.Env.Raid.GetPlayerFromUnit(target)
+		if agent == nil {
 			vigil.heal.Cast(sim, target)
 			return true
 		}
-		for _, member := range party.Players {
+		for _, member := range agent.GetCharacter().Party.Players {
 			vigil.heal.Cast(sim, &member.GetCharacter().Unit)
 		}
 		return true

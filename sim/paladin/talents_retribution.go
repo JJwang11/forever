@@ -290,17 +290,15 @@ func (paladin *Paladin) applyChampionOfTheLight() {
 // times. Landing an attack with a different Seal consumes all stacks, giving the stored Seal its
 // normal chance to activate once per stack.
 //
-// Each copy is the Echo of its seal, one aura per seal. The four Echoes state the same duration and
-// stack count, and only Echo of Fury is a row of the store, so all four read it. A stored seal's
+// Each copy is the Echo of its seal, one aura per seal, each read from its own row. A stored seal's
 // effect lands a batch window after the hit that consumes it, as a live seal's does.
 func (paladin *Paladin) applyUnsealedWrath() {
 	if !paladin.Talents.UnsealedWrath {
 		return
 	}
 
-	row := spellData.UnsealedWrathTriggered.Highest()
-	paladin.echoes = nil
 	for _, id := range []int32{echoOfCommandID, echoOfFuryID, echoOfRighteousnessID, echoOfJusticeID} {
+		row := spelldata.MustFind(id)
 		paladin.echoes = append(paladin.echoes, &sealEcho{
 			id: id,
 			aura: paladin.RegisterAura(core.Aura{
@@ -319,7 +317,13 @@ func (paladin *Paladin) applyUnsealedWrath() {
 		}
 		target := result.Target
 		for _, echo := range paladin.echoes {
-			if echo.id == seal.echoID || !echo.aura.IsActive() {
+			if echo.id == seal.echoID {
+				echo.seal = seal
+				echo.aura.Activate(sim)
+				echo.aura.AddStack(sim)
+				continue
+			}
+			if !echo.aura.IsActive() {
 				continue
 			}
 			stored, stacks := echo.seal, echo.aura.GetStacks()
@@ -333,13 +337,6 @@ func (paladin *Paladin) applyUnsealedWrath() {
 					stored.echo(sim, target)
 				}
 			})
-		}
-		for _, echo := range paladin.echoes {
-			if echo.id == seal.echoID {
-				echo.seal = seal
-				echo.aura.Activate(sim)
-				echo.aura.AddStack(sim)
-			}
 		}
 	})
 	trigger.Name = "Unsealed Wrath" + paladin.Label

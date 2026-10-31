@@ -7,6 +7,7 @@ import (
 )
 
 // Not generated:
+//   Holy Shield: rank 4, spell 1239570, has no SpellMisc row
 //   Judgement of Fury: missing rank 1 of 7
 //   Judgement of the Crusader: missing rank 1 of 6
 
@@ -84,7 +85,6 @@ type generatedSpellData struct {
 	ImprovedRetributionAura       spelldata.Ladder
 	ImprovedRighteousFury         spelldata.Ladder
 	ImprovedSealOfFury            spelldata.Ladder
-	ImprovedSealOfFuryTriggered   spelldata.Ladder
 	ImprovedSealOfTheCrusader     spelldata.Ladder
 	ImprovedSeals                 spelldata.Ladder
 	InfusionOfLight               spelldata.Ladder
@@ -210,7 +210,7 @@ var spellData = generatedSpellData{
 	HolyConduit:                   spelldata.Talent(1237268, 2),
 	HolyLight:                     spelldata.Ranked(635, 639, 647, 1026, 1042, 3472, 10328, 10329, 25292),
 	HolyPower:                     spelldata.Talent(5923, 5),
-	HolyShield:                    spelldata.Ranked(20925, 20927, 20928, 1239570),
+	HolyShield:                    spelldata.Ranked(20925, 20927, 20928),
 	HolyShock:                     spelldata.Ranked(1311606, 20473, 20929, 20930),
 	HolyShockTriggered:            spelldata.Ranked(25902, 25903, 25911, 25912, 25913, 25914, 1311604, 1311605),
 	HolyStrike:                    spelldata.Ranked(679, 678, 1866, 680, 2495, 5569, 10332, 10333),
@@ -226,7 +226,6 @@ var spellData = generatedSpellData{
 	ImprovedRetributionAura:       spelldata.Ranked(20091, 20092),
 	ImprovedRighteousFury:         spelldata.Talent(20468, 3),
 	ImprovedSealOfFury:            spelldata.Ranked(1314103),
-	ImprovedSealOfFuryTriggered:   spelldata.Ranked(1314104),
 	ImprovedSealOfTheCrusader:     spelldata.Ranked(20335, 20336, 20337),
 	ImprovedSeals:                 spelldata.Talent(20224, 5),
 	InfusionOfLight:               spelldata.Talent(426065, 2),
@@ -244,7 +243,7 @@ var spellData = generatedSpellData{
 	LastingJudgement:              spelldata.Ranked(20359, 20360, 20361),
 	LayOnHands:                    spelldata.Ranked(633, 2800, 10310),
 	LightsVigil:                   spelldata.Ranked(1310911, 1311590, 1311595),
-	LightsVigilTriggered:          spelldata.Ranked(1310909, 1310910, 1310912, 1311591, 1311593, 1311594, 1311596, 1311597, 1311599),
+	LightsVigilTriggered:          spelldata.Ranked(1310909, 1310912, 1311591, 1311593, 1311596, 1311597),
 	OathOfLight:                   spelldata.Ranked(1328548),
 	Precision:                     spelldata.Talent(20189, 3),
 	Purify:                        spelldata.Ranked(1152),

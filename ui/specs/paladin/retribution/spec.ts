@@ -170,8 +170,8 @@ export default defineSpec<Spec.SpecRetributionPaladin>({
 		};
 
 		if (!holyShock) {
-			values['Use Seal of Command'] = String(sealOfCommand && (unsealedWrath || simple.nonTwistSeal === PaladinSeal.SealOfCommand));
-			values['Use Seal of Righteousness'] = String(unsealedWrath || simple.nonTwistSeal === PaladinSeal.SealOfRighteousness);
+			values['Use Seal of Command'] = String(sealOfCommand && (unsealedWrath || simple.seal === PaladinSeal.SealOfCommand));
+			values['Use Seal of Righteousness'] = String(unsealedWrath || simple.seal === PaladinSeal.SealOfRighteousness);
 		}
 
 		rotation.valueVariables = rotation.valueVariables.map(variable =>

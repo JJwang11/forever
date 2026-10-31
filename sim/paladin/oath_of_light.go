@@ -46,11 +46,7 @@ func (paladin *Paladin) registerOathOfLight() {
 	config.ClassSpellMask = SpellMaskOathOfLight
 	config.ApplyEffects = func(sim *core.Simulation, target *core.Unit, _ *core.Spell) {
 		// One Oath per paladin: a new one replaces whatever was up.
-		for _, aura := range oath.auras {
-			if aura != nil && aura.IsActive() {
-				aura.Deactivate(sim)
-			}
-		}
+		oath.auras.DeactivateAll(sim)
 		oath.auras.Get(target).Activate(sim)
 	}
 	config.RelatedAuraArrays = oath.auras.ToMap()

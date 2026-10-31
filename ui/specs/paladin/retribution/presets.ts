@@ -27,7 +27,7 @@ export const DefaultAplPreset = PresetUtils.makePresetAPLRotation('Default', Def
 export const DefaultSimpleRotation = RetributionPaladinRotation.create({
 	aura: PaladinAura.RetributionAura,
 	assignedJudgement: PaladinJudgement.JudgementOfTheCrusader,
-	nonTwistSeal: PaladinSeal.SealOfCommand,
+	seal: PaladinSeal.SealOfCommand,
 	pullRange: 25,
 });
 export const SimpleRotation = PresetUtils.makePresetSimpleRotation('Simple', Spec.SpecRetributionPaladin, DefaultSimpleRotation);

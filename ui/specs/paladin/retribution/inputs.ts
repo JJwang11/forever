@@ -60,12 +60,12 @@ export const RotationIconInputs = [
 		],
 	}),
 	InputHelpers.makeRotationEnumIconInput<Spec.SpecRetributionPaladin, PaladinSeal>({
-		fieldName: 'nonTwistSeal',
-		label: i18n.t('rotation_tab.options.paladin.retribution.non_twist_seal.label'),
-		labelTooltip: i18n.t('rotation_tab.options.paladin.retribution.non_twist_seal.tooltip'),
+		fieldName: 'seal',
+		label: i18n.t('rotation_tab.options.paladin.retribution.seal.label'),
+		labelTooltip: i18n.t('rotation_tab.options.paladin.retribution.seal.tooltip'),
 		numColumns: 2,
 		getValue: player => {
-			const seal = player.getSimpleRotation().nonTwistSeal;
+			const seal = player.getSimpleRotation().seal;
 			if (seal === PaladinSeal.SealUnknown) {
 				return player.getTalents().sealOfCommand ? PaladinSeal.SealOfCommand : PaladinSeal.SealOfRighteousness;
 			}
