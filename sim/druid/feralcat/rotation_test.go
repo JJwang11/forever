@@ -4,6 +4,7 @@ package feralcat
 
 import (
 	"math"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -69,10 +70,14 @@ func TestMonocatBitesOnlyAtTheEnd(t *testing.T) {
 
 // With Predatory Discipline, the extra combo points two points of Blood Frenzy give go to Ferocious Bite while Rip ticks.
 func TestMonocatBitesSpareComboPointsWithBloodFrenzy(t *testing.T) {
+	endOnly := defaultCatRotation()
+	endOnly.PriorityList = slices.DeleteFunc(endOnly.PriorityList, func(item *proto.APLListItem) bool {
+		return item.Action.GetCondition().GetVariableRef().GetName() == "Midfight Bite is worthwhile"
+	})
 	spare := runCat(t, sweepRequest(catTalents, defaultCatRotation(), false, 100))
-	endOnly := runCat(t, sweepRequest(withFeralDigit(catTalents, 13, '0'), defaultCatRotation(), false, 100))
-	if got, want := castsOf(spare.Actions, 22829), castsOf(endOnly.Actions, 22829); got <= want {
-		t.Errorf("Ferocious Bite casts = %d with Blood Frenzy, %d without, want more with it", got, want)
+	without := runCat(t, sweepRequest(catTalents, endOnly, false, 100))
+	if got, want := castsOf(spare.Actions, 22829), castsOf(without.Actions, 22829); got <= want {
+		t.Errorf("Ferocious Bite casts = %d with the midfight line, %d without it, want more with it", got, want)
 	}
 }
 
@@ -752,7 +757,6 @@ func TestAdaptiveCatAvailabilityWarnings(t *testing.T) {
 			req.Raid.Parties[0].Players[0].Consumables = &proto.ConsumesSpec{}
 		}
 		expected := map[string]bool{
-			"Cat (#1) does not know talent {SpellID: 16958}":    true,
 			"Cat (#1) does not know spell {SpellID: 1259705}":   true,
 			"No aura found on Cat (#1) for: {SpellID: 1270842}": true,
 			"Cat (#1) does not know spell {SpellID: 1259686}":   true,

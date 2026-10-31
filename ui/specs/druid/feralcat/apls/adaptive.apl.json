@@ -678,6 +678,14 @@
       }
     },
     {
+      "name": "Midfight Bite full CP",
+      "value": {
+        "const": {
+          "val": "5"
+        }
+      }
+    },
+    {
       "name": "Midfight Bite CP",
       "value": {
         "const": {
@@ -1875,7 +1883,7 @@
                 },
                 "rhs": {
                   "const": {
-                    "val": "7s"
+                    "val": "9s"
                   }
                 }
               }
@@ -1977,8 +1985,8 @@
                               "currentComboPoints": {}
                             },
                             "rhs": {
-                              "const": {
-                                "val": "5"
+                              "variableRef": {
+                                "name": "Midfight Bite full CP"
                               }
                             }
                           }
