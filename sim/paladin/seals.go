@@ -32,6 +32,8 @@ const (
 	echoOfFuryID          = 1311701
 	echoOfRighteousnessID = 1311704
 	echoOfJusticeID       = 1311705
+	echoOfLightID         = 1328198
+	echoOfWisdomID        = 1328206
 )
 
 // One Echo: its spell id, its aura on the paladin, and the seal rank whose effect it holds.

@@ -115,3 +115,61 @@ func TestUnsealedWrathSpendsTheStoredCopiesUnderAnotherSeal(t *testing.T) {
 		t.Errorf("Echo of Fury has %d stacks, want 1", got)
 	}
 }
+
+// Seal of Light and Seal of Wisdom are stored as well, and each spent copy of Seal of Wisdom rolls the
+// seal's own chance to restore mana.
+func TestUnsealedWrathStoresLightAndWisdom(t *testing.T) {
+	sim, pal, swing, _ := unsealedWrathPaladin(t)
+	echoOfLight := pal.GetAuraByID(core.ActionID{SpellID: 1328198})
+	echoOfWisdom := pal.GetAuraByID(core.ActionID{SpellID: 1328206})
+	if echoOfLight == nil || echoOfWisdom == nil {
+		t.Fatal("Echo of Light or Echo of Wisdom is not registered")
+	}
+
+	castSeal(t, sim, pal, paladin.SealOfLightRankMap.Highest().ID)
+	swing()
+	if got := echoOfLight.GetStacks(); got != 1 {
+		t.Fatalf("a swing under Seal of Light left Echo of Light at %d stacks, want 1", got)
+	}
+
+	castSeal(t, sim, pal, paladin.SealOfWisdomRankMap.Highest().ID)
+	for range 3 {
+		swing()
+	}
+	if echoOfLight.IsActive() {
+		t.Error("Echo of Light stays up after a hit under Seal of Wisdom")
+	}
+	if got := echoOfWisdom.GetStacks(); got != 3 {
+		t.Fatalf("three swings under Seal of Wisdom left Echo of Wisdom at %d stacks, want 3", got)
+	}
+
+	wisdomRestores := func() int32 {
+		var casts int32
+		for _, spell := range pal.Spellbook {
+			if spell.Matches(paladin.SpellMaskSealOfWisdomProc) {
+				for _, metrics := range spell.SpellMetrics {
+					casts += metrics.Casts
+				}
+			}
+		}
+		return casts
+	}
+	// Only the hit under Seal of Righteousness is counted, so every restore is a spent copy's.
+	const spends = 100
+	var restores int32
+	for i := range spends {
+		if i > 0 {
+			castSeal(t, sim, pal, paladin.SealOfWisdomRankMap.Highest().ID)
+			for range 3 {
+				swing()
+			}
+		}
+		castSeal(t, sim, pal, paladin.SealOfRighteousnessRankMap.Highest().ID)
+		before := wisdomRestores()
+		swing()
+		restores += wisdomRestores() - before
+	}
+	if restores == 0 || restores == 3*spends {
+		t.Errorf("%d spends of three Seal of Wisdom copies restored mana %d times, want a roll per copy", spends, restores)
+	}
+}

@@ -298,7 +298,7 @@ func (paladin *Paladin) applyUnsealedWrath() {
 		return
 	}
 
-	for _, id := range []int32{echoOfCommandID, echoOfFuryID, echoOfRighteousnessID, echoOfJusticeID} {
+	for _, id := range []int32{echoOfCommandID, echoOfFuryID, echoOfRighteousnessID, echoOfJusticeID, echoOfLightID, echoOfWisdomID} {
 		row := spelldata.MustFind(id)
 		paladin.echoes = append(paladin.echoes, &sealEcho{
 			id: id,
