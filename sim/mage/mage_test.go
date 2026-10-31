@@ -151,7 +151,7 @@ func mageSuite(talents string, apl string) core.CharacterSuiteConfig {
 var ArcaneTalents = "050205223101311531-5500003-003"
 var FFBTalents = "-5550000123011303-2035010311013002"
 var FireTalents = "0502052001001-55500001230133031-003"
-var FrostTalents = "0502052011003--053500021100331251"
+var FrostTalents = "203205-5-053500011121331251"
 
 var DefaultConsumables = &proto.ConsumesSpec{
 	FlaskId: 13512, // Flask of Supreme Power
